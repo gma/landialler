@@ -36,9 +36,7 @@ from Tkinter import *
 import views
 
 
-NoDefaultRoot()  # prevent immediate instantiation of a root window
-
-main_win = None   # global var that refers to the main windows Tk() object
+main_win = Tk()      # global var that refers to the main windows Tk() object
 
 
 class Window:
@@ -72,7 +70,7 @@ class Dialog(Window):
 
     def draw(self):
         """Displays the dialog's message and buttons."""
-        self.window = Tk()
+        self.window = Toplevel()
         self.window.resizable(0, 0)
         self.window.title(self.title)
         self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close
@@ -91,7 +89,6 @@ class Dialog(Window):
         widget.pack()
         frame.pack()
         self.draw_buttons(self.window)
-        self.window.wait_visibility(main_win)
         self.window.focus_set()
         if self.modal:
             self.window.grab_set()
@@ -107,13 +104,6 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
     def cleanup(self):
         self.window.quit()
     
-    def draw(self):
-        """Wait until main window displayed before displaying."""
-        Dialog.draw(self)
-        print "calling wait_visibility"
-        global main_win
-        self.window.wait_visibility(main_win)
-
     def update(self):
         if self.model.is_connected:
             self.window.destroy()
@@ -158,7 +148,8 @@ class MainWindow(Window, views.MainWindow):
     def __init__(self, model):
         Window.__init__(self)
         views.MainWindow.__init__(self, model)
-        self.window = Tk()
+        global main_win
+        self.window = main_win
         self.window.resizable(0, 0)
         self.update_var = []   # StringVar() object's for auto label updating
 
