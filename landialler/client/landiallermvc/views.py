@@ -26,7 +26,7 @@ import controllers
 
 class View:
 
-    """Base class for an MVC View component.
+    """Abstract base class for an MVC View component.
 
     See [POSA125] for more information on the MVC
     (Model-View-Controller) pattern.
@@ -39,20 +39,74 @@ class View:
         self.model.attach(self)  # observe the model
 
     def draw(self):
-        """Create and display the user interface (abstract method)."""
+        """Create and display the user interface (abstract method).
+
+        All views should override this method if they wish to be
+        displayed on the screen.
+
+        """
         raise NotImplementedError, \
               ("%s has not implemented draw()" % self.__class__)
 
     def update(self):
-        """Update the status data.
+        """Update the status data (abstract method).
 
         A view is an observer of the model. This method is called
-        automatically by the model's publish-subscribe system. Views
-        that want to do something when notified of changes should
-        override this method, as it does nothing.
+        automatically by the model's publish-subscribe system. All
+        views must override this method, even if it does nothing.
 
         """
+        raise NotImplementedError, \
+              ("%s has not implemented update()" % self.__class__)
+
+
+class ButtonBar:
+    def __init__(self, model):
+        View.__init__(self, model)
+        self.buttons = []
+
+    def add(self, text='Button', callback=None):
+        self.buttons.append((text, callback))
+
+    def draw(self):
         pass
+
+    def update(self):
+        pass
+        
+
+
+class Window:
+    """Contains basic logic for constructing a top level window."""
+    
+    def __init__(self):
+        """Set button_side attribute to default to RIGHT."""
+        self.button_store = {}  # maintain link to buttons so we config them
+        self.button_bar = []
+        
+    def create_button_store(self, parent=None):
+        """Lays out a set of buttons in a button bar.
+
+        Packs the GUI buttons in order, aligned according to the
+        button_side attribute.
+
+        """        
+
+        # We must sort the buttons into order specified by
+        # self.buttons data structure (that's what the position
+        # element in the tuple is for). Before we can sort them we
+        # need to put them into a list.
+        #
+        # FIXME: There must be a better way of sorting a hash by it's
+        # values than this, perhaps with a sub class of UserDict().
+
+        for name in self.buttons.keys():
+            position = self.buttons[name][0]
+            callback = self.buttons[name][1]
+            self.button_bar.append((name, position, callback))
+
+        if len(self.button_bar) > 1:
+            self.button_bar.sort(lambda a, b: cmp(b[1], a[1]))
 
 
 class ConnectingDialog(View):
