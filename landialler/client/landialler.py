@@ -138,10 +138,10 @@ class Model:
         # so that gtk can be the default on Unix. :)
         try:
             toolkit = self.config.get("interface", "toolkit")
+        except ConfigParser.NoSectionError:
+            toolkit = 'tk'
         except ConfigParser.NoOptionError:
-            toolkit = "tk"
-        except ImportError:
-            toolkit = tk
+            toolkit = 'tk'
             
         exec("from landialler import %sviews" % toolkit)
         exec("self.toolkit = %sviews" % toolkit)
