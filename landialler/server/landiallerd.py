@@ -104,14 +104,20 @@ except ImportError, e:
 import gmalib
 
 
-# Global variables
-debug = 0
-log_file = None
-use_syslog = 0
+class Dummy:
+
+    def method(self, *args):
+        pass
+    
+    def __getattr__(self, name):
+        return self.method
+
+# TODO: replace with proper logging object
+log = Dummy()
 
 
-class API(gmalib.Logger):
-
+class API:
+    
     """Implements the LANdialler API.
 
     All accessible methods in this class form a part of the LANdialler
@@ -123,14 +129,14 @@ class API(gmalib.Logger):
 
     """
 
-    def __init__(self):
-        global debug, use_syslog, log_file
-        self.debug = debug
-        gmalib.Logger.__init__(self, log_file, use_syslog)
-        self.conn = Connection()
+    def __init__(self, modem):
+        self._modem = modem
 
     def connect(self, client):
         """Open the connection.
+
+        The client parameter should be a hashable that uniquely
+        identifies the client (e.g. the IP address).
 
         If the server is already connected the XML-RPC True value is
         returned. If the server is in the process of connecting then
@@ -145,21 +151,13 @@ class API(gmalib.Logger):
         the actual connection will be successfully set up immediately.
 
         """
-        if self.conn.is_connected():
-            self.log_debug("connect() already connected")
-            self.log_info("%s connected, %s client(s) in total" %
-                          (client, self.conn.count_clients()))
+        if self._modem.is_connected():
             return xmlrpclib.True
-        elif self.conn.currently_connecting:
-            self.log_debug("connect() currently connecting")
-            self.log_info("%s connected, %s client(s) in total" %
-                          (client, self.conn.count_clients()))
+        elif self._modem.is_connecting:
             return xmlrpclib.False
         else:
-            self.log_debug("connect() running connect command")
-            self.log_info("%s connected, initiating connection" % client)
-            if self.conn.run_connect_command():
-                self.conn.currently_connecting = 1
+            if self._modem.run_connect_command():
+                self._modem.is_connecting = 1
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
@@ -179,27 +177,19 @@ class API(gmalib.Logger):
         should be usable as a dictionary key.
 
         """
-        if (self.conn.count_clients() > 1) and (all != "yes"):
-            self.log_debug('disconnect(all="%s", client=%s) removed client' %
-                           (all, client))
-            self.conn.forget_client(client)
-            self.log_info("%s disconnected, %s client(s) remaining" %
-                          (client, self.conn.count_clients()))
+        if (self._modem.count_clients() > 1) and (all != "yes"):
+            self._modem.forget_client(client)
             return xmlrpclib.True
         else:
-            self.log_debug('disconnect(all="%s", client=%s) disconnecting' %
-                           (all, client))
             if client:
-                self.log_info("%s disconnected, terminating connection" %
-                              client)
-            self.conn.currently_connecting = 0
-            self.conn.forget_all_clients()
-            if self.conn.run_disconnect_command():
+                log.info("%s disconnected, terminating connection" % client)
+            self._modem.is_connecting = 0
+            self._modem.forget_all_clients()
+            if self._modem.run_disconnect_command():
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
                 
-
     def get_status(self, client):
         """Returns the number of clients and connection status.
 
@@ -207,201 +197,133 @@ class API(gmalib.Logger):
         should be usable as a dictionary key. The IP address is
         usually used.
 
-        The two values returned are:
+        The values returned are:
 
         current_clients -- The number of users sharing the connection
         is_connected    -- 1 if connected, 0 otherwise
+        time_connected  -- Formatted string of time on-line (%H:%M:%S)
 
         """
-        self.conn.remember_client(client)
-        if self.conn.is_connected():
-            self.conn.currently_connecting = 0
-            if not self.conn.was_connected:
-                self.conn.start_timer()
-            self.conn.was_connected = 1
-            numClients = self.conn.count_clients()
+        self._modem.remember_client(client)
+        if self._modem.is_connected():
+            self._modem.is_connecting = 0
+            if not self._modem.was_connected:
+                self._modem.start_timer()
+            self._modem.was_connected = 1
+            numClients = self._modem.count_clients()
         else:
-            if self.conn.was_connected:
-                self.conn.stop_timer()
-            self.conn.was_connected = 0
+            if self._modem.was_connected:
+                self._modem.stop_timer()
+            self._modem.was_connected = 0
             numClients = 0
-        self.log_debug("get_status(%s): clients=%s, isCon=%s, wasCon=%s" %
-                       (client, numClients, self.conn.is_connected(),
-                        self.conn.was_connected))
-        return (numClients, self.conn.is_connected(),
-                self.conn.get_time_connected())
+        return (numClients,
+                self._modem.is_connected(),
+                self._modem.get_time_connected())
 
 
-class Connection(gmalib.Logger):
-
-    """Controls a dial up connection.
-
-    Provides methods for controlling/querying the status of a dial up
-    connection (e.g. modem/ISDN connection to the Internet). All
-    instances of this class share their state (see the Borg design
-    pattern in the ASPN Python Cookbook) so that status information is
-    maintained between seperate client HTTP requests.
-
-    """
-
-    _shared_state = {}
+class SharedModem:
 
     def __init__(self):
-        self.__dict__ = Connection._shared_state
-        if not hasattr(self, "client_tracker"):
-            global debug, use_syslog, log_file
-            self.debug = debug
-            gmalib.Logger.__init__(self,
-                                   log_file, use_syslog)
-            self.log_debug("creating new Connection object")
-            self.client_tracker = {}
-            self.config = gmalib.SharedConfigParser()
-            self.currently_connecting = 0
-            self.was_connected = 0 # should only be used by API.get_status()
-            self.timer = Timer()
+        self.client_tracker = {}
+        self.config = gmalib.SharedConfigParser()
+        self.is_connecting = False
+        self.was_connected = False  # should only be used by API.get_status()
+        self.timer = Timer()
 
     def count_clients(self):
         """Return the number of active clients."""
         return len(self.list_clients())
 
     def is_connected(self):
-        """Return 1 if the connection is up, 0 otherwise.
-
-        Runs the external command as specified in the configuration
-        file to determine if the connection is up.
-
-        """
         cmd = self.config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:
-            self.currently_connecting = 0
+            self.is_connecting = 0
             self.timer.start()
             return 1
         else:
             return 0
 
     def remember_client(self, client):
-        """Record time of the client's last HTTP connection."""
         self.client_tracker[client] = time.time()
 
     def forget_client(self, client):
-        """Stop treating this client as active."""
         try:
-            self.log_debug("forget_client: forgetting %s" % client)
+            log.debug("forget_client: forgetting %s" % client)
             del self.client_tracker[client]
-            self.log_info("%s timed out, %s client(s) remaining" %
+            log.info("%s timed out, %s client(s) remaining" %
                           (client, self.count_clients()))
         except KeyError:
             pass
 
     def forget_all_clients(self):
-        """Assume that all clients are inactive."""
-        self.log_debug("forget_all_clients: clearing client list")
+        log.debug("forget_all_clients: clearing client list")
         self.client_tracker.clear()
 
     def forget_old_clients(self):
-        """Forget about clients that haven't connected recently.
-
-        We keep track of the number of users by counting the number
-        that have connected recently. If a client hasn't connected in
-        the last 30 seconds it is deemed to have died and isn't
-        counted any more.
-
-        """
         timeout = 30
         for client in self.list_clients():
-            self.log_debug("forget_old_clients: checking %s" % client)
             if (time.time() - self.client_tracker[client]) > timeout:
                 self.forget_client(client)
 
     def list_clients(self):
-        """Return a list of client identifiers."""
         return self.client_tracker.keys()
 
     def run_connect_command(self):
         cmd = self.config.get("commands", "connect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
-        self.log_debug("connect command returned: %s" % rval)
+        log.debug("connect command returned: %s" % rval)
         if rval == 0:
             return 1
         else:
             return 0
 
     def run_disconnect_command(self):
-        """Return true if disconnect command run okay, false otherwise."""
         cmd = self.config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
-        self.log_debug("disconnect command returned: %s" % rval)
+        log.debug("disconnect command returned: %s" % rval)
         if rval == 0:
             return 1
         else:
             return 0
 
     def start_timer(self):
-        self.log_debug("starting timer")
+        log.debug("starting timer")
         self.timer.reset()
         self.timer.start()
 
     def stop_timer(self):
-        self.log_debug("stopping timer")
+        log.debug("stopping timer")
         self.timer.stop()
 
     def get_time_connected(self):
         return self.timer.get_elapsed_time()
 
 
-class CleanerThread(threading.Thread, gmalib.Logger):
+class CleanerThread(threading.Thread):
 
-    """Ensures that the connection does not remain live with no clients.
+    """Ensures that the connection does not remain live with no clients."""
 
-    If a client is not shut down cleanly it may not be able to call
-    the API's disconnect procedure, thereby leaving the connection
-    open when there are no clients left. This is bad, as it could lead
-    to an expensive telephone bill.
-
-    This thread periodically makes sure that the connection is not
-    alive when there are no users. If it is, the Connection.disconnect()
-    method is called.
-
-    """
-
-    def __init__(self, interval=10):
-        """Setup the thread object.
-
-        The thread is set to be a daemon thread, so that the server
-        exits without worrying about closing this thread.
-
-        The object also creates an Event object for itself, to
-        facilitate a timer. The timer is used to execute the contents
-        of the run() method every "interval" seconds.
-
-        """
-        self.interval = interval  # time before re-running clean up
+    def __init__(self, modem, interval=10):
+        """Setup the thread object."""
         threading.Thread.__init__(self, name=CleanerThread)
-        self.setDaemon(1)  # we're a daemon thread (see __init__ docs)
-        self.pauser = threading.Event()
-
-        global debug, log_file, use_syslog
-        self.debug = debug
-        gmalib.Logger.__init__(self, log_file, use_syslog)
+        self._modem = modem
+        self._pause_interval = interval
+        self._pauser = threading.Event()
+        self.setDaemon(True)
 
     def run(self):
         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
         # for a full example of the while loop's timer code.
-
-        conn = Connection()
         while 1:
-            conn.forget_old_clients()
-            self.log_debug("cleaner: clients=%s, isConn=%s, curConn=%s, isTiming=%s" %
-                           (conn.count_clients(), conn.is_connected(),
-                            conn.currently_connecting, conn.timer.is_running))
-            if conn.count_clients() < 1:
-                if conn.currently_connecting or conn.is_connected():
-                    self.log_info("clients timed out, terminating connection")
-                    api = API()
+            self._modem.forget_old_clients()
+            if self._modem.count_clients() < 1:
+                if self._modem.is_connecting or self._modem.is_connected():
+                    log.info("clients timed out, terminating connection")
+                    api = API(self._modem)
                     api.disconnect(all="yes")
 
-            self.pauser.wait(self.interval)
+            self._pauser.wait(self._pause_interval)
 
 
 class ReusableTCPServer(SocketServer.TCPServer):
@@ -416,19 +338,15 @@ class ReusableTCPServer(SocketServer.TCPServer):
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
                                         request_handler_class)
-    
 
-class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler,
-                     gmalib.Logger):
+
+class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
 
     """Handles XML-RPC requests."""
 
-    def __init__(self, *args, **kwargs):
-        global debug, log_file, use_syslog
-        self.debug = debug
-        gmalib.Logger.__init__(self, log_file, use_syslog)
-        SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self,
-                                                               *args, **kwargs)
+    def __init__(self, modem):
+        SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self)
+        self._modem = modem
 
     def call(self, procedure, params):
         """Call an API procedure, return it's result.
@@ -439,37 +357,29 @@ class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler,
 
         """
         if not procedure in ["connect", "disconnect", "get_status"]:
-            self.log_err("Unknown procedure name: %s" % procedure)
+            log.err("Unknown procedure name: %s" % procedure)
             raise xmlrpclib.Fault, "Unknown procedure name: %s" % procedure
         else:
-            api = API()
+            api = API(self._modem)
             method = getattr(api, procedure)
             if procedure in ["connect", "get_status"]:
                 (host, port) = self.client_address
                 params = (host,)
             elif procedure == "disconnect":
                 (host, port) = self.client_address
-                disconnectAllUsers = params[0]
-                params = (disconnectAllUsers, host)
-            self.log_debug("RequestHandler.call(): called %s(%s)" % \
-                           (procedure, ", ".join(map(repr, params))))
+                disconnect_all_users = params[0]
+                params = (disconnect_all_users, host)
+            log.debug("RequestHandler.call(): called %s(%s)" % \
+                      (procedure, ", ".join(map(repr, params))))
             return apply(method, params)
 
-    def log_request(self, code="-", size="-"):
-        """HTTP connections are not logged (overrides super class)."""
-        pass
 
-
-class Timer(gmalib.Logger):
+class Timer:
 
     """Simple timer class to record elapsed times."""
 
     def __init__(self):
         """Run the start() method."""
-        global debug, log_file, use_syslog
-        self.debug = debug
-        gmalib.Logger.__init__(self, log_file, use_syslog)
-
         self._start_time = 0  # seconds since epoch
         self._stop_time = 0
         self.is_running = 0
@@ -491,7 +401,7 @@ class Timer(gmalib.Logger):
         Note that reset() neither stops or starts the timer.
 
         """
-        self.log_debug("Timer: resetting time to zero")
+        log.debug("Timer: resetting time to zero")
         self._start_time = time.time()
 
     def _get_elapsed_seconds(self):
@@ -520,31 +430,22 @@ class Timer(gmalib.Logger):
         return "%02d:%02d:%02d" % (hours, mins, secs)
 
 
-class App(gmalib.Logger):
+class App:
 
     """A simple wrapper class that initialises and runs the server."""
-    
+
     def __init__(self):
-        global debug, use_syslog, log_file
-        self.debug = debug
-        gmalib.Logger.__init__(self, log_file, use_syslog)
-        self.become_daemon = 1
+        self._modem = SharedModem()
+        self._become_daemon = True
 
     def check_platform(self):
-        """Check OS is supported."""
         if os.name != "posix":
             print "Sorry, only POSIX compliant systems are supported."
             sys.exit()
 
     def daemonise(self):
-        """Become a daemon process (POSIX only).
-
-        Forks a child process, exits the parent, makes the child a
-        session leader and sets the umask to 0 (so programs run from
-        within can set their own file permissions correctly).
-
-        """
-        if not self.become_daemon:
+        """Become a daemon process (POSIX only)."""
+        if not self._become_daemon:
             return
         if os.name != "posix":
             print "unable to run as a daemon (POSIX only)"
@@ -584,10 +485,10 @@ class App(gmalib.Logger):
 
         for o, v in opts:
             if o == "-d":
-                global debug
-                debug = self.debug = 1
+                # TODO: set debug level on the logging object
+                pass
             elif o == "-f":
-                self.become_daemon = 0
+                self._become_daemon = False
             elif o == "-h":
                 self.usage_message()
             elif o == "-l":
@@ -614,10 +515,10 @@ class App(gmalib.Logger):
         self.check_platform()
         self.pre_load_config()
         try:
-            self.log_info("starting up")
+            log.info("starting up")
             self.getopt()
             self.daemonise()
-            cleaner = CleanerThread()
+            cleaner = CleanerThread(self._modem)
             cleaner.start()
         except IOError, e:
             sys.stderr.write("%s\n" % e)
@@ -629,7 +530,11 @@ class App(gmalib.Logger):
 
         # start the server and start taking requests
         server_port = int(self.config.get("general", "port"))
-        server = ReusableTCPServer(("", server_port), RequestHandler)
+
+        def handler_factory():
+            return RequestHandler(self._modem)
+
+        server = ReusableTCPServer(("", server_port), handler_factory, False)
         try:
             server.serve_forever()
         except KeyboardInterrupt:
