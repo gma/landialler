@@ -111,6 +111,7 @@ class RemoteModem(Observable):
     def __init__(self, server_proxy):
         Observable.__init__(self)
         self._server_proxy = server_proxy
+        self._checking_status = False
         self.num_users = 0
         self.is_connected = False
         self.seconds_online = 0
@@ -125,19 +126,27 @@ class RemoteModem(Observable):
     client_id = property(_get_client_id)
 
     def dial(self):
+        self._checking_status = True
         return self._server_proxy.connect(self.client_id)
 
     def hang_up(self):
+        self._checking_status = False
+        self.is_connected = False
+        self.notify_observers()
         return self._server_proxy.disconnect(self.client_id)
 
     def hang_up_all(self):
+        # TODO: refactor into hang_up()
+        self._checking_status = False
+        self.is_connected = False
+        self.notify_observers()
         return self._server_proxy.disconnect(self.client_id, all=True)
 
     def get_status(self):
-        self.num_users, self.is_connected, self.seconds_online = \
-                        self._server_proxy.get_status(self.client_id)
+        if self._checking_status:
+            self.num_users, self.is_connected, self.seconds_online = \
+                            self._server_proxy.get_status(self.client_id)
         self.notify_observers()
-        return True
 
 
 class WidgetWrapper:
@@ -179,7 +188,7 @@ class MainWindow(Window):
 
     CHECK_STATUS_PERIOD = 1000 * 2
     STATUS_LABEL = '<span size="larger" weight="bold">You are %s</span>'
-    TIMER_UPDATE_PERIOD = 100
+    UPDATE_TIMER_PERIOD = 100
 
     def __init__(self, modem):
         Window.__init__(self, 'main_window')
@@ -188,16 +197,13 @@ class MainWindow(Window):
         self._set_status_disconnected()
         self._seconds_online = 0
         self._last_check_time = None
-        gtk.timeout_add(self.CHECK_STATUS_PERIOD, self._modem.get_status)
-        gtk.timeout_add(self.TIMER_UPDATE_PERIOD, self._update_timer)
+        gtk.timeout_add(self.CHECK_STATUS_PERIOD, self._check_status)
+        gtk.timeout_add(self.UPDATE_TIMER_PERIOD, self._update_timer)
 
-    def _update_timer(self):
-        if self._modem.is_connected:
-            secs_since_check = time.time() - self._last_check_time
-            secs_online = self._modem.seconds_online + secs_since_check
-            self._set_status_connected(secs_online)
-        return True
-
+    def _check_status(self):
+        self._modem.get_status()
+        return gtk.TRUE
+        
     def update(self):
         self._last_check_time = time.time()
         if self._modem.is_connected:
@@ -219,8 +225,16 @@ class MainWindow(Window):
         self.connect_button.set_sensitive(gtk.FALSE)
         self.disconnect_button.set_sensitive(gtk.TRUE)
 
+    def _update_timer(self):
+        if self._modem.is_connected:
+            secs_since_check = time.time() - self._last_check_time
+            secs_online = self._modem.seconds_online + secs_since_check
+            self._set_status_connected(secs_online)
+        return True
+
     def _set_status_disconnected(self):
         self._set_status_label('disconnected')
+        self.details_label.set_label('')
         self.connect_button.set_sensitive(gtk.TRUE)
         self.disconnect_button.set_sensitive(gtk.FALSE)
 
@@ -234,7 +248,7 @@ class MainWindow(Window):
         dialog.show()
 
     def on_disconnect_button_clicked(self, *args):
-        dialog = DisconnectDialog()
+        dialog = DisconnectDialog(self._modem)
         dialog.show()
 
 
@@ -274,14 +288,22 @@ class ConnectingDialog(Window):
 
 class DisconnectDialog(Window):
 
-    def __init__(self):
+    def __init__(self, modem):
         Window.__init__(self, 'disconnect_dialog')
+        self._modem = modem
 
     def on_disconnect_button_clicked(self, *args):
-        pass
+        if self.disconnect_all.get_active():
+            self._modem.hang_up_all()
+        else:
+            self._modem.hang_up()
+        self.destroy()
 
     def on_cancel_button_clicked(self, *args):
-        pass
+        self.destroy()
+
+    def on_disconnect_dialog_delete_event(self, *args):
+        self.on_cancel_button_clicked()
 
 
 class App:

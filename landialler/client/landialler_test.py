@@ -87,6 +87,7 @@ class RemoteModemTest(unittest.TestCase):
         modem = landialler.RemoteModem(server)
         observer = mock.Mock()
         modem.add_observer(observer)
+        modem.dial()
         modem.get_status()
         self.assertEqual(len(observer.getNamedCalls('update')), 1)
 
@@ -94,11 +95,39 @@ class RemoteModemTest(unittest.TestCase):
         """Check modem status accessible to observers"""
         server = mock.Mock({'get_status': (2, True, 23)})
         modem = landialler.RemoteModem(server)
+        modem.dial()
         modem.get_status()
         self.assertEqual(modem.num_users, 2)
         self.assertEqual(modem.is_connected, True)
         self.assertEqual(modem.seconds_online, 23)
 
+    def test_read_status_when_interested(self):
+        """Check get_status() only called when client is interested"""
+        server = mock.Mock({'get_status': (1, True, 23)})
+        modem = landialler.RemoteModem(server)
+        self.assertEqual(len(server.getNamedCalls('get_status')), 0)
+        modem.get_status()
+        self.assertEqual(len(server.getNamedCalls('get_status')), 0)
+        modem.dial()
+        modem.get_status()
+        self.assertEqual(len(server.getNamedCalls('get_status')), 1)
+        modem.hang_up()
+        modem.get_status()
+        self.assertEqual(len(server.getNamedCalls('get_status')), 1)
+        modem.hang_up_all()
+        modem.get_status()
+        self.assertEqual(len(server.getNamedCalls('get_status')), 1)
+
+    def test_hang_up_sets_disconnected(self):
+        """Check that modem doesn't appear to be connected after hang up"""
+        server = mock.Mock({'get_status': (1, True, 23)})
+        modem = landialler.RemoteModem(server)
+        modem.dial()
+        modem.get_status()
+        self.assertEqual(modem.is_connected, True)
+        modem.hang_up()
+        self.assertEqual(modem.is_connected, False)
+        
 
 if __name__ == '__main__':
     unittest.main()
