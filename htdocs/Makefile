@@ -2,7 +2,7 @@
 
 
 REMOTE_HOST=landialler.sourceforge.net
-REMOTE_DIR=/home/groups/l/la/landialler/htdocs/new
+REMOTE_DIR=/home/groups/l/la/landialler/htdocs
 REMOTE_USER=ashtong
 
 
