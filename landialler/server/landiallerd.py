@@ -266,7 +266,6 @@ def api_disconnect(all='no', client=None):
 
     """
     global current_users
-    print "all: %s, users: %s" % (all, client)
     if (current_users - 1 > 0) and (all != 'yes'):  # other users still online
         del user_tracker[client]
         return xmlrpclib.True
