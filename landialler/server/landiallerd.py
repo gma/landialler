@@ -50,9 +50,9 @@ A sample configuration file should be included with the package, but
 the following should serve as a good example:
 
   [commands]
-  connect: /usr/local/bin/dialup
-  disconnet: /usr/local/bin/kill-dialup
-  is_connected: /sbin/ifconfig ppp0
+  connect: /usr/local/bin/start-connection
+  disconnet: /usr/local/bin/stop-connection
+  is_connected: /sbin/ifconfig ppp0 | grep "inet addr" >/dev/null
 
   [server]
   port: 6543
@@ -68,7 +68,10 @@ know how to integrate landialler cleanly with your own operating
 system's dial up systems then please send suggestions in and they will
 be made available on the web site, with credits.
 
-Error, informational and debugging messages are written to the syslog.
+To see a list of the available command line options, use the -h
+switch. For example, error, informational and debugging messages can
+be written to the syslog if the -s switch is used, or to a separate
+log file if -l is used.
 
 More information on landialler is available at the project home page:
 
@@ -99,170 +102,212 @@ except ImportError, e:
         sys.stderr.write("can't import syslog: %s" % e)
 
 
-# The functions that follow whose names begin "api_" define the XML-RPC API.
-#
-# We maintain state via global variables:
-#
-#   current_users  -- the number of people sharing the connection
-#   user_tracker   -- dict of clients and when they checked the status
-#   is_connected   -- whether or not the server is connected
-#   now_connecting -- whether or not another client has a connection pending
+class API(gmalib.Logger):
 
+    """Implements the LANdialler API.
 
-def api_connect():
-    """Open the connection.
+    All accessible methods in this class form a part of the LANdialler
+    XML-RPC API, and are called directly whenever a client makes an
+    HTTP request to the server.
 
-    If the server is already connected the the XML-RPC True value is
-    returned.
-
-    Otherwise an attempt is made to make a connection by running
-    an external dial up script. If the external script runs
-    successfully (and therefore returns 0) then the XML-RPC True
-    value is returned, False otherwise. The script should return
-    immediately (i.e. not block whilst the connection is made)
-    irrespective of whether or not the actual connection will be
-    successfully set up by the script.
+    Their return values are passed directly back to the XML-RPC
+    clients.
 
     """
-    global mutex, is_connected, now_connecting
 
-    mutex.acquire()
-    do_nothing1 = is_connected  # do_nothing vars just localise mutex code
-    do_nothing2 = now_connecting
-    mutex.release()
-    
-    if do_nothing1:
-        return xmlrpclib.True   # already connected
-    elif do_nothing2:
-        return xmlrpclib.False  # another client began connecting, not up yet
-    else:
-        config = gmalib.SharedConfigParser()
-        cmd = config.get("commands", "connect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
+    def __init__(self):
+        global debug, use_syslog, logfile
+        self.debug = debug
+        self.use_syslog = use_syslog
+        gmalib.Logger.__init__(self, logfile=logfile,
+                               use_syslog=use_syslog)
+        self.conn = Connection()
 
-        if rval == 0:
-            mutex.acquire()
-            now_connecting = 1
-            mutex.release()
-            print "connect command run successfully"
+    def connect(self):
+        """Open the connection.
+
+        If the server is already connected the XML-RPC True value is
+        returned. If the server is in the process of connecting then
+        an XML-RPC False value is returned.
+
+        Otherwise an attempt is made to make a connection by running
+        an external dial up command (see landiallerd.conf). If the
+        external command runs successfully (and therefore returns 0)
+        then the XML-RPC True value is returned, False otherwise. The
+        external command should return immediately (i.e. not block
+        whilst the connection is made) irrespective of whether or not
+        the actual connection will be successfully set up immediately.
+
+        """
+        if self.conn.isConnected():
+            self.log_debug("connect() already connected")
+            return xmlrpclib.True
+        elif self.conn.nowConnecting:
+            self.log_debug("connect() currently connecting")
+            return xmlrpclib.False
+        else:
+            self.log_debug("connect() running connect command")
+            if self.conn.runConnectCommand():
+                self.nowConnecting = 1
+                return xmlrpclib.True
+            else:
+                return xmlrpclib.False
+
+    def disconnect(self, all="no", client=None):
+        """Close the connection.
+
+        If there are other users online and the all argument is not
+        set to "yes" then the XML-RPC True value is returned.
+
+        Otherwise the connection is dropped by running an external
+        dial up termination script. As with connect(), the return
+        value of the external script is converted into the XML-RPC
+        True or False value, and returned.
+
+        The client argument should uniquely identify the client, and
+        should be usable as a dictionary key.
+
+        """
+        if (self.conn.countClients() > 1) and (all != "yes"):
+            self.log_info('disconnect(all="%s", client=%s) removed client' %
+                          (all, client))
+            self.conn.forgetClient(client)
             return xmlrpclib.True
         else:
-            sys.stderr.write("connect command failed (%s)\n" % rval)
-            return xmlrpclib.False
+            self.log_info('disconnect(all="%s", client=%s) disconnecting' %
+                          (all, client))
+            self.conn.nowConnecting = 0
+            self.conn.forgetAllClients()
+            if self.conn.runDisconnectCommand():
+                return xmlrpclib.True
+            else:
+                return xmlrpclib.False
+                
+
+    def get_status(self, client):
+        """Returns the number of clients and connection status.
+
+        The client parameter should uniquely identify the client, and
+        should be usable as a dictionary key. The IP address is
+        usually used.
+
+        The two values returned are:
+
+        current_clients -- The number of users sharing the connection
+        is_connected    -- 1 if connected, 0 otherwise
+
+        """
+        self.conn.rememberClient(client)
+        if self.conn.isConnected():
+            self.conn.nowConnecting = 0
+            numClients = self.conn.countClients()
+        else:
+            numClients = 0
+        self.log_debug("get_status(%s): clients=%s, connected=%s" %
+                       (client, numClients, self.conn.isConnected()))
+        return (numClients, self.conn.isConnected())
 
 
-def api_disconnect(all="no", client=None):
-    """Close the connection.
+class Connection(gmalib.Logger):
 
-    If there are other users online and the all argument is not set
-    then the XML-RPC True value is returned.
+    """Controls a dial up connection.
 
-    Otherwise the connection is dropped by running an external dial up
-    termination script. As with api_connect(), the return value of the
-    external script is converted into the XML-RPC True or False value,
-    and returned.
-
-    The client argument should uniquely identify the client, and
-    should be usable as a dictionary key.
+    Provides methods for controlling/querying the status of a dial up
+    connection (e.g. modem/ISDN connection to the Internet). All
+    instances of this class share their state (see the Borg design
+    pattern in the ASPN Python Cookbook) so that status information is
+    maintained between different client HTTP requests.
 
     """
-    global mutex, current_users, is_connected, now_connecting, user_tracker
-    
-    if (current_users > 1) and (all <> "yes"):  # other users still online
-        del user_tracker[client]
-        return xmlrpclib.True
 
-    else:
-        config = gmalib.SharedConfigParser()
-        cmd = config.get("commands", "disconnect")
+    __shared_state = {}
+
+    def __init__(self):
+        self.__dict__ = Connection.__shared_state
+        if not hasattr(self, "clientTracker"):
+            global debug, use_syslog, logfile
+            self.debug = debug
+            self.use_syslog = use_syslog
+            gmalib.Logger.__init__(self, logfile=logfile,
+                                   use_syslog=use_syslog)
+            self.log_debug("creating new Connection object")
+            self.clientTracker = {}
+            self.config = gmalib.SharedConfigParser()
+            self.nowConnecting = 0
+
+    def countClients(self):
+        """Return the number of active clients."""
+        self.forgetOldClients()
+        return len(self.listClients())
+
+    def isConnected(self):
+        """Return 1 if the connection is up, 0 otherwise.
+
+        Runs the external command as specified in the configuration
+        file to determine if the connection is up.
+
+        """
+        cmd = self.config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:
-            mutex.acquire()
-            is_connected = 0
-            now_connecting = 0
-            user_tracker.clear()
-            mutex.release()
-            print "disconnect command run successfully"
-            return xmlrpclib.True
+            self.nowConnecting = 0
+            return 1
         else:
-            sys.stderr.write("disconnect command failed (%s)\n" % rval)
-            return xmlrpclib.False
+            return 0
 
+    def rememberClient(self, client):
+        """Record time of the client's last HTTP connection."""
+        self.clientTracker[client] = time.time()
 
-def api_get_status(client):
-    """Return current_users and is_connected.
+    def forgetClient(self, client):
+        """Stop treating this client as active."""
+        try:
+            self.log_debug("forgetClient: forgetting %s" % client)
+            del self.clientTracker[client]
+        except KeyError:
+            pass
 
-    The client parameter should uniquely identify the client, and
-    should be usable as a dictionary key. The IP address is usually
-    used.
+    def forgetAllClients(self):
+        """Assume that all clients are inactive."""
+        self.log_debug("forgetAllClients: forgetting all clients")
+        self.clientTracker.clear()
 
-    The two values returned are:
+    def forgetOldClients(self):
+        """Forget about clients that haven't connected recently.
 
-    current_users -- The number of users sharing the connection
-    is_connected  -- 1 if connected, 0 otherwise
+        We keep track of the number of users by counting the number
+        that have connected recently. If a client hasn't connected in
+        the last 30 seconds it is deemed to have died and isn't
+        counted any more.
 
-    """
-    global mutex, is_connected, now_connecting, user_tracker
+        """
+        timeout = 30
+        for client in self.listClients():
+            if (time.time() - self.clientTracker[client]) > timeout:
+                self.forgetClient(client)
 
-    mutex.acquire()
+    def listClients(self):
+        """Return a list of client identifiers."""
+        return self.clientTracker.keys()
 
-    # register client's connection
-    user_tracker[client] = time.time()
+    def runConnectCommand(self):
+        cmd = self.config.get("commands", "connect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        self.log_debug("connect command returned: %s" % rval)
+        if rval == 0:
+            return 1
+        else:
+            return 0
 
-    # get dummy_current_users and is_connected
-    is_connected = check_connection_status()
-    if is_connected:
-        now_connecting = 0
-        dummy_current_users = len(user_tracker.keys())
-    else:
-        dummy_current_users = 0
-
-    mutex.release()
-
-    return (dummy_current_users, is_connected)
-    
-
-def check_connection_status():
-    """Run the external is_connected command.
-
-    Returns 1 if the external command runs successfully, 0 otherwise.
-
-    """
-    global mutex, is_connected, now_connecting
-    
-    config = gmalib.SharedConfigParser()
-    cmd = config.get("commands", "is_connected")
-    rval = os.system("%s > /dev/null 2>&1" % cmd)
-
-    mutex.acquire()
-    if rval == 0:
-        is_connected = 1
-        now_connecting = 0
-    else:
-        is_connected = 0
-    mutex.release()
-
-    return is_connected
-
-
-def count_users():
-    """Counts the number of currently active clients.
-
-    Returns the number of clients that have run the API's get_status()
-    procedure in the last 30 seconds.
-    
-    """
-    global mutex, is_connected, user_tracker
-
-    mutex.acquire()
-    timeout = 30  # number of seconds before client deemed to be dead
-    for client in user_tracker.keys():
-        if (time.time() - user_tracker[client]) > timeout:
-            del user_tracker[client]
-    num_users = len(user_tracker.keys())
-    mutex.release()
-
-    return num_users
+    def runDisconnectCommand(self):
+        """Return true if disconnect command run okay, false otherwise."""
+        cmd = self.config.get("commands", "disconnect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        self.log_debug("disconnect command returned: %s" % rval)
+        if rval == 0:
+            return 1
+        else:
+            return 0
 
 
 class CleanerThread(threading.Thread, gmalib.Logger):
@@ -274,10 +319,9 @@ class CleanerThread(threading.Thread, gmalib.Logger):
     open when there are no clients left. This is bad, as it could lead
     to an expensive telephone bill.
 
-    This thread periodically makes sure that the current_users
-    variable is correctly set by determining how many clients have
-    connected in the last 30 seconds. If current_users is false but
-    is_connected is true, the API's disconnect method is called.
+    This thread periodically makes sure that the connection is not
+    alive when tere are no users. If it is, the Connection.disconnect()
+    method is called.
 
     """
 
@@ -297,30 +341,25 @@ class CleanerThread(threading.Thread, gmalib.Logger):
         self.interval = interval  # time before re-running clean up
         self.pauser = threading.Event()
 
-        global mutex, debug, logfile, use_syslog
-        mutex.acquire()
+        global debug, logfile, use_syslog
         self.debug = debug
         gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
-        mutex.release()
 
     def run(self):
         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
         # for a full example of the while loop's timer code.
-    
-        global mutex, current_users, is_connected, now_connecting, user_tracker
 
+        conn = Connection()
         while 1:
-            mutex.acquire()
+            self.log_debug("cleaner: clients=%s, conn=%s, nowConn=%s" %
+                           (conn.countClients(), conn.isConnected(),
+                            conn.nowConnecting))
+            if (conn.countClients() <= 0) and \
+               (conn.nowConnecting or conn.isConnected()):
+                self.log_debug("cleaner: disconnecting")
+                api = API()
+                api.disconnect(all="yes")
 
-            current_users = count_users()
-            is_connected = check_connection_status()
-            self.log_debug("CleanerThread: users=%s, connected=%s" %
-                           (current_users, is_connected))
-            if (current_users < 1) and (now_connecting or is_connected):
-                self.log_debug("CleanerThread: disconnecting")
-                api_disconnect(all="yes")
-
-            mutex.release()
             self.pauser.wait(self.interval)
 
 
@@ -349,48 +388,47 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
     """Handles XML-RPC requests."""
 
     def __init__(self, *args, **kwargs):
-        global mutex, debug, logfile, use_syslog
-        mutex.acquire()
+        global debug, logfile, use_syslog
         self.debug = debug
         gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
-        mutex.release()
 
         # FIXME: iterate through all base class' __init__ methods so that
         #        class hierarchy can change without us worrying about it.
         SocketServer.BaseRequestHandler.__init__(self, *args, **kwargs)
 
-    def call(self, method, params):
+    def call(self, procedure, params):
         """Call an API procedure, return it's result.
 
-        Calls one of the methods whose name begins with "api_". For
-        example, if method is set to "a_method" then the
-        "api_a_method" will be called. If the method doesn't exist
-        then an AttributeError is raised, returning a XML-RPC fault to
-        the client.
+        Calls one of the API's methods on an instance of the API
+        class. If the procedure isn't supported then an AttributeError
+        is raised, returning a XML-RPC fault to the client.
 
         """
-        my_api = ["connect", "disconnect", "get_status"]
-        if not method in my_api:
-            self.log_err("Unknown method name: %s" % method)
-            raise xmlrpclib.Fault, "Unknown method name"
+        if not procedure in ["connect", "disconnect", "get_status"]:
+            self.log_err("Unknown procedure name: %s" % procedure)
+            raise xmlrpclib.Fault, "Unknown procedure name: %s" % procedure
         else:
-            if method == "get_status":
+            api = API()
+            method = getattr(api, procedure)
+            if procedure == "get_status":
                 (host, port) = self.client_address
                 params = (host,)
-            elif method == "disconnect":
+            elif procedure == "disconnect":
                 (host, port) = self.client_address
-                params = (params[0], host)
-            self.log_debug("called %s(%s)" % \
-                           (method, ", ".join(map(repr, params))))
-            return apply(eval("api_" + method), params)
+                disconnectAllUsers = params[0]
+                params = (disconnectAllUsers, host)
+            self.log_debug("MyHandler.call(): called %s(%s)" % \
+                           (procedure, ", ".join(map(repr, params))))
+            return apply(method, params)
 
     def log_request(self, code="-", size="-"):
         """Requests are logged if running in debug mode."""
-        if self.debug:
-            self.log_debug('%s - - [%s] "%s" %s %s\n' % \
-                           (self.address_string(),
-                           self.log_date_time_string(),
-                           self.requestline, str(code), str(size)))
+        pass
+##         if self.debug:
+##             self.log_debug('%s - - [%s] "%s" %s %s\n' % \
+##                            (self.address_string(),
+##                            self.log_date_time_string(),
+##                            self.requestline, str(code), str(size)))
 
 
 class App(gmalib.Daemon):
@@ -400,7 +438,18 @@ class App(gmalib.Daemon):
     def __init__(self):
         gmalib.Daemon.__init__(self)
         self.debug = 0
-        self.run_as_daemon = 1
+        self.runAsDaemon = 1
+
+    def checkPlatform(self):
+        """Check OS is supported."""
+        if os.name != "posix":
+            print "Sorry, only POSIX compliant systems are supported."
+            sys.exit()
+
+    def daemonise(self):
+        """Run parent's daemonise() if runAsDaemon attribute is set."""
+        if self.runAsDaemon:
+            gmalib.Daemon.daemonise(self)
 
     def getopt(self):
         """Parse command line arguments.
@@ -416,17 +465,14 @@ class App(gmalib.Daemon):
         """
         opts, args = getopt.getopt(sys.argv[1:], "dfhl:s")
 
-        global mutex
-        mutex.acquire()
-
         for o, v in opts:
             if o == "-d":
                 global debug
                 debug = self.debug = 1
             elif o == "-f":
-                self.run_as_daemon = 0
+                self.runAsDaemon = 0
             elif o == "-h":
-                self.usage_message()
+                self.usageMessage()
             elif o == "-l":
                 global logfile
                 logfile = v
@@ -436,30 +482,41 @@ class App(gmalib.Daemon):
                 global use_syslog
                 use_syslog = 1
 
-        mutex.release()
+    def preLoadConfig(self):
+        """Load configuration files into SharedConfigParser object."""
+        # pre-load configuration files, cached by SharedConfigParser
+        try:
+            config = gmalib.SharedConfigParser()
+            config.read(["/usr/local/etc/landiallerd.conf",
+                         "/etc/landiallerd.conf", "landiallerd.conf"])
+        except Exception, e:
+            print "Terminating - error reading config file: %s" % e
+            sys.exit()
 
     def main(self):
         """Start the XML-RPC server."""
         try:
             self.getopt()
-            if self.run_as_daemon:
-                self.daemonise()
+            self.daemonise()
             cleaner = CleanerThread()
             cleaner.start()
         except IOError, e:
             sys.stderr.write("%s\n" % e)
         except getopt.GetoptError, e:
             sys.stderr.write("%s\n" % e)
-            self.usage_message()
+            self.usageMessage()
         
-        self.config = gmalib.SharedConfigParser()  # pre-cached
+        self.config = gmalib.SharedConfigParser()
 
         # start the server and start taking requests
         server_port = int(self.config.get("general", "port"))
-        self.server = MyTCPServer(("", server_port), MyHandler)
-        self.server.serve_forever()
+        server = MyTCPServer(("", server_port), MyHandler)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print "Caught Ctrl-C, shutting down."
 
-    def usage_message(self):
+    def usageMessage(self):
         """Print usage message to sys.stderr and exit."""
         message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
 
@@ -477,30 +534,12 @@ Options:
 
 
 if __name__ == "__main__":
-    if os.name != "posix":
-        print "Sorry, only POSIX compliant systems are currently supported."
-        sys.exit()
+    app = App()
+    app.checkPlatform()
+    app.preLoadConfig()
 
-    # pre-load configuration files, cached by SharedConfigParser
-    try:
-        config = gmalib.SharedConfigParser()
-        config.read(["/usr/local/etc/landiallerd.conf",
-                     "/etc/landiallerd.conf", "landiallerd.conf"])
-    except Exception, e:
-        print "Terminating - error reading config file: %s" % e
-        sys.exit()
-
-    # global variables for maintaining consistent logging across classes
-    debug = 0
+    debug = 0       # global vars used for consistent logging
     logfile = None
     use_syslog = 0
 
-    # global variables for maintaining state
-    mutex = threading.RLock()  # control access to the following globals
-    user_tracker = {}  # dict of all users' IP/port numbers
-    current_users = 0  # number of users online (determined from user_tracker)
-    is_connected = 0   # is the connection currently up?
-    now_connecting = 0 # is the connection in the process of coming up?
-    
-    app = App()
     app.main()
