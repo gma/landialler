@@ -36,15 +36,17 @@ if __name__ == '__main__':
     if os.name == 'posix':
         bin_dir = '/usr/local/bin'
         bin_file = 'landialler.py'
+        glade_file = 'landialler.glade'
         conf_dir = '/usr/local/etc'
         conf_file = 'landialler.conf'
 
-        # install landialler.py
-        print 'copying %s to %s' % (bin_file, bin_dir)
+        # install landialler.py, landialler.glade
+        print 'copying %s, %s to %s' % (bin_file, glade_file, bin_dir)
         if (not os.path.exists(bin_dir)) or (not os.path.isdir(bin_dir)):
             error_msg('%s is not a directory' % bin_dir)
-        shutil.copyfile(bin_file, '%s/%s' % (bin_dir, bin_file))
+        shutil.copyfile(bin_file, os.path.join(bin_dir, bin_file))
         os.chmod('%s/%s' % (bin_dir, bin_file), 0755)
+        shutil.copyfile(glade_file, os.path.join(bin_dir, glade_file))
 
         # install landialler.conf
         print 'copying %s to %s' % (conf_file, conf_dir)
@@ -56,13 +58,13 @@ if __name__ == '__main__':
     # Tell windows users to do it themselves.
     else:
         print """
-Please copy landialler.py and landialler.conf into the same directory
-(e.g. C:\Program Files\landialler on Windows). Edit the landialler.conf
-file to point to your LANdialler server, and then run "python landialler.py"
-from a command prompt.
+Please copy landialler.py, landialler.glade and landialler.conf into
+the same directory (e.g. 'C:\Program Files\landialler' on Windows). Edit
+the landialler.conf file to point to your LANdialler server, and then
+run "python landialler.py" from a command prompt.
 
 If you would prefer to run LANdialler without the command prompt
 window rename landialler.py to landialler.pyw and create a desktop
-shortcut to run "python landialler.pyw" for you, but make sure that the 
-shortcut starts in the landialler directory.
+shortcut that executes "python landialler.pyw" for you, but make sure
+that the shortcut starts in the landialler directory.
 """
