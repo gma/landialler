@@ -28,38 +28,39 @@
       <p>
 	landialler enables several computers on a LAN (Local Area
 	Network) to share control of a dial up connection to the
-	Internet. To see if landialler would be useful to you, answer
-	these questions:
+	Internet. To see if landialler would be useful to you, try
+	answering these questions:
       </p>
       <ol>
 	<li>
-	  Do you have several computers at home, connected together in
-	  a small network?
+	  Do you have several computers at home? Can they be connected
+	  together to form a small network?
 	  <p>
 	</li>
 	<li>
-	  Do you connect to the Internet intermittently (rather than
-	  being permanently connected)?
+	  Do you connect to the Internet intermittently (e.g. via a
+	  phone line)?
 	  <p>
 	</li>
 	<li>
 	  Can you configure your network so that all your computers
 	  can access the Internet at once? This is the trickiest bit,
 	  but is well worth the effort. There are lots of instructions
-	  on how to <a href="#further-reading">set it up</a> with
-	  Linux.
+	  available on how to set it up with Linux; see the <a
+	  href="#further-reading">further reading</a> section for more
+	  details.
 	</li>
       </ol>
 
       <p>
-	<strong>If you said no</strong> to any of the above questions
-	then landialler is probably not going to be of much use to
-	you.
+	If you said <strong>yes</strong> (or nearly yes) to all or
+	most of the above questions then (with a bit of tweaking)
+	landialler will enable any of the computers on your home
+	network to control your Internet connection.
       </p>
       <p>
-	<strong>If you said yes</strong> (or nearly yes) to all of
-	them, then landialler will enable any of the computers on your
-	home network to control your Internet connection.
+	If you said <strong>no</strong> to all of them, then
+	landialler is probably not going to be of much use to you.
       </p>
 
       <p>
@@ -98,89 +99,85 @@
 	not an attractive beast).
       </p>
 
-      <table cellpadding="3" cellspacing="2" width="100%">
+      <table align="center" cellpadding="3" cellspacing="5">
 	<tbody>
 	  <tr>
 	    <td>
+	      <img alt="Go online dialog"
+		   src="images/ss/go-online.gif" height="119"
+		   width="209"><br>
 	      <font size="-2">
 		<strong>Are you sure now?</strong>
 	      </font>
 	    </td>
 	    <td>
+	      <img alt="Click to disconnect dialog"
+		   src="images/ss/disconnect.gif" height="119" width="183"><br>
 	      <font size="-2">
 		<strong>Success!</strong>
 	      </font>
 	    </td>
 	    <td>
+	      <img alt="Click to disconnect dialog"
+		   src="images/ss/retry.gif" height="119" width="176"><br>
 	      <font size="-2">
 		<strong>Ahh, go on go on go on, you will...</strong>
 	      </font>
 	    </td>
 	  </tr>
-	  <tr>
-	    <td>
-	      <img alt="Go online dialog"
-		   src="images/ss/go-online.gif" height="119" width="209">
-	    </td>
-	    <td>
-	      <img alt="Click to disconnect dialog"
-		   src="images/ss/disconnect.gif" height="119" width="183">
-	    </td>
-	    <td>
-	      <img alt="Click to disconnect dialog"
-		   src="images/ss/retry.gif" height="119" width="176">
-	    </td>
-	  </tr>
-	  <tr>
-	  </tr>
 	</tbody>
       </table>
 
       <p>
-	After "Yes" has been clicked on the first dialog the client
-	sends an XML-RPC message to the server, instructing the modem
-	to connect to the Internet. The server actually runs an
-	operating system dependent script, so landialler can be easily
-	configured to use different operating systems and different
-	sort of dial up techniques.
+	So what's happening here?
       </p>
 
-      <p>
-	Once the script has started and the server is dialling up, the
-	client continually asks the server for an progress update. If
-	the connection is made inside the (configurable) time limit
-	then the second dialog pops up. To close the connection just
-	click OK (yep, you're right - that button should say
-	"Disconnect", but I need to learn some Tk first).
-      </p>
+      <ol>
+	<li>
+	  After "Yes" has been clicked on the first dialog the client
+	  sends an XML-RPC message to the server, instructing the
+	  modem to connect to the Internet. The server actually runs
+	  an operating system dependent script, so landialler can be
+	  easily configured to use different operating systems and
+	  different dial up hardware and software.
+	  <p>
+	</li>
 
-      <p>
-	Finally, if the connection timed out you get the option to try
-	again. You may want to tweak the time out value, which is easy
-	because it's stored in the landialler configuration file. The
-	default time out is two minutes, as that's what the author
-	finds works rather well on his modem, with his ISP.
-      </p>
+        <li>
+	  Once the script has started and the server is dialling up,
+	  the client continually asks the server for a progress
+	  update. If the connection is made inside the (configurable)
+	  time limit then the second dialog pops up. To close the
+	  connection just click OK (yep, you're right - that button
+	  should say "Disconnect", but I need to learn some Tk first).
+	  <p>
+	</li>
+
+	<li>
+	  Finally, if the time limit is hit before the connection has
+	  been made successfully you get the option to try again. You
+	  may want to tweak the time out value, which is easy because
+	  it's stored in the landialler configuration file. The
+	  default time limit for setting up a new connection is two
+	  minutes.
+	  <p>
+	</li>
+      </ol>
 
       <a name="download"><h2>Download</h2></a>
 
       <p>
-	Ah, now there you've got me. It's all working perfectly well
-	at the moment but I haven't quite finished packaging it up
-	yet. If you want to know when it is first available you can
-	subscribe to the <a href=
-	"http://lists.sourceforge.net/lists/listinfo/landialler-announce">mailing
-	list</a> as I'll be posting an announcement there (probably
-	before the end of August 2001).
+	Both the client (called landialler) and the server (called
+	landiallerd) are available from the SourceForge project
+	page. You will also want to grab the gmalib.py library while
+	you're there...
       </p>
 
-      <p>
-	As soon as the first landialler snapshots are available they
-	will be available direct from the <a
-	href="http://sourceforge.net/projects/landialler/">SourceForge
-	project page</a>.
+      <p align="center">
+	<a href="http://sourceforge.net/projects/landialler/">download
+	  from SourceForge</a>
       </p>
-
+	
       <a name="further-reading"><h2>Further Reading</h2></a>
 
       <p>
@@ -250,18 +247,22 @@
       </center>
 
       <hr size="1">
-      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <table border="0" cellpadding="0" cellspacing="0">
 	<tbody>
 	  <tr>
-	    <td align="left" valign="top">
-	      <font size="-1">
-		&copy; 2001, Graham Ashton &lt;ashtong@users.sourceforge.net&gt;
-	      </font>
-	    </td>
-	    <td align="right">
+	    <td align="left">
 	      <a href="http://sourceforge.net/"><img
                  src="http://sourceforge.net/sflogo.php?group_id=34228"
 		 width="88" height="31" border="0" alt="SourceForge logo"></a>
+	    </td>
+	    <td>
+	      &nbsp;&nbsp;
+	    </td>
+	    <td align="left" valign="top">
+	      <font size="-1">
+		Copyright &copy; 2001,
+		Graham Ashton &lt;ashtong@users.sourceforge.net&gt;
+	      </font>
 	    </td>
 	  </tr>
 	</tbody>
