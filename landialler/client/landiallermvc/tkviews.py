@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# tkviews.py - Tk interface for the landialler client
+# tkviews.py - Tk interface for the LANdialler client
 #
 # Copyright (C) 2001 Graham Ashton
 #
