@@ -86,16 +86,13 @@ class MockConfigParser:
         return self.value
     
 
-class MockConfigTest(unittest.TestCase):
+class ModemTest(unittest.TestCase):
 
     SUCCESSFUL_COMMAND = 'ls / > /dev/null'
     FAILING_COMMAND = 'ls /missing.file.234324324 2> /dev/null'
 
     def setUp(self):
         self.config = MockConfigParser()
-
-
-class ModemTest(MockConfigTest):
 
     def test_dial(self):
         """Check we can dial the modem and receive the return code"""
@@ -285,6 +282,7 @@ class ModemProxyTest(unittest.TestCase):
             real_time = landiallerd.time
             offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
             landiallerd.time = MockTime(offset)
+            proxy.remove_old_clients()
             self.assertEqual(proxy.count_clients(), 0)
         finally:
             landiallerd.time = real_time
@@ -298,7 +296,8 @@ class ModemProxyTest(unittest.TestCase):
             real_time = landiallerd.time
             offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
             landiallerd.time = MockTime(offset)
-            proxy.count_clients()
+            proxy.remove_old_clients()
+            self.assertEqual(proxy.count_clients(), 0)
             hang_up_calls = modem.getNamedCalls('hang_up')
             self.assertEqual(len(hang_up_calls), 1)
         finally:
@@ -432,6 +431,18 @@ class APITest(unittest.TestCase):
         api = landiallerd.API(proxy)
         api.connect('client-id-1')
         self.assertEqual(api.get_status('client-id-1')[2], 14)
+
+
+class AutoDisconnecThreadTest(unittest.TestCase):
+
+    def test_connection_dropped_no_users(self):
+        """Check connection automatically dropped when there are no users"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+        
+
+#     def test_connection_not_dropped_with_users(self):
+#         """Check connection not dropped when there are active users"""
 
 
 if __name__ == '__main__':
