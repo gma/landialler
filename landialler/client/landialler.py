@@ -123,18 +123,13 @@ class RemoteModem(Observable):
         self._server_proxy.connect(self.client_id)
         self._checking_status = True
 
-    def disconnect(self):
+    def disconnect(self, all=xmlrpclib.False):
+        if bool(all):
+            all = xmlrpclib.True
         self._checking_status = False
         self.is_connected = False
         self.notify_observers()
-        self._server_proxy.disconnect(self.client_id)
-
-    def disconnect_all(self):
-        # TODO: refactor into hang_up()
-        self._checking_status = False
-        self.is_connected = False
-        self.notify_observers()
-        self._server_proxy.disconnect(self.client_id, all=True)
+        self._server_proxy.disconnect(self.client_id, all)
 
     def get_status(self):
         if self._checking_status:
@@ -303,10 +298,7 @@ class DisconnectDialog(Window):
         self._modem = modem
 
     def on_disconnect_button_clicked(self, *args):
-        if self.disconnect_all.get_active():
-            self._modem.disconnect_all()
-        else:
-            self._modem.disconnect()
+        self._modem.disconnect(self.disconnect_all.get_active())
         self.destroy()
 
     def on_cancel_button_clicked(self, *args):
@@ -367,13 +359,14 @@ class ExceptionHandler:
     def handler(self, exc_type, exc_value, exc_traceback):
         if isinstance(exc_value, socket.error):
             dialog = ErrorDialog(
-                "Can't Contact Server",
+                "Can't contact server",
                 "The LANdialler server is not available. Please check "
                 "that it is running, and that the server address is "
                 "set correctly in the client configuration file.")
             dialog.show()
         else:
             exc_text = ''.join(traceback.format_tb(exc_traceback))
+            print exc_text
             dialog = ExceptionDialog(exc_text)
             dialog.show()
 
