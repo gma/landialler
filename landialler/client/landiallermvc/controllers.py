@@ -37,25 +37,25 @@ view.
 """
 
 
-class Controller:
+import Observer
+
+
+class Controller(Observer.Observer):
 
     """Basic controller component."""
     
     def __init__(self, model, view):
-        self.model = model
-        # self.model.attach(self)  # observe the model
+        Observer.Observer.__init__(self, model)
         self.view = view
 
-##    def update(self):
-##        """Called by the model's notify() method.
+    def update(self):
+        """Called by the model's notify() method.
 
-##        The controllers can observe the model if required, in which
-##        they should override this method. They should also call their
-##        model's attach() method, as this is currently done
-##        automatically for controllers.
+        The controllers can observe the model if required, in which
+        they should override this method (this one does nothing).
 
-##        """
-##        pass
+        """
+        pass
 
 
 class ConnectingDialogController(Controller):
