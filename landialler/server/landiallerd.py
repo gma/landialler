@@ -78,7 +78,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
-__version__ = "0.2pre1"
+__version__ = "0.2pre2"
 
 
 import getopt
@@ -87,6 +87,7 @@ import os
 import posixpath
 import SocketServer
 import sys
+import threading
 import time
 import xmlrpclib
 import xmlrpcserver
@@ -157,6 +158,60 @@ class MyHandler(gmalib.Logger, xmlrpcserver.RequestHandler):
                 params = (params[0], host)
             return apply(eval("api_" + method), params)
             
+
+class CleanerThread(threading.Thread):
+
+    """Ensures that the connection is not live when there are no clients.
+
+    If a client is not shut down cleanly it may not be able to call
+    the API's disconnect procedure, thereby leaving the connection
+    open when there are no clients left. This is bad, as it could lead
+    to an expensive telephone bill.
+
+    This thread periodically makes sure that the current_users
+    variable is correctly set by determining how many clients have
+    connected in the last 30 seconds. If current_users is false but
+    is_connected is true, the API's disconnect method is called.
+
+    """
+
+    def __init__(self, interval=10):
+        """Setup the thread object.
+
+        The thread is set to be a daemon thread, so that the server
+        exits without worrying about closing this thread.
+
+        The object also creates an Event object for itself, to
+        facilitate a timer. The timer is used to execute the contents
+        of the run() method every "interval" seconds.
+
+        """
+        threading.Thread.__init__(self, name=CleanerThread)
+        self.setDaemon(1)
+        self.interval = interval  # time before re-running clean up
+        self.pauser = threading.Event()
+    
+    def run(self):
+        # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
+        # for a full example of the while loop's timer code.
+    
+        global mutex, current_users, is_connected, user_tracker
+
+        while 1:
+            mutex.acquire()
+
+            timeout = 30  # number of seconds before client deemed to be dead
+            for client in user_tracker.keys():
+                if (time.time() - user_tracker[client]) > timeout:
+                    del user_tracker[client]
+
+            current_users = len(user_tracker.keys())
+
+            if is_connected and current_users < 1:
+                api_disconnect(all='yes')
+
+            mutex.release()
+            self.pauser.wait(self.interval)
 
 
 class App(gmalib.Daemon):
@@ -240,10 +295,15 @@ def api_connect():
     successfully set up by the script.
 
     """
-    global is_connected
-    if is_connected:
-        return xmlrpclib.True
+    global mutex, is_connected
 
+    mutex.acquire()
+    do_nothing = is_connected  # do_nothing var just localises mutex code
+    mutex.release()
+    
+    if do_nothing:
+        return xmlrpclib.True
+    
     else:
         config = gmalib.SharedConfigParser()
         cmd = config.get("commands", "connect")
@@ -266,9 +326,13 @@ def api_disconnect(all='no', client=None):
     external script is converted into the XML-RPC True or False value,
     and returned.
 
+    The client argument should uniquely identify the client, and
+    should be usable as a dictionary key.
+
     """
-    global current_users
-    if (current_users - 1 > 0) and (all != 'yes'):  # other users still online
+    global mutex, current_users, is_connected, user_tracker
+    
+    if (current_users > 1) and (all <> 'yes'):  # other users still online
         del user_tracker[client]
         return xmlrpclib.True
 
@@ -277,7 +341,10 @@ def api_disconnect(all='no', client=None):
         cmd = config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:
+            mutex.acquire()
+            is_connected = 0
             user_tracker.clear()
+            mutex.release()
             return xmlrpclib.True
         else:
             return xmlrpclib.False
@@ -290,15 +357,12 @@ def api_get_status(client):
     is_connected  -- 1 if connected, 0 otherwise
 
     """
-    global current_users, user_tracker, is_connected
+    global mutex, current_users, is_connected, user_tracker
+
+    mutex.acquire()
 
     # register client's connection, purge old data
-    now = time.time()
-    user_tracker[client] = now
-    timeout = 30  # seconds before a user times out
-    for client in user_tracker.keys():
-        if (now - user_tracker[client]) > timeout:
-            del user_tracker[client]
+    user_tracker[client] = time.time()
 
     # get current_users and is_connected
     config = gmalib.SharedConfigParser()
@@ -310,6 +374,8 @@ def api_get_status(client):
     else:
         current_users = 0  # ignore contents of user_tracker, we're not online
         is_connected = 0
+
+    mutex.release()
 
     return (current_users, is_connected)
 
@@ -324,7 +390,12 @@ if __name__ == '__main__':
     current_users = 0  # number of users online (determined from user_tracker)
     is_connected = 0   # is the connection currently up?
 
+    mutex = threading.RLock()  # control access to *ALL* the above global vars
+
+    cleaner = CleanerThread()
+    cleaner.start()
+    
     app = App()
-    #app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
+    # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
     app.debug = 1
     app.main()
