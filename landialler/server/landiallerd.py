@@ -560,28 +560,36 @@ class Modem:
         return os.system(command) == 0
 
     def is_connected(self):
-        if not self.timer.is_running:
-            self.timer.start()
+#         if not self.timer.is_running:
+#             self.timer.start()
         command = self._config_parser.get('commands', 'is_connected')
         return os.system(command) == 0
 
 
 class ModemProxy:
 
+    CLIENT_TIMEOUT = 30
+
     def __init__(self, modem):
         self._modem = modem
         self._clients = {}
         self._is_dialling = False
 
-    def _count_client(self, client_id):
+    def _add_client(self, client_id):
         if client_id not in self._clients:
-            self._clients[client_id] = 1
+            self._clients[client_id] = time.time()
+
+    def refresh_client(self, client_id):
+        self._clients[client_id] = time.time()
             
     def count_clients(self):
+        for client_id, time_last_seen in self._clients.items():
+            if (time.time() - time_last_seen) > self.CLIENT_TIMEOUT:
+                self.hang_up(client_id)
         return len(self._clients.keys())
 
     def dial(self, client_id):
-        self._count_client(client_id)
+        self._add_client(client_id)
         if not self._is_dialling:
             self._is_dialling = True
             return self._modem.dial()
@@ -596,7 +604,7 @@ class ModemProxy:
     def is_connected(self):
         return self._modem.is_connected()
 
-    def get_time_online(self):
+    def get_time_connected(self):
         return self._modem.timer.elapsed_seconds
     
 
