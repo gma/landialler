@@ -49,15 +49,15 @@ A sample configuration file should be included with the package, but
 the following should serve as a good example:
 
   [commands]
-  connect: /usr/local/bin/start-connection
-  disconnet: /usr/local/bin/stop-connection
+  connect: /usr/local/bin/start-connection.sh
+  disconnet: /usr/local/bin/stop-connection.sh
   is_connected: /sbin/ifconfig ppp0 | grep "inet addr" >/dev/null
 
   [server]
   port: 6543
 
 Note that you can also configure the TCP port number that landiallerd.py
-uses to talk to the clients.
+uses to communicate with the clients.
 
 The connect and disconnect scripts referenced in the config file
 should both make sure that they exit immediately; the connect command
