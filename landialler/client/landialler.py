@@ -214,10 +214,10 @@ class Model:
             return 0
 
 
-class App(gmalib.Application):
+class App(gmalib.Logger):
     def __init__(self):
         """Calls the base class's initialisor."""
-        gmalib.Application.__init__(self)
+        gmalib.Logger.__init__(self, use_syslog=0)
 
     def main(self):
         """The main method, runs the application.
@@ -252,11 +252,11 @@ class App(gmalib.Application):
             # start the GUI
             model = Model(config, server)
             model.get_server_status()
+            window = model.toolkit.MainWindow(model)
             if not model.is_connected:
                 dialog = model.toolkit.ConnectingDialog(model)
                 dialog.draw()
                 model.server_connect()
-            window = model.toolkit.MainWindow(model)
             window.draw()  # starts event handling loop
 
         except ConnectError, e:
