@@ -58,6 +58,7 @@ class View(Observer.Observer):
     
     def __init__(self, model):
         Observer.Observer.__init__(self, model)
+        self.controller = None
 
     def draw(self):
         """Create and display the user interface (abstract).
@@ -173,10 +174,8 @@ class ConnectingDialog(Dialog):
         self.controller = controllers.ConnectingDialogController(model, self)
         self.title = "Connecting"
         self.text = "Please wait, connecting..."
-        # we use lambda to pass parameters into the callback method
-        callback = (lambda c=self.cleanup, s=self: s.controller.cancel_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'Cancel': (0, callback) }
+        self.buttons = { 'Cancel': (0, self.controller.cancel_cb) }
 
     def cleanup(self):
         """Cleans up after the dialog has closed (abstract).
@@ -213,11 +212,9 @@ class DisconnectDialog(Dialog):
         self.modal = 1
         self.title = "Disconnect"
         self.text = "Disconnect all users?"
-        # we use lambda to pass parameters into the callback method
-        yes_cb = (lambda c=self.cleanup, s=self: s.controller.yes_cb(c))
-        no_cb = (lambda c=self.cleanup, s=self: s.controller.no_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'Yes': (0, yes_cb), 'No': (1, no_cb) }
+        self.buttons = { 'Yes': (0, self.controller.yes_cb),
+                         'No': (1, self.controller.no_cb) }
 
     def cleanup(self):
         """Clean up after a button has been pressed (abstract).
@@ -250,10 +247,8 @@ class DroppedDialog(Dialog):
         self.controller = controllers.DroppedDialogController(model, self)
         self.title = "Connection dropped"
         self.text = "You have been disconnected\n(perhaps somebody hung up)"
-        # we use lambda to pass parameters into the callback method
-        callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'OK': (0, callback) }
+        self.buttons = { 'OK': (0, self.controller.ok_cb) }
 
     def cleanup(self):
         """Cleans up after the OK button has been pressed (abstract).
@@ -299,10 +294,8 @@ class FatalErrorDialog(Dialog):
         self.modal = 1
         self.title = title
         self.text = message
-        # we use lambda to pass parameters into the callback method
-        callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'OK': (0, callback) }
+        self.buttons = { 'OK': (0, self.controller.ok_cb) }
 
     def cleanup(self):
         """Cleans up after the OK button has been pressed (abstract).
@@ -331,11 +324,8 @@ class MainWindow(Window):
         self.title = "LANdialler"
         self.status_rows = [("Connection status:", "Offline"),
                             ("Current users:", 0)]
-        # we use lambda to pass parameters into the callback method
-        callback = (lambda c=self.cleanup, s=self:
-                    s.controller.disconnect_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { "Disconnect": (0, callback) }
+        self.buttons = { "Disconnect": (0, self.controller.disconnect_cb) }
 
     def cleanup(self):
         """GUI specific tear down code (abstract).
