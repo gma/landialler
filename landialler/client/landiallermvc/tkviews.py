@@ -46,6 +46,7 @@ class Window:
 
     def __init__(self):
         self.button_side = RIGHT  # right aline buttons
+        self.window = None
 
     def draw_buttons(self, parent=None):
         self.create_button_store()
@@ -69,11 +70,11 @@ class Dialog(Window):
 
     def __init__(self):
         Window.__init__(self)
-        self.window = None
 
     def draw(self):
         """Displays the dialog's message and buttons."""
         self.window = Toplevel()
+        self.window.resizable(0, 0)
         self.window.title(self.title)
         self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close
         frame = Frame(self.window, bd=6)
@@ -151,6 +152,9 @@ class MainWindow(Window, views.MainWindow):
     def __init__(self, model):
         Window.__init__(self)
         views.MainWindow.__init__(self, model)
+        global root
+        self.window = root
+        self.window.resizable(0, 0)
         self.default_var = []  # stores variable values (i.e. actual status)
         self.update_var = []   # StringVar() object's for auto label updating
         for row in self.status_rows:
@@ -159,14 +163,12 @@ class MainWindow(Window, views.MainWindow):
             self.update_var.append(StringVar())
 
     def cleanup(self):
-        global root
-        root.quit()
+        self.window.quit()
 
     def draw(self):
-        global root
-        root.title(self.title)
+        self.window.title(self.title)
         on_delete_cb = self.buttons['disconnect'][1]  # same as disconnect btn
-        root.protocol('WM_DELETE_WINDOW', on_delete_cb)
+        self.window.protocol('WM_DELETE_WINDOW', on_delete_cb)
         self.draw_labels()
         self.draw_buttons()
         self.status_check()
@@ -195,9 +197,8 @@ class MainWindow(Window, views.MainWindow):
         frame1.pack()
 
     def status_check(self):
-        global root
         self.model.get_server_status()
-        root.after(self.model.status_check_period, self.status_check)  # re-run
+        self.window.after(self.model.status_check_period, self.status_check)
 
     def update(self):
         self.update_var[1].set(self.model.current_users)
