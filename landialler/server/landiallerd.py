@@ -2,7 +2,7 @@
 #
 # landiallerd.py - the LANdialler daemon
 #
-# Copyright (C) 2001 Graham Ashton
+# Copyright (C) 2001-2004 Graham Ashton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -577,15 +577,28 @@ class ModemProxy:
         if client_id not in self._clients:
             self._clients[client_id] = 1
             
+    def count_clients(self):
+        return len(self._clients.keys())
+
     def dial(self, client_id):
         self._count_client(client_id)
         if not self._is_dialling:
             self._is_dialling = True
             return self._modem.dial()
 
-    def count_clients(self):
-        return len(self._clients.keys())
-        
+    def hang_up(self, client_id, all=False):
+        if client_id in self._clients:
+            del self._clients[client_id]
+        if self.is_connected():
+            if all or not self._clients:
+                self._modem.hang_up()
+
+    def is_connected(self):
+        return self._modem.is_connected()
+
+    def get_time_online(self):
+        return self._modem.timer.elapsed_seconds
+    
 
 if __name__ == "__main__":
     app = App()
