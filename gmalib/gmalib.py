@@ -38,7 +38,7 @@ except ImportError, e:
         sys.stderr.write("can't import syslog: %s" % e)
 
 
-__version__ = "0.2"
+__version__ = "0.3"
 
 
 class Logger:
@@ -56,16 +56,16 @@ class Logger:
                  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    def __init__(self, file=None, use_syslog=0):
+    def __init__(self, logfile=None, use_syslog=0):
         """Initialises the object.
 
-        If specified, the file attribute should be the name of a file to
+        If specified, the logfile attribute should be the name of a file to
         append log messages to. If the syslog attribute is true then
         messages will be written to syslog, on POSIX systems.
 
         """
         # default attributes
-        self.file = file
+        self.logfile = logfile
         self.use_syslog = use_syslog
         if not hasattr(self, 'debug'):
             self.debug = 0
@@ -79,20 +79,23 @@ class Logger:
         if self.use_syslog:
             syslog.closelog()
 
-    def log_date_time_string(self):
+    def _log_date_time_string(self):
         """Return the current time formatted for logging."""
+        # based on BaseHTTPServer's method of the same name
         now = time.time()
         year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
-        s = "%02d/%3s/%04d %02d:%02d:%02d" % \
-            (day, self.monthname[month], year, hh, mm, ss)
         s = "%3s %02d %04d %02d:%02d:%02d" % \
             (self.monthname[month], day, year, hh, mm, ss)
         return s
 
     def _to_file(self, priority, message):
-        f = open(self.file, "a")
-        date_time = self.log_date_time_string()
-        f.write("%s [%s]: %s\n" % (date_time, priority.upper(), message))
+        f = open(self.logfile, "a")
+        date_time = self._log_date_time_string()
+        fmt = "%s %s[%d]: (%s) %s"
+        if message[-1:] != "\n":
+            fmt += "\n"
+        f.write(fmt % (date_time, posixpath.basename(sys.argv[0]),
+                       os.getpid(), priority.upper(), message))
         f.close()
 
     def log_debug(self, message):
@@ -101,28 +104,28 @@ class Logger:
         if self.debug:
             if self.use_syslog:
                 syslog.syslog(syslog.LOG_DEBUG, message)
-            if self.file:
+            if self.logfile:
                 self._to_file("debug", message)
 
     def log_info(self, message):
         """Log info message."""
         if self.use_syslog:
             syslog.syslog(syslog.LOG_INFO, message)
-        if self.file:
+        if self.logfile:
             self._to_file("info", message)
 
     def log_notice(self, message):
         """Log a notice message."""
         if self.use_syslog:
             syslog.syslog(syslog.LOG_NOTICE, message)
-        if self.file:
+        if self.logfile:
             self._to_file("notice", message)
 
     def log_err(self, message):
         """Log an error message."""
         if self.use_syslog:
             syslog.syslog(syslog.LOG_ERR, message)
-        if self.file:
+        if self.logfile:
             self._to_file("error", message)
 
 
@@ -141,16 +144,14 @@ class Daemon:
 
     """
     
-    def __init__(self, **log_args):
+    def __init__(self, **kwargs):
         """Initialistion.
         
-        Keyword arguments passed via the **log_args argument are passed
-        straight into the Logger object that sys.stdout and sys.stderr
-        are redirected to, so can be used to configure the logging
-        options.
+        Keyword arguments are passed straight to the Logger objects that 
+        are used to replace sys.stdin and sys.stdout.
         
         """
-        self.log_args = log_args
+        self.logger_args = kwargs
 
     def daemonise(self):
         """Convert the caller into a daemon (POSIX only).
@@ -169,7 +170,6 @@ class Daemon:
 
         # See "Python Standard Library", pg. 29, O'Reilly, for more
         # info on the following.
-        print "converting to a daemon"
         pid = os.fork()
         if pid:
             os._exit(0) # kill parent
@@ -179,22 +179,20 @@ class Daemon:
 
         # Redirect stdout and stderr to syslog.
         class _StdOutLogDevice(Logger):
-            def __init__(self):
-                Logger.__init__(self, self.log_args)
-                
+            def __init__(self, **kwargs):
+                Logger.__init__(self, **kwargs)
             def write(self, msg):
                 self.log_info(msg)
 
         class _StdErrLogDevice(Logger):
-            def __init__(self):
-                Logger.__init__(self, self.log_args)
-                
+            def __init__(self, **kwargs):
+                Logger.__init__(self, **kwargs)
             def write(self, msg):
                 self.log_err(msg)
 
         sys.stdin.close()
-        sys.stdout = _StdOutLogDevice()
-        sys.stderr = _StdErrLogDevice()
+        sys.stdout = _StdOutLogDevice(**self.logger_args)
+        sys.stderr = _StdErrLogDevice(**self.logger_args)
 
 
 class SharedConfigParser(ConfigParser.ConfigParser):
@@ -233,7 +231,7 @@ def test():
     if "syslog" in dir():
         syslog.openlog(posixpath.basename(sys.argv[0]))
     
-    log = Logger(file="test.log", use_syslog=1)
+    log = Logger(logfile="test.log", use_syslog=1)
     log.log_info("an info log message")
     log.log_err("an error log message")
     log.log_notice("a notice log message")
@@ -244,7 +242,6 @@ def test():
     #print "done.",  # shouldn't see this!
     #if "syslog" in dir():
     #    syslog.closelog()
-
 
 
 if __name__ == '__main__':
