@@ -3,8 +3,8 @@ INSTALL
 
 This file contains the installation instructions for landiallerd.py.
 In the future they will be streamlined so that you will be able to
-type something as simple as "python setup.py", but unfortunately we're
-not quite there yet.
+type something as simple as "python setup.py install", but
+unfortunately we're not quite there yet.
 
 
 REQUIREMENTS
@@ -35,7 +35,7 @@ and xmlrpcserver.py into Python's site-packages directory
 Then install gmalib according to the instructions that come with it.
 
 Now you are ready to install the LANdialler server. Untar the source
-code, change into the directory created, and type simply type (as root):
+code, change into the directory created, and type (as root):
 
   # make install
 
@@ -91,5 +91,6 @@ much information as you can, including the operating system (and
 version number) that you are using, the version of Python and any
 output that you see when you launch the software (either on the
 command line or in syslog).
+
 
 $Id$
