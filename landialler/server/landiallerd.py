@@ -76,7 +76,9 @@ The author (Graham Ashton) can be contacted at ashtong@users.sourceforge.net.
 
 """
 
+__version__ = "0.1"
 
+import getopt
 import gmalib
 import os
 import posixpath
@@ -85,8 +87,6 @@ import sys
 import syslog
 import xmlrpclib
 import xmlrpcserver
-
-__version__ = "0.1"
 
 
 class MyTCPServer(SocketServer.TCPServer):
@@ -153,6 +153,12 @@ class MyHandler(xmlrpcserver.RequestHandler):
         else:
             return xmlrpclib.False
 
+    def api_count_users(self, params):
+        """Returns the number of clients currently using landiallerd."""
+
+        from random import random
+        return int(random() * 10)
+
     def api_disconnect(self, params):
         """Disconnect from the Internet.
 
@@ -193,6 +199,16 @@ class MyHandler(xmlrpcserver.RequestHandler):
         else:
             return xmlrpclib.False
 
+    def api_time_online(self, params):
+        """Returns number of seconds the connection has been up.
+
+        If the connection is down it returns -1 instead.
+
+        """
+
+        from random import random
+        return int(random() * 10)
+
 
 class App(gmalib.Daemon):
     """A simple wrapper class that initialises and runs the server."""
@@ -200,12 +216,36 @@ class App(gmalib.Daemon):
     def __init__(self):
         gmalib.Daemon.__init__(self)
 
+    def getopt(self):
+        """Parse command line arguments.
+
+        Reads the command line arguments, looking for the following:
+
+        -d   enable debugging for extra output
+        -f   run in the foreground (not as a daemon)
+
+        """
+
+        opts, args = getopt.getopt(sys.argv[1:], "df")
+
+        for o, v in opts:
+            if o == "-d":
+                self.debug = 1
+            elif o == "-f":
+                self.log_to_console = 1
+                self.be_daemon = 0
+
+        print "be_daemon=%s" % self.be_daemon
+        self.log_debug("App.getopt(): opts=%s, args=%s" % (opts, args))
+
     def main(self):
         """Read configuration, start the XML-RPC server."""
 
         syslog.openlog(posixpath.basename(sys.argv[0]),
                        syslog.LOG_PID | syslog.LOG_CONS)
         self.log_info("starting server")
+
+        self.getopt()
 
         # load configuration files
         try:
@@ -215,6 +255,8 @@ class App(gmalib.Daemon):
         except Exception, e:
             self.log_err("Terminating - error reading config file: %s" % e)
             sys.exit()
+
+        self.daemonise()
 
         # start the server and start taking requests
         server_port = int(self.config.get("server", "port"))
@@ -230,6 +272,5 @@ if __name__ == '__main__':
         sys.exit()
     app = App()
     # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
-    app.debug = 1
-    app.daemonise()
+    # app.debug = 1
     app.main()
