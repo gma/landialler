@@ -144,8 +144,10 @@ def api_connect():
             mutex.acquire()
             now_connecting = 1
             mutex.release()
+            print "connect command run successfully"
             return xmlrpclib.True
         else:
+            sys.stderr.write("connect command failed (%s)" % rval)
             return xmlrpclib.False
 
 
@@ -180,8 +182,10 @@ def api_disconnect(all="no", client=None):
             now_connecting = 0
             user_tracker.clear()
             mutex.release()
+            print "disconnect command run successfully"
             return xmlrpclib.True
         else:
+            sys.stderr.write("disconnect command failed (%s)" % rval)
             return xmlrpclib.False
 
 
@@ -305,14 +309,17 @@ class CleanerThread(threading.Thread, gmalib.Logger):
     
         global mutex, current_users, is_connected, now_connecting, user_tracker
 
+        print "cleaner running pre loop"
         while 1:
             mutex.acquire()
 
             current_users = count_users()
             is_connected = check_connection_status()
-            self.log_debug("cleaner; users=%s, connected=%s" %
+            print "cleaner running"
+            self.log_debug("CleanerThread: users=%s, connected=%s" %
                            (current_users, is_connected))
             if (current_users < 1) and (now_connecting or is_connected):
+                self.log_debug("CleanerThread: disconnecting")
                 api_disconnect(all="yes")
 
             mutex.release()
@@ -393,7 +400,7 @@ class App(gmalib.Daemon):
     """A simple wrapper class that initialises and runs the server."""
     
     def __init__(self):
-        gmalib.Daemon.__init__(self, logfile="landiallerd.log", use_syslog=1)
+        gmalib.Daemon.__init__(self)
         self.debug = 0
         self.run_as_daemon = 1
 
@@ -432,14 +439,40 @@ class App(gmalib.Daemon):
 
     def main(self):
         """Start the XML-RPC server."""
+        try:
+            self.getopt()
+            if self.run_as_daemon:
+                self.daemonise()
+            cleaner = CleanerThread()
+            cleaner.start()
+        except IOError, e:
+            sys.stderr.write("%s\n" % e)
+        except getopt.GetoptError, e:
+            sys.stderr.write("%s\n" % e)
+            self.usage_message()
+        
         self.config = gmalib.SharedConfigParser()  # pre-cached
-        if self.run_as_daemon:
-            self.daemonise()
 
         # start the server and start taking requests
         server_port = int(self.config.get("general", "port"))
         self.server = MyTCPServer(("", server_port), MyHandler)
         self.server.serve_forever()
+
+    def usage_message(self):
+        """Print usage message to sys.stderr and exit."""
+        message = """
+Usage: %s [-d] [-f] [-l file] [-s]
+
+Options:
+
+    -d          enable debug messages
+    -f          run in foreground instead of as a daemon
+    -l file     write log messages to file
+    -s          write log messages to syslog
+
+""" % posixpath.basename(sys.argv[0])
+        sys.stderr.write(message)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -466,19 +499,7 @@ if __name__ == "__main__":
     user_tracker = {}  # dict of all users' IP/port numbers
     current_users = 0  # number of users online (determined from user_tracker)
     is_connected = 0   # is the connection currently up?
-    now_connecting = 0 # is the connection coming up?
+    now_connecting = 0 # is the connection in the process of coming up?
     
     app = App()
-    app.getopt()
-
-    cleaner = CleanerThread()
-    cleaner.start()
-    
-    try:
-        app.main()
-    except IOError, e:
-        sys.stderr.write("%s\n" % e)
-    except getopt.GetoptError, e:
-        sys.stderr.write("%s\n" % e)
-        sys.stderr.write("usage: %s [-d] [-f] [-l file] [-s]\n" % \
-                         posixpath.basename(sys.argv[0]))
+    app.main()
