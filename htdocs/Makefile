@@ -14,6 +14,11 @@ upload: .upload-html .upload-ssi .upload-images .upload-screenshots
 	@touch .upload-html
 
 
+.upload-news: news/*.html
+	scp $? $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
+	@touch .upload-news
+
+
 .upload-ssi: ssi/*.html
 	scp $? $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)/ssi
 	@touch .upload-ssi

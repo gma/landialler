@@ -18,61 +18,76 @@
     <!--#include virtual="ssi/sidebar.html" -->
 
     <div id="body">
-      <h1>News</h1>
+      <h1>Latest News</h1>
       <ul>
-	<li>
-	  <p>
-	    <strong>Python 2.3 and GTK2 port released shortly</strong>
-	    (13 March 2004)<br/>
-	      
-	      It's taken longer than I'd hoped, but a new Python 2.3
-	      compatible version of LANdialler is now available from <a
-		href="http://sourceforge.net/cvs/?group_id=34228">CVS</a>
-	      (scroll down to the "Anonymous CVS Access" section). I've
-	      not made packages yet as there's quite a bit of work to do
-	      on the installation and packaging, and it is not yet tested
-	      on Windows. If you'd like to try it check it out from CVS
-	      and run both the client and server from within their current
-	      directories. I've uploaded a <a
-		href="screenshots.html">screenshot</a> to tempt you into it.
-	  </p>
-	</li>
-	<li>
-	  <p>
-	    <strong>Development back underway</strong> (18 January
-	    2004)<br>
-
-	    I've made very few changes to LANdialler for a long time
-	    now, primarily because it just worked. However, it no
-	    longer works out of the box with the later versions of
-	    Python due to the absorption of the XML-RPC module into
-	    the Python standard library. This is the first thing that
-	    will be fixed.
-	  </p>
-	  <p>
-	    I'm also intending to port the Unix GUI to GTK2, a change 
-	    which is long over due. For a full list of what's coming see
-	    the <a href="http://cvs.sourceforge.net/viewcvs.py/landialler/landialler/TODO">TODO</a> 
-	    list.
-	  </p>
-	</li>
-	
+	<!--#include virtual="news/20040313.html" -->
       </ul>
 
-      <h1>Feedback</h1>
+      <h1>What is LANdialler?</h1>
+
+      <p>
+	LANdialler enables several computers on a LAN (Local Area
+	Network) to share control of a dial up connection to the
+	Internet.
+      </p>
+      
+      <p>
+	If you have a small home or office network (a LAN) that
+	connects to the Internet via a dial up link on a Linux
+	computer, then LANdialler could be of real use to you. If you
+	haven't got a Linux router yet find out how to <a
+	href="routing-docs.html">set one up</a>. The LANdialler client
+	software should run on most operating systems, including
+	Windows and Linux.
+      </p>
+
+      <p>
+	LANdialler is released under the terms of the <a
+	href="http://www.gnu.org/licenses/gpl.txt">GNU General Public
+	License</a>.
+      </p>
+
+      <h2>How does it work?</h2>
             
       <p>
-	If you find LANdialler useful, have some suggestons for
-	possible new features, or just can't make it work, I'd love to
-	hear about it. Please either drop into the <a
-	href="http://sourceforge.net/forum/forum.php?forum_id=106888">forum</a>,
-	add a <a
-	href="http://sourceforge.net/tracker/?atid=410222&group_id=34228&func=browse"
-	>feature request</a> or simply 
-	<a href="http://sourceforge.net/users/ashtong/">email me</a>.
+	LANdialler consists of two programs:
+      </p>
+
+      <ul>
+	<li>
+	  <strong>The client</strong> is run on all desktop computers
+	  that require Internet access. It talks to the server,
+	  requesting Internet connectivity for as long as the user
+	  requires it. The interface is very simple, which is
+	  officially a "good thing".
+	  <p>
+	</li>
+	<li>
+	  <strong>The server</strong> runs on the router and manages
+	  the state of the dial up connection. It keeps track of the
+	  number of people who have asked to go online and keeps the
+	  Internet connection up until the last user disconnects.
+	</li>
+      </ul>
+  
+      <p>
+	Because the dial up connection is handled by your Linux router
+	your desktop computers can remain safely protected from prying
+	eyes by your router's firewall (assuming you have configured
+	it&nbsp;-&nbsp;if not why not?).
+      </p>
+            
+      <p>
+	The client and server communicate with one another over the
+	local network through the <a
+	href="http://www.xmlrpc.com/">XML-RPC</a> protocol.
       </p>
 
       <!--#include virtual="ssi/copyright.html" -->
+
+    </div>
+  </body>
+</html>
 
     </div>
   </body>
