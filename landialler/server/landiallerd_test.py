@@ -18,6 +18,15 @@ class MockConfigParser:
         return self.value
     
 
+class MockTime:
+
+    def __init__(self, advance_by):
+        self._advance_by = advance_by
+
+    def time(self):
+        return time.time() + self._advance_by
+
+
 class ConnectionTest(unittest.TestCase):
 
     def setUp(self):
@@ -60,25 +69,16 @@ class ConnectionTest(unittest.TestCase):
         clients.sort()
         self.assertEqual(clients, [ip1, ip2])
 
-    def _advance_clock(self, seconds):
-
-        class MockTime:
-
-            def time(self):
-                return time.time() + seconds
-            
-        self._real_time, landiallerd.time = landiallerd.time, MockTime()
-
-    def _reset_clock(self):
-        landiallerd.time = self._real_time        
-
     def test_forget_old_clients(self):
         """Check that old clients are forgotten about automatically"""
         self.conn.remember_client('127.0.0.1')
-        self._advance_clock(3600)
-        self.conn.forget_old_clients()
-        self._reset_clock()
-        self.assertEqual(self.conn.count_clients(), 0)
+        real_time, landiallerd.time = landiallerd.time, MockTime(3600)
+        try:
+            self.assertEqual(self.conn.count_clients(), 1)
+            self.conn.forget_old_clients()
+            self.assertEqual(self.conn.count_clients(), 0)
+        finally:
+            landiallerd.time = real_time        
 
     def test_connect_command(self):
         """Check that we test the return value of the connect command"""
@@ -92,15 +92,57 @@ class ConnectionTest(unittest.TestCase):
 
         mock_os = MockOsModule()
         real_os, landiallerd.os = landiallerd.os, mock_os
+        try:
+            mock_os.rval = 0
+            rval = self.conn.run_connect_command()
+            self.assertEqual(rval, True)
 
-        mock_os.rval = 0
-        rval = self.conn.run_connect_command()
-        self.assertEqual(rval, True)
+            mock_os.rval = 1
+            rval = self.conn.run_connect_command()
+            self.assertEqual(rval, False)
+        finally:
+            landiallerd.os = real_os
 
-        mock_os.rval = 1
-        rval = self.conn.run_connect_command()
-        self.assertEqual(rval, False)
-        
+
+class TimerTest(unittest.TestCase):
+
+    def test_start(self):
+        """Check we can start the timer"""
+        timer = landiallerd.Timer()
+        timer.start()
+        try:
+            real_time = landiallerd.time
+            landiallerd.time = MockTime((39 * 60) + 23)
+            self.assertEqual(timer.get_elapsed_time(), '00:39:23')
+        finally:
+            landiallerd.time = real_time
+
+    def test_reset(self):
+        """Check we can reset the timer"""
+        timer = landiallerd.Timer()
+        timer.start()
+        try:
+            real_time = landiallerd.time
+            landiallerd.time = MockTime((39 * 60) + 23)
+            timer.reset()
+            self.assertEqual(timer.get_elapsed_time(), '00:00:00')
+        finally:
+            landiallerd.time = real_time
+
+    def test_stop(self):
+        """Check we can stop the timer"""
+        timer = landiallerd.Timer()
+        timer.start()
+        try:
+            real_time = landiallerd.time
+            landiallerd.time = MockTime((39 * 60) + 23)
+            timer.stop()
+            self.assertEqual(timer.get_elapsed_time(), '00:39:23')
+            landiallerd.time = MockTime((45 * 60) + 32)
+            self.assertEqual(timer.get_elapsed_time(), '00:39:23')
+        finally:
+            landiallerd.time = real_time
+            
 
 if __name__ == '__main__':
     unittest.main()
