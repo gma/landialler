@@ -52,6 +52,7 @@ class GoOnlineDialogController(Controller):
     def yes_cb(self):
         """Called when the Yes button is pressed."""
         print "GoOnlineDialogController.yes_cb called"
+        self.model.server_connect()
 
     def no_cb(self):
         """Called when the No button is pressed."""
@@ -61,7 +62,8 @@ class GoOnlineDialogController(Controller):
 class ConnectingDialogController(Controller):
     def cancel_cb(self):
         """Called when the Cancel button is pressed."""
-        print "ConnectingDialogController.no_cb called"
+        print "ConnectingDialogController.cancel_cb called"
+        self.model.server_disconnect()
 
 
 class DisconnectDialogController(Controller):
