@@ -20,14 +20,16 @@
 #
 # $Id$
 
-"""serves landialler XML-RPC requests
+"""serves landialler clients, manages connecctions
 
-Landialler enables several computers on a home LAN to remotely
-control a dial up device (e.g. modem) that is connected to a single
-Unix workstation.
+LANdialler enables several computers on a home LAN to remotely control
+a dial up device (e.g. modem) that is connected to a single Unix
+workstation. This scenario is explained in more detail on the
+LANdialler web site.
 
-There are two programs that make up landialler; the client and the
-server. This is the server that runs on the Unix workstation.
+There are two programs that make up a complete LANdialler system; the
+client (landialler) and the server (landiallerd). This is the server
+that runs on the Unix workstation.
 
 The client and server communicate via XML-RPC. The server runs in the
 background (as a daemon) waiting for landialler clients to connect to
@@ -71,7 +73,7 @@ More information on landialler is available at the project home page:
 
   http://landialler.sourceforge.net/
 
-The author (Graham Ashton) can be contacted at ashtong@users.sourceforge.net.
+The author can be contacted at ashtong@users.sourceforge.net.
 
 """
 
