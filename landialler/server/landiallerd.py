@@ -147,7 +147,11 @@ class API(gmalib.Logger):
             return xmlrpclib.False
         else:
             self.log_debug("connect() running connect command")
-            return self.conn.runConnectCommand()
+            if self.conn.runConnectCommand():
+                self.nowConnecting = 1
+                return xmlrpclib.True
+            else:
+                return xmlrpclib.False
 
     def disconnect(self, all="no", client=None):
         """Close the connection.
@@ -291,11 +295,9 @@ class Connection(gmalib.Logger):
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         self.log_debug("connect command returned: %s" % rval)
         if rval == 0:
-            self.nowConnecting = 1
-            return xmlrpclib.True
+            return 1
         else:
-            self.log_err("connect command failed: %s" % rval)
-            return xmlrpclib.False
+            return 0
 
     def runDisconnectCommand(self):
         """Return true if disconnect command run okay, false otherwise."""
