@@ -197,7 +197,7 @@ class App(gmalib.Logger):
     def handle_disconnect_error(self):
         self.log_err("Error: DisconnectError")
         msg = "There was a problem disconnecting\nfrom the network. " + \
-            "You may not have\nbeen disconnected properly!"
+              "You may not have\nbeen disconnected properly!"
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
@@ -213,8 +213,8 @@ class App(gmalib.Logger):
     def handle_status_error(self):
         self.log_err("Error: StatusError")
         msg = "LANdialler is unable to determine the\nstatus of your " + \
-            "network connection.\n\nPlease check the connection and\n" + \
-            "the server and try again."
+              "network connection.\n\nPlease check the connection and\n" + \
+              "the server and try again."
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
@@ -229,5 +229,4 @@ class App(gmalib.Logger):
 
 if __name__ == "__main__":
     app = App()
-    #app.debug = 1
     app.main()
