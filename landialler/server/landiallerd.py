@@ -29,22 +29,22 @@ workstation. This scenario is explained in more detail on the
 LANdialler web site.
 
 There are two programs that make up a complete LANdialler system; the
-client (landialler) and the server (landiallerd). This is the server
-that runs on the Unix workstation.
+client (landialler.py) and the server (landiallerd.py). You're reading
+the documentation for the server that runs on the Unix workstation.
 
 The client and server communicate via XML-RPC. The server runs in the
-background (as a daemon) waiting for landialler clients to connect to
-it and request an Internet connection (through the landialler XML-RPC
-API). By default the server listen for connections on port 6543.
+background (as a daemon) waiting for clients to connect to it and
+request an Internet connection (through the LANdialler XML-RPC API).
+By default the server listen for connections on port 6543.
 
 The client/server API defines three procedures that the client can
 call; connect(), disconnect() and get_status(). These are individually
 documented below. Each procedure runs an external script/program to
-perform their task, making the landialler server more portable between
-different versions of Unix, or distributions of Linux. Each command
-should return immediately and exit with a non zero return code if
-there is an error. Commands are specified in the [commands] section of
-the landiallerd.conf configuration file.
+perform their task, making the server more portable between different
+versions of Unix, or distributions of Linux. Each command should
+return immediately and exit with a non zero return code if there is an
+error. Commands are specified in the [commands] section of the
+landiallerd.conf configuration file.
 
 A sample configuration file should be included with the package, but
 the following should serve as a good example:
@@ -57,23 +57,24 @@ the following should serve as a good example:
   [server]
   port: 6543
 
-Note that you can also configure the TCP port number that landiallerd
+Note that you can also configure the TCP port number that landiallerd.py
 uses to talk to the clients.
 
 The connect and disconnect scripts referenced in the config file
 should both make sure that they exit immediately; the connect command
 MUST NOT block before the connection has been made, but should only
-check that the commands that it has run have started correctly. If you
-know how to integrate landialler cleanly with your own operating
-system's dial up systems then please send suggestions in and they will
-be made available on the web site, with credits.
+check that the commands that it has run have started correctly (errors
+should be indicated with a non zero exit code). If you know how to
+integrate LANdialler cleanly with your own operating system's dial up
+systems then please send suggestions in and they will be made
+available on the web site (with credits).
 
 To see a list of the available command line options, use the -h
 switch. For example, error, informational and debugging messages can
 be written to the syslog if the -s switch is used, or to a separate
 log file if -l is used.
 
-More information on landialler is available at the project home page:
+More information on LANdialler is available at the project home page:
 
   http://landialler.sourceforge.net/
 
