@@ -86,7 +86,6 @@ The author can be contacted at ashtong@users.sourceforge.net.
 import exceptions
 import ConfigParser
 import getopt
-import gmalib
 import landiallermvc
 from landiallermvc import Model
 import os
@@ -98,11 +97,22 @@ import xmlrpclib
 __version__ = "0.2.1"
 
 
-class App(gmalib.Logger):
+class Dummy:
+
+    def method(self, *args):
+        pass
+    
+    def __getattr__(self, name):
+        return self.method
+
+# TODO: replace with proper logging object
+log = Dummy()
+
+
+class App:
 
     def __init__(self):
         """Calls the base class's initialisor."""
-        gmalib.Logger.__init__(self, use_syslog=0)
         self.conf_file = None
         self.debug = 0
         self.toolkit = None
@@ -131,14 +141,14 @@ class App(gmalib.Logger):
                 self.toolkit = v
 
     def handle_connect_error(self):
-        self.log_err("Error: ConnectError")
+        log.err("Error: ConnectError")
         msg = "There was a problem\nconnecting to the network."
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
     def handle_disconnect_error(self):
-        self.log_err("Error: DisconnectError")
+        log.err("Error: DisconnectError")
         msg = "There was a problem disconnecting\nfrom the network. " + \
               "You may not have\nbeen disconnected properly!"
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
@@ -146,15 +156,15 @@ class App(gmalib.Logger):
         dialog.start_event_loop()
 
     def handle_socket_error(self, e):
-        self.log_err("Error: socket error: %s (%d)" % (e.args[1], e.args[0]))
+        log.err("Error: socket error: %s (%d)" % (e.args[1], e.args[0]))
         msg = "Unable to connect to server: %s" % e.args[1]
-        self.log_err(msg)
+        log.err(msg)
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
     def handle_status_error(self):
-        self.log_err("Error: StatusError")
+        log.err("Error: StatusError")
         msg = "LANdialler is unable to determine the\nstatus of your " + \
               "network connection.\n\nPlease check the connection and\n" + \
               "the server and try again."
@@ -163,7 +173,7 @@ class App(gmalib.Logger):
         dialog.start_event_loop()
 
     def handle_error(self, e):
-        self.log_err("Error: %s" % e)
+        log.err("Error: %s" % e)
         msg = "Error: %s" % e
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
@@ -200,7 +210,7 @@ class App(gmalib.Logger):
             port = config.get("xmlrpcserver", "port")
         
             server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
-            self.log_debug("connected to %s:%s" % (hostname, port))
+            log.debug("connected to %s:%s" % (hostname, port))
             self.model = Model.Model(config, server, self.toolkit)
             window = self.model.views.MainWindow(self.model)
 
