@@ -61,23 +61,6 @@ a:active {
 
 /* Common page elements: Header, footer, etc. */
 
-#logo {
-	position: absolute;
-	top: 10px;
-	left: 10px;
-	border: 0px;
-	z-index: 10;
-
-	background: url("img/logo/text-64") no-repeat;
-	width: 64px;
-	height: 64px;
-}
-
-#logo a img {
-	width: 64px;
-	height: 64px;
-}
-
 #hdr {
 	position: absolute;
 	z-index: 5;
@@ -90,28 +73,8 @@ a:active {
 
 	text-align: left;
 
-	background: url("img/hdr/hills01.jpg") no-repeat;
 	background-color: #eeeeee;
 	border-bottom: 1px solid #666666;
-}
-
-#banner {
-	position: absolute;
-	z-index: 10;
-
-	top: 0px;
-	right: 0px;
-	border: 0px;
-
-	width: 300px;
-	height: 48px;
-
-	background: url("/images/spacer.png") no-repeat;
-}
-
-#banner a img {
-	width: 300px;
-	height: 48px;
 }
 
 #hdrNav {
@@ -191,15 +154,7 @@ a:active {
 
 	margin-top: 10px;
 	padding: 5px 0px 5px 0px;
-	color: #aaaaaa;
-}
-
-#copyright a {
-	color: #aaaaff;
-}
-
-#copyright a:visited {
-	color: #ffaaaa;
+	color: #999999;
 }
 
 
