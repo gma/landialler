@@ -609,7 +609,6 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
 
 <widget class="GtkDialog" id="error_dialog">
   <property name="border_width">6</property>
-  <property name="visible">True</property>
   <property name="title" translatable="yes"></property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER</property>
