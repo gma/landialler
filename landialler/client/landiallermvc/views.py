@@ -41,9 +41,10 @@ implementation, create qtviews.py, and all should be well.
 
 
 import controllers
+import Observer
 
 
-class View:
+class View(Observer.Observer):
 
     """Abstract base class for an MVC View component.
 
@@ -54,9 +55,7 @@ class View:
     """
     
     def __init__(self, model):
-        """Register with the model's publish-subscribe mechanism."""
-        self.model = model
-        self.model.attach(self)  # observe the model
+        Observer.Observer.__init__(self, model)
 
     def draw(self):
         """Create and display the user interface (abstract method).
@@ -67,17 +66,6 @@ class View:
         """
         raise NotImplementedError, \
               ("%s has not implemented draw()" % self.__class__)
-
-    def update(self):
-        """Update the status data (abstract method).
-
-        A view is an observer of the model. This method is called
-        automatically by the model's publish-subscribe system. All
-        views must override this method, even if it does nothing.
-
-        """
-        raise NotImplementedError, \
-              ("%s has not implemented update()" % self.__class__)
 
 
 class ButtonBar:
