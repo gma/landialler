@@ -17,11 +17,11 @@ REQUIREMENTS
 
 INSTALLATION
 
-I will ignore the first two requirements and assume that if you have
-got this far that you are there already. If not you might want to get
-hold of a copy of Python from http://www.python.org/.
+I will ignore the first two requirements; if you're not sure whether
+or not you've got Python visit http://www.python.org/ and download the
+latest version for your platform.
 
-Next, download xmlrpclib from the URL above (xmlrpclib should be
+Now, download xmlrpclib from the URL above (xmlrpclib should be
 included with the main Python source tree from Python 2.2 onwards, so
 you may have it already). If not you will need to copy the
 xmlrpclib.py file into your Python system directory (on Windows) or
@@ -52,8 +52,11 @@ platform:
 
 CONFIGURATION
 
-You will probably need to edit the [xmlrpcserver] section of the config
-file. Set the IP address of your landialler server in the file.
+You will probably need to edit the [xmlrpcserver] section of the
+config file. Set the IP address of your landialler server in the
+file. If you find that your Internet connection regularly takes more
+than two minutes to come up then you can increase the timeout
+parameter in the config file to suit (the default is 120 seconds).
 
 If you have problems installing either the client or the server then I
 will try and help you if I can. Please make sure that you send me as
