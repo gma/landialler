@@ -218,7 +218,23 @@ class DroppedDialog(Dialog):
 
 
 class FatalErrorDialog(Dialog):
+
+    """Display an error message to the user.
+
+    If there's a serious problem (of any nature) then the user needs
+    to get feedback. This dialog displays an error message and an OK
+    button. When the OK button is clicked the whole application is
+    terminated.
+
+    """
+
     def __init__(self, model, err_msg):
+        """Initialise the dialog.
+
+        The err_msg parameter should be a string explaining what went
+        wrong.
+
+        """
         Dialog.__init__(self, model)
         self.controller = controllers.FatalErrorController(model, self)
         self.modal = 1
