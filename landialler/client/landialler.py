@@ -58,7 +58,7 @@ API, which is covered in landiallerd.py's documentation.
 The configuration file tells landialler how to contact the server. A
 sample configuration file looks like this:
 
-  [xmlrpcserver]
+  [server]
   hostname: 192.168.1.1  # your Unix box
   port: 6543             # the default port
 
@@ -127,20 +127,20 @@ class RemoteModem(Observable):
 
     def dial(self):
         self._checking_status = True
-        return self._server_proxy.connect(self.client_id)
+        self._server_proxy.connect(self.client_id)
 
     def hang_up(self):
         self._checking_status = False
         self.is_connected = False
         self.notify_observers()
-        return self._server_proxy.disconnect(self.client_id)
+        self._server_proxy.disconnect(self.client_id)
 
     def hang_up_all(self):
         # TODO: refactor into hang_up()
         self._checking_status = False
         self.is_connected = False
         self.notify_observers()
-        return self._server_proxy.disconnect(self.client_id, all=True)
+        self._server_proxy.disconnect(self.client_id, all=True)
 
     def get_status(self):
         if self._checking_status:
@@ -239,6 +239,7 @@ class MainWindow(Window):
         self.disconnect_button.set_sensitive(gtk.FALSE)
 
     def on_main_window_delete_event(self, *args):
+        self._modem.remove_observer(self)
         self._modem.hang_up()
         gtk.main_quit()
 
