@@ -14,6 +14,16 @@ REQUIREMENTS
   - xmlrpclib, from http://www.pythonware.com/products/xmlrpc/
   - gmalib, available from http://sourceforge.net/projects/landialler/
 
+If you want to use the GTK+ user interface (instead of Tk) then you will
+also need the GTK+ libraries and the Python bindings:
+
+  - GTK+ is available from http://www.gtk.org/
+  - PyGTK is available from http://www.daa.com.au/~james/pygtk/
+
+Installing GTK+ support is recommended if you are running on a Unix or
+Linux platform as it makes things look much nicer. It behaves better too.
+If PyGTK is installed correctly it will be used by default on Unix systems.
+
 
 INSTALLATION
 
@@ -35,10 +45,15 @@ platform:
   Windows
     - Download the latest landialler ZIP file, and unzip into a temporary
       directory.
+
     - From within the landialler directory, run "python setup.py install"
       to install the landiallermvc package.
+
     - Create a landialler directory (e.g. C:\Program Files\landialler)
       and copy landialler.py and landialler.conf into the new directory.
+      If you want to put the landialler.conf file in a different directory
+      you may, but see the -c command line option notes below.
+
     - Right click the desktop to create a new shortcut and point
       it towards landialler.py. Make sure that the shortcut runs
       landialler in it's own directory.
@@ -54,6 +69,22 @@ platform:
       Note: landialler.py will be copied into /usr/local/bin
             landialler.conf will be copied into /usr/local/etc
 
+      If you want to put the configuration file somewhere else you may,
+      but see the -c command line option notes below.
+
+    - If your system has Python support for GTK+ it will be used by default.
+      If you'd prefer to use Tk instead you have two choices; 1) edit the
+      /usr/local/etc/landialler.conf file, adding a section that looks
+      like this:
+
+        [interface]
+        toolkit: tk
+
+      or 2) run landialler with the "-u tk" command line switch. If you have
+      any difficulty getting GTK+ support to work send me an email with a
+      description of the problem and I'll see if I can help you to get it
+      working.
+
   MacOS
     - I'm afraid I don't have access to a Mac and so have no idea how
       to install landialler. I'm not even sure if it works, but I'd be
@@ -68,6 +99,13 @@ config file. Set the IP address of your landialler server in the
 file. If you find that your Internet connection regularly takes more
 than two minutes to come up then you can increase the timeout
 parameter in the config file to suit (the default is 120 seconds).
+
+Once landialler is installed properly you may find the following command
+line options useful:
+
+  -c file       specify an alternate configuration file
+  -d            enable extra debugging output
+  -u toolkit    select the GUI toolkit (tk, gtk)
 
 If you have problems installing either the client or the server then I
 will try and help you if I can. Please make sure that you send me as
