@@ -10,8 +10,13 @@ not quite there yet.
 REQUIREMENTS
 
   - Unix, or similar POSIX compliant Operating System (e.g. Linux)
-  - Python 2.1 (it may work with Python 2.0 though this is untested)
+
+  - Python 2.1 compiled with support for threads. Note that thread
+    support is enabled by default from Python 2.1 onwards. There's a
+    good chance that landiallerd will work with Python 2.0 (untested).
+
   - xmlrpclib, from http://www.pythonware.com/products/xmlrpc/
+
   - gmalib, available from http://sourceforge.net/projects/landialler/
 
 
