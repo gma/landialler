@@ -9,27 +9,24 @@ not quite there yet.
 
 REQUIREMENTS
 
-  - Python 2.3 with support for either Tk or PyGTK2.
+  - Python 2.3 from http://www.python.org/
+  - PyGTK from http://pygtk.org/
 
-PyGTK2 is available from http://www.daa.com.au/~james/pygtk/. Note
-that LANdialler no longer works with PyGTK 0.6.x.
-
-Using PyGTK instead of Tk is recommended if you are running on a Unix
-or Linux platform (it's much nicer to use). If PyGTK2 is installed
-correctly it will be used by default on Unix systems.
+Note that from version 0.3 onwards LANdialler no longer works with
+PyGTK 0.6.x, but should work with any version later than 2.0.
 
 
 INSTALLATION
 
-If you need to install Python, Tk or PyGTK2 you must follow the
+If you need to install Python or PyGTK you must follow the
 instructions that come with those packages.
 
 To install LANdialler follow the instructions for your platform:
 
   WINDOWS
 
-    - Download the latest landialler ZIP file, and unzip into a temporary
-      directory.
+      Note: The Windows installation instructions have not yet been
+      	    tested, but will be before version 0.3 is released.
 
     - Create a landialler directory (e.g. C:\Program Files\landialler)
       and copy landialler.py and landialler.conf into the new directory.
@@ -55,28 +52,16 @@ To install LANdialler follow the instructions for your platform:
       If you want to put the configuration file somewhere else you may,
       but see the notes on the -c command line option below.
 
-    - If your system has support for GTK2 it will be used by default.
-      If you'd prefer to use Tk instead you have two choices; 1) edit
-      the /usr/local/etc/landialler.conf file, adding a section that
-      looks like this:
-
-        [interface]
-        toolkit: tk
-
-      or 2) run landialler with the "-u tk" command line switch.
-
 
 CONFIGURATION
 
 You will probably need to edit the [xmlrpcserver] section of the
-config file. Set the IP address of your landialler server in the file.
+config file. Set the IP address of your LANdialler server in the file.
 
-Once landialler is installed properly you may find the following command
+Once LANdialler is installed properly you may find the following command
 line options useful:
 
   -c file       specify an alternate configuration file
-  -d            enable extra debugging output
-  -u toolkit    select the GUI toolkit (tk, gtk)
 
 If you have problems installing either the client or the server then I
 will try and help you if I can. Please make sure that you send me as
