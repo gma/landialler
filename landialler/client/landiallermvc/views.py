@@ -29,7 +29,8 @@ class View:
     """Abstract base class for an MVC View component.
 
     See [POSA125] for more information on the MVC
-    (Model-View-Controller) pattern.
+    (Model-View-Controller) pattern. All views that wish to be updated
+    by changes to the Model should inherit from View.
 
     """
     
@@ -41,7 +42,7 @@ class View:
     def draw(self):
         """Create and display the user interface (abstract method).
 
-        All views should override this method if they wish to be
+        All views should override this method if they need to be
         displayed on the screen.
 
         """
@@ -61,6 +62,12 @@ class View:
 
 
 class ButtonBar:
+
+    """The beginnings of a button handler to simplify the creation and
+    layout of groups of buttons. Incomplete and unused.
+
+    """
+    
     def __init__(self, model):
         View.__init__(self, model)
         self.buttons = []
@@ -70,7 +77,11 @@ class ButtonBar:
 
 
 class Window:
-    """Contains basic logic for constructing a top level window."""
+    """Contains basic logic for constructing a top level window.
+
+    Needs updating to use the ButtonBar class.
+
+    """
     
     def __init__(self):
         """Set button_side attribute to default to RIGHT."""
@@ -79,10 +90,9 @@ class Window:
         #self.button_bar = ButtonBar()
         
     def create_button_store(self, parent=None):
-        """Lays out a set of buttons in a button bar.
+        """Manipulates the buttons attribute, ready for drawing.
 
-        Packs the GUI buttons in order, aligned according to the
-        button_side attribute.
+        A quick and dirty hack, to be replaced by the ButtonBar class.
 
         """        
 
@@ -107,10 +117,10 @@ class ConnectingDialog(View):
 
     """Display a message explaining that the server is connecting.
 
-    The dialog also has a Cancel button, allowing the user to cancel
-    the connection request at any time. If the cancel button is
-    pressed the application should exit (see cleanup() for how to
-    handle this).
+    The dialog has a Cancel button, allowing the user to cancel the
+    connection request at any time. If the cancel button is pressed
+    the application should exit (see cleanup() for how to handle
+    this).
 
     """
 
@@ -125,14 +135,15 @@ class ConnectingDialog(View):
         self.buttons = { 'cancel': (0, callback) }
 
     def cleanup(self):
-        """Destroy the dialog window.
+        """Destroy the dialog window (abstract method).
 
-        GUI specific code for cleaning up the window after the cancel
-        button has been pressed, or the dialog has been closed, should
-        be put in this method. Override it in the sub class.
+        Should be overriden in a sub class with GUI specific code for
+        cleaning up the window after the cancel button has been
+        pressed, or the dialog has been closed.
 
         """
-        pass
+        raise NotImplementedError, \
+              ("%s has not implemented cleanup()" % self.__class__)
 
 
 class DisconnectDialog(View):
@@ -166,9 +177,10 @@ class DroppedDialog(View):
     """Warn user that the connection has been dropped.
 
     If the connection has suddenly gone off line there will be 0
-    active users and self.model.is_connected will be 0. It is likely
-    that either a) the connection has dropped out for some reason, or
-    b) somebody else has hung up the connection.
+    active users and the model's is_connected attribute will be 0,
+    whilst it's was_connected attribute will be 1. It is likely that
+    either a) the connection has dropped out for some reason, or b)
+    somebody else has hung up the connection.
 
     This dialog simply points that out to the user and then quits the
     application when the user clicks OK.
