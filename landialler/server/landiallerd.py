@@ -99,17 +99,31 @@ except ImportError, e:
         sys.stderr.write("can't import syslog: %s" % e)
 
 
-# The functions that follow whose names begin "api_" define the XML-RPC API.
-#
-# We maintain state via global variables:
-#
-#   current_users  -- the number of people sharing the connection
-#   user_tracker   -- dict of clients and when they checked the status
-#   is_connected   -- whether or not the server is connected
-#   now_connecting -- whether or not another client has a connection pending
-
-
 class Connection:
+
+    """Controls a dial up connection.
+
+    Provides methods for controlling/querying the status of a dial up
+    connection (e.g. modem connection to the Internet). All instances
+    of this class share their state (see the Borg design pattern in
+    the ASPN Python Cookbook) so that status information is maintained
+    between different client HTTP requests.
+
+    The following methods are part of the LANdialler XML-RPC API, and
+    are called directly whenever a client makes an HTTP request to the
+    server:
+
+      connect()
+      disconnect()
+      get_status()
+
+    Their return values are passed directly back to the XML-RPC
+    clients.
+
+    Other methods should only be used either from within these
+    methods, or from within other parts of the landiallerd application.
+
+    """
 
     __shared_state = {}
 
@@ -129,12 +143,12 @@ class Connection:
         an XML-RPC False value is returned.
 
         Otherwise an attempt is made to make a connection by running
-        an external dial up command. If the external command runs
-        successfully (and therefore returns 0) then the XML-RPC True
-        value is returned, False otherwise. The command should return
-        immediately (i.e. not block whilst the connection is made)
-        irrespective of whether or not the actual connection will be
-        successfully set up immediately.
+        an external dial up command (see landiallerd.conf). If the
+        external command runs successfully (and therefore returns 0)
+        then the XML-RPC True value is returned, False otherwise. The
+        external command should return immediately (i.e. not block
+        whilst the connection is made) irrespective of whether or not
+        the actual connection will be successfully set up immediately.
 
         """
         if self.isConnected():
@@ -156,10 +170,10 @@ class Connection:
         """Close the connection.
 
         If there are other users online and the all argument is not
-        set then the XML-RPC True value is returned.
+        set to "yes" then the XML-RPC True value is returned.
 
         Otherwise the connection is dropped by running an external
-        dial up termination script. As with api_connect(), the return
+        dial up termination script. As with connect(), the return
         value of the external script is converted into the XML-RPC
         True or False value, and returned.
 
@@ -227,8 +241,12 @@ class Connection:
                 self.forgetClient(client)
 
     def countClients(self):
+        """Return the number of active clients."""
         self.forgetOldClients()
-        return len(self.clientTracker.keys())
+        if self.isConnected():
+            return len(self.clientTracker.keys())
+        else:
+            return 0
 
     def isConnected(self):
         """Return 1 if the connection is up, 0 otherwise.
