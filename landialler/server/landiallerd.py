@@ -494,7 +494,7 @@ if __name__ == "__main__":
     # global variables for maintaining consistent logging across classes
     debug = 0
     logfile = None
-    use_syslog = 1
+    use_syslog = 0
 
     # global variables for maintaining state
     mutex = threading.RLock()  # control access to the following globals
