@@ -35,14 +35,13 @@ it and request an Internet connection (through the landialler XML-RPC
 API). By default the server listen for connections on port 6543.
 
 The client/server API defines three procedures that the client can
-call; connect(), disconnect() and is_connected(). These are
-individually documented in the MyHandler class (see below). Each
-procedure runs an external script/program to perform their task,
-making the landialler server more portable between different versions
-of Unix, or distributions of Linux. Each command should return
-immediately and exit with a non zero return code if there is an
-error. Commands are specified in the [commands] section of the
-landiallerd.conf configuration file.
+call; connect(), disconnect() and get_status(). These are individually
+documented below. Each procedure runs an external script/program to
+perform their task, making the landialler server more portable between
+different versions of Unix, or distributions of Linux. Each command
+should return immediately and exit with a non zero return code if
+there is an error. Commands are specified in the [commands] section of
+the landiallerd.conf configuration file.
 
 A sample configuration file should be included with the package, but
 the following should serve as a good example:
@@ -58,13 +57,13 @@ the following should serve as a good example:
 Note that you can also configure the TCP port number that landiallerd
 uses to talk to the clients.
 
-The connect and disconnect scripts above should both make sure that
-they exit immediately; the connect command MUST NOT block before the
-connection has been made, but should only check that the commands that
-it has run have started correctly. If you know how to integrate
-landialler cleanly with your own operating system's dial up systems
-then please send suggestions in and they will be made available on the
-web site, with credits.
+The connect and disconnect scripts referenced in the config file
+should both make sure that they exit immediately; the connect command
+MUST NOT block before the connection has been made, but should only
+check that the commands that it has run have started correctly. If you
+know how to integrate landialler cleanly with your own operating
+system's dial up systems then please send suggestions in and they will
+be made available on the web site, with credits.
 
 Error, informational and debugging messages are written to the syslog.
 
@@ -144,10 +143,13 @@ class MyHandler(gmalib.Logger, xmlrpcserver.RequestHandler):
         the client.
 
         """
-        my_api = ["connect", "disconnect", "get_status"]
+        my_api = ['connect', 'disconnect', 'get_status']
         if not method in my_api:
             raise xmlrpclib.Fault(123, 'Unknown method name')
         else:
+            if method == 'get_status':
+                (host, port) = self.client_address
+                params = (host,)
             return apply(eval("api_" + method), params)
             
 
@@ -216,6 +218,7 @@ class App(gmalib.Daemon):
 #   current_users  -- the number of people sharing the connection
 #   is_connected   -- whether or not the server is connected
 
+
 def api_connect():
     """Connect to the Internet.
 
@@ -253,7 +256,8 @@ def api_connect():
         else:
             return xmlrpclib.False
 
-def api_disconnect():
+
+def api_disconnect(all=0):
     """Disconnect from the Internet.
 
     Decrements the number of current users by 1. If there are
@@ -266,9 +270,8 @@ def api_disconnect():
 
     """
     global current_users
-    current_users -= 1
-    if current_users > 0:
-        return xmlrpclib.True  # other users still online
+    if (all == 0) and (current_users - 1 > 0):  # other users still online
+        return xmlrpclib.True
 
     else:
         config = gmalib.SharedConfigParser()
@@ -279,9 +282,31 @@ def api_disconnect():
         else:
             return xmlrpclib.False
 
-def api_get_status():
+
+def api_get_status(client):
     """Return current_users and is_connected."""
-    global current_users, is_connected
+    global current_users, user_tracker, is_connected
+
+    # register client's connection, purge old data
+    now = time.time()
+    user_tracker[client] = now
+    timeout = 30  # seconds before a user times out
+    for client in user_tracker.keys():
+        if (now - user_tracker[client]) > timeout:
+            del user_tracker[client]
+
+    # count current_users
+    current_users = len(user_tracker.keys())
+
+    # get is_connected
+    config = gmalib.SharedConfigParser()
+    cmd = config.get("commands", "is_connected")
+    rval = os.system("%s > /dev/null 2>&1" % cmd)
+    if rval == 0:
+        is_connected = 1
+    else:
+        is_connected = 0
+
     return (current_users, is_connected)
 
 
@@ -290,8 +315,10 @@ if __name__ == '__main__':
         print "Sorry, only POSIX compliant systems are currently supported."
         sys.exit()
 
-    current_users = 0  # global variables for
-    is_connected = 0   # maintaining state
+    # global variables for maintaining state
+    user_tracker = {}  # dict of all users' IP/port numbers
+    current_users = 0  # number of users online (determined from user_tracker)
+    is_connected = 0   # is the connection currently up?
 
     app = App()
     app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
