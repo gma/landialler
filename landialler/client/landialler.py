@@ -35,27 +35,24 @@ documentation for the client.
 When you run landialler.py it contacts the server and determines if it
 is currently connected (e.g. dialled up). If so, the client registers
 itself with the server as a new client and the user is informed that
-they are currently online. Otherwise the client asks the server to
+they are currently on-line. Otherwise the client asks the server to
 connect, displaying feedback to the user confirming that the server is
 currently connecting.
 
 Once the server reports that the connection is made, the client
 displays the number of users that are currently using the
 connection. The user has the option to disconnect at any time. If
-there are other users online then the user can choose to either either
+there are other users on-line then the user can choose to either either
 unregister themselves (thereby allowing the server to disconnect when
 all users have unregistered), or to forceably terminate the
 connection, disconnecting all other users at the same time.
-
-If the connection drops out at any time (let's face it, it can happen
-a lot with modems) a dialog box pops up alerting the user.
 
 The configuration file tells landialler how to contact the server. A
 sample configuration file looks like this:
 
   [server]
   hostname: 192.168.1.1  # your Unix box
-  port: 6543             # the default port
+  port: 7293             # the default port
 
 The configuration file should be called "landialler.conf". On POSIX
 operating systems (e.g. Unix or similar) it can either be placed in
@@ -82,7 +79,7 @@ import time
 import traceback
 import xmlrpclib
 
-import pygtk; pygtk.require('2.0')
+import pygtk; pygtk.require("2.0")
 import gtk
 import gtk.glade
 
@@ -116,7 +113,7 @@ class RemoteModem(Observable):
     def _get_client_id(self):
         ip = socket.gethostbyname(socket.gethostname())
         try:
-            return '%s@%s' % (os.environ['USER'], ip)
+            return "%s@%s" % (os.environ["USER"], ip)
         except KeyError:
             return ip
 
@@ -145,7 +142,7 @@ class WidgetWrapper(object):
 
     def __init__(self, root_widget):
         self._root_widget_name = root_widget
-        self._xml = gtk.glade.XML('landialler.glade', root_widget)
+        self._xml = gtk.glade.XML("landialler.glade", root_widget)
         self._connect_signals()
 
     def _get_root_widget(self):
@@ -186,11 +183,11 @@ class MainWindow(Window):
 
     CHECK_STATUS_PERIOD = 1000 * 2
     STATUS_LABEL = '<span size="larger" weight="bold">You are %s</span>'
-    TITLE = 'LANdialler'
+    TITLE = "LANdialler"
     UPDATE_TIMER_PERIOD = 100
 
     def __init__(self, modem):
-        Window.__init__(self, 'main_window')
+        Window.__init__(self, "main_window")
         self._modem = modem
         self._modem.add_observer(self)
         self._set_status_disconnected()
@@ -212,13 +209,13 @@ class MainWindow(Window):
         self.status_label.set_label(self.STATUS_LABEL % status)
 
     def _set_status_connected(self, seconds_online):
-        self._set_status_label('connected')
-        time_str = time.strftime('%H:%M:%S', time.gmtime(seconds_online))
-        user_str = { True: 'user', False: 'users' }[self._modem.num_users == 1]
+        self._set_status_label("connected")
+        time_str = time.strftime("%H:%M:%S", time.gmtime(seconds_online))
+        user_str = { True: "user", False: "users" }[self._modem.num_users == 1]
         self.details_label.set_label(
-            '%s %s, online for %s' %
+            "%s %s, on-line for %s" %
             (self._modem.num_users, user_str, time_str))
-        self.root_widget.set_title('%s (connected)' % MainWindow.TITLE)
+        self.root_widget.set_title("%s (connected)" % MainWindow.TITLE)
         self.connect_button.set_sensitive(gtk.FALSE)
         self.disconnect_button.set_sensitive(gtk.TRUE)
 
@@ -230,8 +227,8 @@ class MainWindow(Window):
         return True
 
     def _set_status_disconnected(self):
-        self._set_status_label('disconnected')
-        self.details_label.set_label('')
+        self._set_status_label("disconnected")
+        self.details_label.set_label("")
         self.root_widget.set_title(MainWindow.TITLE)
         self.connect_button.set_sensitive(gtk.TRUE)
         self.disconnect_button.set_sensitive(gtk.FALSE)
@@ -269,7 +266,7 @@ class MainWindow(Window):
 class ConnectingDialog(Window):
 
     def __init__(self, modem):
-        Window.__init__(self, 'connecting_dialog')
+        Window.__init__(self, "connecting_dialog")
         self._modem = modem
         self._progress_timeout = None
         self._modem.add_observer(self)
@@ -303,7 +300,7 @@ class ConnectingDialog(Window):
 class DisconnectDialog(Window):
 
     def __init__(self, modem):
-        Window.__init__(self, 'disconnect_dialog')
+        Window.__init__(self, "disconnect_dialog")
         self._modem = modem
 
     def on_disconnect_button_clicked(self, *args):
@@ -320,7 +317,7 @@ class DisconnectDialog(Window):
 class ErrorDialog(Dialog):
 
     def __init__(self, primary_text, secondary_text):
-        Dialog.__init__(self, 'error_dialog')
+        Dialog.__init__(self, "error_dialog")
         self._primary_text = primary_text
         self._secondary_text = secondary_text
 
@@ -340,17 +337,17 @@ class ErrorDialog(Dialog):
 class ExceptionDialog(Window):
 
     def __init__(self, exc_text):
-        Window.__init__(self, 'exception_dialog')
+        Window.__init__(self, "exception_dialog")
         buffer = self.textview1.get_buffer()
         buffer.set_text(exc_text)
 
     def on_details_button_clicked(self, *args):
-        if self.scrolledwindow1.get_property('visible'):
-            self.details_button.set_label('Details >>')
-            self.scrolledwindow1.set_property('visible', gtk.FALSE)
+        if self.scrolledwindow1.get_property("visible"):
+            self.details_button.set_label("Details >>")
+            self.scrolledwindow1.set_property("visible", gtk.FALSE)
         else:
-            self.details_button.set_label('Details <<')
-            self.scrolledwindow1.set_property('visible', gtk.TRUE)
+            self.details_button.set_label("Details <<")
+            self.scrolledwindow1.set_property("visible", gtk.TRUE)
         self.root_widget.queue_resize()
 
     def on_close_button_clicked(self, *args):
@@ -377,7 +374,7 @@ class ExceptionHandler(object):
             gtk.main_quit()
         else:
             lines = traceback.format_exception(exc_type, exc_value, exc_tb)
-            exc_text = ''.join(lines)
+            exc_text = "".join(lines)
             print exc_text,
             dialog = ExceptionDialog(exc_text)
             dialog.show()
@@ -389,12 +386,12 @@ class App(object):
 
     def __init__(self):
         self._config = ConfigParser.ConfigParser()
-        self._config.read('landialler.conf')
+        self._config.read("landialler.conf")
 
     def _connect_to_server(self):
-        hostname = self._config.get('server', 'hostname')
-        port = self._config.get('server', 'port')
-        return xmlrpclib.ServerProxy('http://%s:%s/' % (hostname, port))
+        hostname = self._config.get("server", "hostname")
+        port = self._config.get("server", "port")
+        return xmlrpclib.ServerProxy("http://%s:%s/" % (hostname, port))
         
     def main(self):
         try:
