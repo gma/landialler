@@ -98,14 +98,14 @@ class Dialog(Window):
         """Set default button_side attribute to TOP."""
         Window.__init__(self)
         self.modal = 0
-        self.win = None
+        self.window = None
 
     def draw(self):
         """Displays the dialog's message and buttons."""
-        self.win = Toplevel()
-        self.win.title(self.title)
-        self.win.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close button
-        frame = Frame(self.win, bd=6)
+        self.window = Toplevel()
+        self.window.title(self.title)
+        self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close button
+        frame = Frame(self.window, bd=6)
         max_cols = 15
         max_pixels = 160
         if len(self.text) > max_cols:
@@ -114,11 +114,11 @@ class Dialog(Window):
             widget = Label(frame, text=self.text, width=len(self.text))
         widget.pack()
         frame.pack()
-        self.draw_buttons(self.win)
-        self.win.focus_set()
+        self.draw_buttons(self.window)
+        self.window.focus_set()
         if self.modal:
-            self.win.grab_set()
-            self.win.wait_window()
+            self.window.grab_set()
+            self.window.wait_window()
 
 
 class ConnectingDialog(Dialog, views.ConnectingDialog):
@@ -129,13 +129,13 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
     def cleanup(self):
         """Cleans up after the dialog has been closed."""
         global root
-        self.win.destroy()
+        self.window.destroy()
         root.quit()
 
     def update(self):
         """Closes the dialog once the connection is made."""
         if self.model.is_connected:
-            self.win.destroy()
+            self.window.destroy()
     
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
@@ -150,7 +150,7 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         Destroys the dialog box.
 
         """
-        self.win.destroy()
+        self.window.destroy()
 
 
 class DroppedDialog(Dialog, views.DroppedDialog):
@@ -166,7 +166,7 @@ class DroppedDialog(Dialog, views.DroppedDialog):
 
         """
         global root
-        self.win.destroy()
+        self.window.destroy()
         root.quit()
 
 
