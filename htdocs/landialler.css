@@ -10,11 +10,11 @@ A:active {
 }
 
 A:link {
-  color: #666666;
+  color: #333333;
 }
 
-A.visited {
-  color: #999999;
+A:visited {
+  color: #666666;
 }
 
 A:visited.sidebar {
@@ -48,29 +48,32 @@ TABLE {
   color: #003366;
 }
 
+/*
+
 TD {
   color: #003366;
 }
 
-TH {
-  color: #003366;
-  text-align: left;
-  font-size: x-small;
+*/
+
+UL.side_box {
+  margin-top: 0pc;
 }
 
 .heading {
   font-weight: bold;
+  font-size: medium;
 }
 
 .small {
   font-size: x-small;
 }
 
-.sidebar {
+.side_box {
   font-size: x-small;
 }
 
-.title_bar {
+.side_box_title {
   color: #ffffff;
   font-size: small;
   font-weight: bold;
