@@ -10,6 +10,7 @@ Usage: python setup.py install
 
 
 import distutils.core
+import landialler
 import os
 import shutil
 import sys
@@ -22,7 +23,7 @@ def error_msg(message):
 
 if __name__ == '__main__':
     distutils.core.setup(name="landialler",
-                         version="0.2",
+                         version=landialler.__version__,
                          description="LANdialler client",
                          author="Graham Ashton",
                          author_email="ashtong@users.sourceforge.net",
