@@ -95,7 +95,7 @@ class DisconnectDialogController(Controller):
         """
         self.model.server_disconnect(all='yes')
         cleanup_view()
-        
+
     def no_cb(self, cleanup_view):
         """Called when the No button is pressed.
 
