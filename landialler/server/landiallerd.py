@@ -172,7 +172,13 @@ class API(gmalib.Logger):
         else:
             self.log_info('disconnect(all="%s", client=%s) disconnecting' %
                           (all, client))
-            return self.conn.runDisconnectCommand()
+            self.conn.nowConnecting = 0
+            self.conn.forgetAllClients()
+            if self.conn.runDisconnectCommand():
+                return xmlrpclib.True
+            else:
+                return xmlrpclib.False
+                
 
     def get_status(self, client):
         """Returns the number of clients and connection status.
@@ -292,16 +298,14 @@ class Connection(gmalib.Logger):
             return xmlrpclib.False
 
     def runDisconnectCommand(self):
+        """Return true if disconnect command run okay, false otherwise."""
         cmd = self.config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         self.log_debug("disconnect command returned: %s" % rval)
         if rval == 0:
-            self.nowConnecting = 0
-            self.forgetAllClients()
-            return xmlrpclib.True
+            return 1
         else:
-            self.log_err("disconnect command failed: %s" % rval)
-            return xmlrpclib.False
+            return 0
 
 
 class CleanerThread(threading.Thread, gmalib.Logger):
@@ -345,12 +349,14 @@ class CleanerThread(threading.Thread, gmalib.Logger):
 
         conn = Connection()
         while 1:
-            self.log_debug("cleaner: clients=%s, connected=%s" %
-                           (conn.countClients(), conn.isConnected()))
-            if (conn.countClients() < 1) and \
+            self.log_debug("cleaner: clients=%s, conn=%s, nowConn=%s" %
+                           (conn.countClients(), conn.isConnected(),
+                            conn.nowConnecting))
+            if (conn.countClients() <= 0) and \
                (conn.nowConnecting or conn.isConnected()):
                 self.log_debug("cleaner: disconnecting")
-                conn.disconnect(all="yes")
+                api = API()
+                api.disconnect(all="yes")
 
             self.pauser.wait(self.interval)
 
@@ -415,11 +421,12 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
 
     def log_request(self, code="-", size="-"):
         """Requests are logged if running in debug mode."""
-        if self.debug:
-            self.log_debug('%s - - [%s] "%s" %s %s\n' % \
-                           (self.address_string(),
-                           self.log_date_time_string(),
-                           self.requestline, str(code), str(size)))
+        pass
+##         if self.debug:
+##             self.log_debug('%s - - [%s] "%s" %s %s\n' % \
+##                            (self.address_string(),
+##                            self.log_date_time_string(),
+##                            self.requestline, str(code), str(size)))
 
 
 class App(gmalib.Daemon):
@@ -502,7 +509,10 @@ class App(gmalib.Daemon):
         # start the server and start taking requests
         server_port = int(self.config.get("general", "port"))
         server = MyTCPServer(("", server_port), MyHandler)
-        server.serve_forever()
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print "Caught Ctrl-C, shutting down."
 
     def usageMessage(self):
         """Print usage message to sys.stderr and exit."""
