@@ -118,12 +118,10 @@ class API(gmalib.Logger):
     def __init__(self):
         global debug, use_syslog, logfile
         self.debug = debug
-        self.use_syslog = use_syslog
-        gmalib.Logger.__init__(self, logfile=logfile,
-                               use_syslog=use_syslog)
+        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
         self.conn = Connection()
 
-    def connect(self):
+    def connect(self, client):
         """Open the connection.
 
         If the server is already connected the XML-RPC True value is
@@ -141,14 +139,19 @@ class API(gmalib.Logger):
         """
         if self.conn.isConnected():
             self.log_debug("connect() already connected")
+            self.log_info("%s connected, %s client(s) in total" %
+                          (client, self.conn.countClients()))
             return xmlrpclib.True
         elif self.conn.nowConnecting:
             self.log_debug("connect() currently connecting")
+            self.log_info("%s connected, %s client(s) in total" %
+                          (client, self.conn.countClients()))
             return xmlrpclib.False
         else:
             self.log_debug("connect() running connect command")
+            self.log_info("%s connected, initiating connection" % client)
             if self.conn.runConnectCommand():
-                self.nowConnecting = 1
+                self.conn.nowConnecting = 1
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
@@ -169,13 +172,18 @@ class API(gmalib.Logger):
 
         """
         if (self.conn.countClients() > 1) and (all != "yes"):
-            self.log_info('disconnect(all="%s", client=%s) removed client' %
-                          (all, client))
+            self.log_debug('disconnect(all="%s", client=%s) removed client' %
+                           (all, client))
             self.conn.forgetClient(client)
+            self.log_info("%s disconnected, %s client(s) remaining" %
+                          (client, self.conn.countClients()))
             return xmlrpclib.True
         else:
-            self.log_info('disconnect(all="%s", client=%s) disconnecting' %
-                          (all, client))
+            self.log_debug('disconnect(all="%s", client=%s) disconnecting' %
+                           (all, client))
+            if client:
+                self.log_info("%s disconnected, terminating connection" %
+                              client)
             self.conn.nowConnecting = 0
             self.conn.forgetAllClients()
             if self.conn.runDisconnectCommand():
@@ -227,9 +235,8 @@ class Connection(gmalib.Logger):
         if not hasattr(self, "clientTracker"):
             global debug, use_syslog, logfile
             self.debug = debug
-            self.use_syslog = use_syslog
-            gmalib.Logger.__init__(self, logfile=logfile,
-                                   use_syslog=use_syslog)
+            gmalib.Logger.__init__(self,
+                                   logfile=logfile, use_syslog=use_syslog)
             self.log_debug("creating new Connection object")
             self.clientTracker = {}
             self.config = gmalib.SharedConfigParser()
@@ -237,7 +244,6 @@ class Connection(gmalib.Logger):
 
     def countClients(self):
         """Return the number of active clients."""
-        self.forgetOldClients()
         return len(self.listClients())
 
     def isConnected(self):
@@ -264,12 +270,14 @@ class Connection(gmalib.Logger):
         try:
             self.log_debug("forgetClient: forgetting %s" % client)
             del self.clientTracker[client]
+            self.log_info("%s timed out, %s client(s) remaining" %
+                          (client, self.countClients()))
         except KeyError:
             pass
 
     def forgetAllClients(self):
         """Assume that all clients are inactive."""
-        self.log_debug("forgetAllClients: forgetting all clients")
+        self.log_debug("forgetAllClients: clearing client list")
         self.clientTracker.clear()
 
     def forgetOldClients(self):
@@ -283,6 +291,7 @@ class Connection(gmalib.Logger):
         """
         timeout = 30
         for client in self.listClients():
+            self.log_debug("forgetOldClients: checking %s" % client)
             if (time.time() - self.clientTracker[client]) > timeout:
                 self.forgetClient(client)
 
@@ -351,14 +360,15 @@ class CleanerThread(threading.Thread, gmalib.Logger):
 
         conn = Connection()
         while 1:
+            conn.forgetOldClients()
             self.log_debug("cleaner: clients=%s, conn=%s, nowConn=%s" %
                            (conn.countClients(), conn.isConnected(),
                             conn.nowConnecting))
-            if (conn.countClients() <= 0) and \
-               (conn.nowConnecting or conn.isConnected()):
-                self.log_debug("cleaner: disconnecting")
-                api = API()
-                api.disconnect(all="yes")
+            if conn.countClients() < 1:
+                if conn.nowConnecting or conn.isConnected():
+                    self.log_info("clients timed out, terminating connection")
+                    api = API()
+                    api.disconnect(all="yes")
 
             self.pauser.wait(self.interval)
 
@@ -410,7 +420,7 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
         else:
             api = API()
             method = getattr(api, procedure)
-            if procedure == "get_status":
+            if procedure in ["connect", "get_status"]:
                 (host, port) = self.client_address
                 params = (host,)
             elif procedure == "disconnect":
@@ -431,13 +441,15 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
 ##                            self.requestline, str(code), str(size)))
 
 
-class App(gmalib.Daemon):
+class App(gmalib.Daemon, gmalib.Logger):
 
     """A simple wrapper class that initialises and runs the server."""
     
     def __init__(self):
         gmalib.Daemon.__init__(self)
-        self.debug = 0
+        global debug, use_syslog, logfile
+        self.debug = debug
+        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
         self.runAsDaemon = 1
 
     def checkPlatform(self):
@@ -496,6 +508,7 @@ class App(gmalib.Daemon):
     def main(self):
         """Start the XML-RPC server."""
         try:
+            self.log_info("starting up")
             self.getopt()
             self.daemonise()
             cleaner = CleanerThread()
@@ -534,12 +547,11 @@ Options:
 
 
 if __name__ == "__main__":
-    app = App()
-    app.checkPlatform()
-    app.preLoadConfig()
-
     debug = 0       # global vars used for consistent logging
     logfile = None
     use_syslog = 0
 
+    app = App()
+    app.checkPlatform()
+    app.preLoadConfig()
     app.main()
