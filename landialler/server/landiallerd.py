@@ -102,41 +102,26 @@ except ImportError, e:
         sys.stderr.write("can't import syslog: %s" % e)
 
 
-class Connection:
+class API(gmalib.Logger):
 
-    """Controls a dial up connection.
+    """Implements the LANdialler API.
 
-    Provides methods for controlling/querying the status of a dial up
-    connection (e.g. modem/ISDN connection to the Internet). All
-    instances of this class share their state (see the Borg design
-    pattern in the ASPN Python Cookbook) so that status information is
-    maintained between different client HTTP requests.
-
-    The following methods are part of the LANdialler XML-RPC API, and
-    are called directly whenever a client makes an HTTP request to the
-    server:
-
-      connect()
-      disconnect()
-      get_status()
+    All accessible methods in this class form a part of the LANdialler
+    XML-RPC API, and are called directly whenever a client makes an
+    HTTP request to the server.
 
     Their return values are passed directly back to the XML-RPC
     clients.
 
-    Other methods should only be used either from within these
-    methods, or from within other parts of the landiallerd application.
-
     """
 
-    __shared_state = {}
-
     def __init__(self):
-        self.__dict__ = Connection.__shared_state
-        if not hasattr(self, "clientTracker"):
-            print "initialising Connection() attributes"
-            self.clientTracker = {}
-            self.config = gmalib.SharedConfigParser()
-            self.nowConnecting = 0
+        global debug, use_syslog, logfile
+        self.debug = debug
+        self.use_syslog = use_syslog
+        gmalib.Logger.__init__(self, logfile=logfile,
+                               use_syslog=use_syslog)
+        self.conn = Connection()
 
     def connect(self):
         """Open the connection.
@@ -154,23 +139,15 @@ class Connection:
         the actual connection will be successfully set up immediately.
 
         """
-        if self.isConnected():
+        if self.conn.isConnected():
+            self.log_debug("connect() already connected")
             return xmlrpclib.True
-        elif self.nowConnecting:
+        elif self.conn.nowConnecting:
+            self.log_debug("connect() currently connecting")
             return xmlrpclib.False
         else:
-            return self.runConnectCommand()
-
-    def runConnectCommand(self):
-        cmd = self.config.get("commands", "connect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:
-            self.nowConnecting = 1
-            print "connect command ran successfully"
-            return xmlrpclib.True
-        else:
-            sys.stderr.write("connect command failed (%s)\n" % rval)
-            return xmlrpclib.False
+            self.log_debug("connect() running connect command")
+            return self.conn.runConnectCommand()
 
     def disconnect(self, all="no", client=None):
         """Close the connection.
@@ -187,23 +164,15 @@ class Connection:
         should be usable as a dictionary key.
 
         """
-        if (self.countClients() > 1) and (all != "yes"):
-            self.forgetClient(client)
+        if (self.conn.countClients() > 1) and (all != "yes"):
+            self.log_info('disconnect(all="%s", client=%s) removed client' %
+                          (all, client))
+            self.conn.forgetClient(client)
             return xmlrpclib.True
         else:
-            return self.runDisconnectCommand()
-
-    def runDisconnectCommand(self):
-        cmd = self.config.get("commands", "disconnect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:
-            self.nowConnecting = 0
-            self.forgetAllClients()
-            print "disconnect command run successfully"
-            return xmlrpclib.True
-        else:
-            sys.stderr.write("disconnect command failed (%s)\n" % rval)
-            return xmlrpclib.False
+            self.log_info('disconnect(all="%s", client=%s) disconnecting' %
+                          (all, client))
+            return self.conn.runDisconnectCommand()
 
     def get_status(self, client):
         """Returns the number of clients and connection status.
@@ -218,13 +187,43 @@ class Connection:
         is_connected    -- 1 if connected, 0 otherwise
 
         """
-        self.rememberClient(client)
-        if self.isConnected():
-            self.nowConnecting = 0
-            numClients = self.countClients()
+        self.conn.rememberClient(client)
+        if self.conn.isConnected():
+            self.conn.nowConnecting = 0
+            numClients = self.conn.countClients()
         else:
             numClients = 0
-        return (numClients, self.isConnected())
+        self.log_debug("get_status(%s): clients=%s, connected=%s" %
+                       (client, numClients, self.conn.isConnected()))
+        return (numClients, self.conn.isConnected())
+
+
+class Connection(gmalib.Logger):
+
+    """Controls a dial up connection.
+
+    Provides methods for controlling/querying the status of a dial up
+    connection (e.g. modem/ISDN connection to the Internet). All
+    instances of this class share their state (see the Borg design
+    pattern in the ASPN Python Cookbook) so that status information is
+    maintained between different client HTTP requests.
+
+    """
+
+    __shared_state = {}
+
+    def __init__(self):
+        self.__dict__ = Connection.__shared_state
+        if not hasattr(self, "clientTracker"):
+            global debug, use_syslog, logfile
+            self.debug = debug
+            self.use_syslog = use_syslog
+            gmalib.Logger.__init__(self, logfile=logfile,
+                                   use_syslog=use_syslog)
+            self.log_debug("creating new Connection object")
+            self.clientTracker = {}
+            self.config = gmalib.SharedConfigParser()
+            self.nowConnecting = 0
 
     def countClients(self):
         """Return the number of active clients."""
@@ -253,12 +252,14 @@ class Connection:
     def forgetClient(self, client):
         """Stop treating this client as active."""
         try:
+            self.log_debug("forgetClient: forgetting %s" % client)
             del self.clientTracker[client]
         except KeyError:
             pass
 
     def forgetAllClients(self):
         """Assume that all clients are inactive."""
+        self.log_debug("forgetAllClients: forgetting all clients")
         self.clientTracker.clear()
 
     def forgetOldClients(self):
@@ -278,6 +279,29 @@ class Connection:
     def listClients(self):
         """Return a list of client identifiers."""
         return self.clientTracker.keys()
+
+    def runConnectCommand(self):
+        cmd = self.config.get("commands", "connect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        self.log_debug("connect command returned: %s" % rval)
+        if rval == 0:
+            self.nowConnecting = 1
+            return xmlrpclib.True
+        else:
+            self.log_err("connect command failed: %s" % rval)
+            return xmlrpclib.False
+
+    def runDisconnectCommand(self):
+        cmd = self.config.get("commands", "disconnect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        self.log_debug("disconnect command returned: %s" % rval)
+        if rval == 0:
+            self.nowConnecting = 0
+            self.forgetAllClients()
+            return xmlrpclib.True
+        else:
+            self.log_err("disconnect command failed: %s" % rval)
+            return xmlrpclib.False
 
 
 class CleanerThread(threading.Thread, gmalib.Logger):
@@ -311,6 +335,7 @@ class CleanerThread(threading.Thread, gmalib.Logger):
         self.interval = interval  # time before re-running clean up
         self.pauser = threading.Event()
 
+        global debug, logfile, use_syslog
         self.debug = debug
         gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
 
@@ -320,11 +345,11 @@ class CleanerThread(threading.Thread, gmalib.Logger):
 
         conn = Connection()
         while 1:
-            self.log_debug("CleanerThread: users=%s, connected=%s" %
+            self.log_debug("cleaner: clients=%s, connected=%s" %
                            (conn.countClients(), conn.isConnected()))
             if (conn.countClients() < 1) and \
                (conn.nowConnecting or conn.isConnected()):
-                self.log_debug("CleanerThread: disconnecting")
+                self.log_debug("cleaner: disconnecting")
                 conn.disconnect(all="yes")
 
             self.pauser.wait(self.interval)
@@ -366,18 +391,17 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
     def call(self, procedure, params):
         """Call an API procedure, return it's result.
 
-        Calls one of the API's methods on an instance of the
-        Connection class. If the procedure isn't supported then an
-        AttributeError is raised, returning a XML-RPC fault to the
-        client.
+        Calls one of the API's methods on an instance of the API
+        class. If the procedure isn't supported then an AttributeError
+        is raised, returning a XML-RPC fault to the client.
 
         """
         if not procedure in ["connect", "disconnect", "get_status"]:
             self.log_err("Unknown procedure name: %s" % procedure)
             raise xmlrpclib.Fault, "Unknown procedure name: %s" % procedure
         else:
-            conn = Connection()
-            method = getattr(conn, procedure)
+            api = API()
+            method = getattr(api, procedure)
             if procedure == "get_status":
                 (host, port) = self.client_address
                 params = (host,)
@@ -385,7 +409,7 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
                 (host, port) = self.client_address
                 disconnectAllUsers = params[0]
                 params = (disconnectAllUsers, host)
-            self.log_debug("called %s(%s)" % \
+            self.log_debug("MyHandler.call(): called %s(%s)" % \
                            (procedure, ", ".join(map(repr, params))))
             return apply(method, params)
 
@@ -449,7 +473,7 @@ class App(gmalib.Daemon):
                 global use_syslog
                 use_syslog = 1
 
-    def loadConfig(self):
+    def preLoadConfig(self):
         """Load configuration files into SharedConfigParser object."""
         # pre-load configuration files, cached by SharedConfigParser
         try:
@@ -500,9 +524,9 @@ Options:
 if __name__ == "__main__":
     app = App()
     app.checkPlatform()
-    app.loadConfig()
+    app.preLoadConfig()
 
-    debug = 0
+    debug = 0       # global vars used for consistent logging
     logfile = None
     use_syslog = 0
 
