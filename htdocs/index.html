@@ -184,11 +184,63 @@
       <a name="further-reading"><h2>Further Reading</h2></a>
 
       <p>
-	I'll be posting some links to documenation on how to configure
-	a Linux box to route packets between a private LAN and the
-	Internet here soon.
+	To be able to run the landialler server you need a Unix box
+	configured to do some sort of Network Address Translation
+	(NAT) or <a
+	href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO-2.html#ss2.1">IP
+	Masquerading</a>. You can use any modern Unix system, so long
+	as it can run Python 2.1 software. I use <a
+	href="http://www.linux.com/">Linux</a>, so I've included
+	information on that here. You could use any of the BSD
+	variants (e.g. <a href="http://www.freebsd.org/">FreeBSD</a>,
+	<a href="http://www.openbsd.org/">OpenBSD</a>, <a
+	href="http://www.netbsd.org/">NetBSD</a>), <a
+	href="http://www.sun.com/software/solaris/">Solaris</a>,
+	etc. instead if you prefer.
       </p>
-      
+      <p>
+	If it wasn't for the excellent documentation then setting it
+	up would be quite a long and painful process for the
+	uninitiated. First find out which version of the Linux kernel
+	you are running	(type <kbd>uname&nbsp;-r</kbd>) and then follow the
+	relevant links below.
+      </p>
+
+      <ul>
+	<li>
+	  David Ranch's <a
+	  href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO.html">Linux
+	  IP Masquerade HOWTO</a> contains full instructions for
+	  Linux kernel versions 2.0 and 2.2.
+	  <p>
+	</li>
+	<li>
+	  Rusty Russell's <a
+	  href="http://netfilter.samba.org/unreliable-guides/">Unreliable
+	  Guides</a> provide full coverage of the new routing features
+	  of 2.4 kernels. Of particular use are the sections that tell
+	  you how to configure a simple yet secure home firewall;
+	  <p>
+	  <ul>
+	    <li>
+	      <a
+	      href="http://netfilter.samba.org/unreliable-guides/NAT-HOWTO/NAT-HOWTO.linuxdoc-4.html#ss4.1">I
+	      just want masquerading! Help!</a>
+	    </li>
+	    <li>
+	      <a
+	      href="http://netfilter.samba.org/unreliable-guides/packet-filter-HOWTO/packet-filtering-HOWTO.linuxdoc-5.html">Rusty's
+	      Really Quick Guide to Packet Filtering</a>
+	    </li>
+	  </ul>
+	  <p>
+	    I use kernel 2.4 on Debian Linux version 2.2. You can have
+	    a look at <a href="packet-filtering.html">my scripts</a>
+	    to get the idea.
+	  </p>
+	</li>
+      </ul>
+
       <center>
 	<font size="-1">
 	  [&nbsp;<a href="#about">about</a>&nbsp;|&nbsp;<a
