@@ -23,11 +23,10 @@
 
 """implements the Tk landialler user interface
 
-Most classes in this file are undocumented, bacause they are simply Tk
-specific sub classes of the classes in views.py that define the MVC
-views. Where this is not the case they are present simply to aid the
-Tk implementation, and are briefly documented to explain their
-purpose.
+Most classes in this file are Tk specific sub classes of those in
+views.py that define the MVC views. Where this is not the case they
+are present simply to aid the Tk implementation. Please see views.py
+for more documentation.
 
 """
 
@@ -43,6 +42,7 @@ root = Tk()  # Instantiated explicitly so that we can access it later.
 
 
 class Window(views.Window):
+
     def __init__(self):
         views.Window.__init__(self)
         self.button_side = RIGHT  # right aline buttons
@@ -66,8 +66,6 @@ class Window(views.Window):
 
 
 class Dialog(Window):
-
-    """Simple class for creating generic dialog boxes."""
 
     def __init__(self):
         """Set default button_side attribute to TOP."""
@@ -97,6 +95,7 @@ class Dialog(Window):
 
 
 class ConnectingDialog(Dialog, views.ConnectingDialog):
+
     def __init__(self, model):
         Dialog.__init__(self)
         views.ConnectingDialog.__init__(self, model)
@@ -114,6 +113,7 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
     
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
+
     def __init__(self, model):
         Dialog.__init__(self)
         views.DisconnectDialog.__init__(self, model)
@@ -133,6 +133,7 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
 
 
 class DroppedDialog(Dialog, views.DroppedDialog):
+
     def __init__(self, model):
         Dialog.__init__(self)
         views.DroppedDialog.__init__(self, model)
@@ -154,6 +155,7 @@ class DroppedDialog(Dialog, views.DroppedDialog):
 
 
 class MainWindow(Window, views.MainWindow):
+
     def __init__(self, model):
         Window.__init__(self)
         views.MainWindow.__init__(self, model)
@@ -170,7 +172,6 @@ class MainWindow(Window, views.MainWindow):
         root.quit()
 
     def draw(self):
-        """Display the main window."""
         global root
         root.title(self.title)
         on_delete_cb = self.buttons['disconnect'][1]  # same as disconnect btn
@@ -203,18 +204,17 @@ class MainWindow(Window, views.MainWindow):
         frame1.pack()
 
     def status_check(self):
-        """Regularly check the connection status on the server.
-
-        Calls the model's get_server_status() method every
-        status_check_period milliseconds.
-
-        """
         global root
         self.model.get_server_status()
         root.after(self.model.status_check_period, self.status_check)  # re-run
 
     def update(self):
-        """Updates the status display."""
+        """Updates the status display.
+
+        Updates the status and user count labels. If the connection
+        has dropped a DroppedDialog is created.
+
+        """
         self.update_var[1].set(self.model.current_users)
         if self.model.is_connected:
             self.update_var[0].set('Online')
