@@ -72,14 +72,15 @@ class App(application.Application):
                 if not go_online:
                     sys.exit()
 
+                print "starting connection"
                 self.client.connect()
 
-                online = 0
-                paused = 0
-                max_paused = 120  # seconds to wait before giving up
+                online = 0        # are we online?
+                paused = 0        # seconds waited for so far
+                max_pause = 120  # seconds to wait before giving up
 
                 response = self.client.is_connected()
-                while (response.value != 1) and (paused < max_paused):
+                while (response.value != 1) and (paused < max_pause):
                     print "checking connection (%d secs)" % paused
                     response = self.client.is_connected()
                     if response.value == 1:
@@ -93,9 +94,27 @@ class App(application.Application):
                 # The next OK button shouldn't be clicked until we're
                 # ready to disconnect from the Internet.
                 
-                dialog.showinfo("Landialler: disconnect?",
-                                "Click OK to disconnect")
+                if response.value == 1:
+                    dialog.showinfo("Landialler: disconnect?",
+                                    "Click OK to disconnect")
+                print "closing connection"
                 self.client.disconnect()
+
+                # Now sit in a loop while attempting to disconnect,
+                # checking the status as we go; not as clean as it
+                # could be but it'll do as a first implementation.
+                
+                paused = 0
+                response = self.client.is_connected()
+                while (response.value == 1) and (paused < max_pause):
+                    time.sleep(5)
+                    paused += 5
+                    print "checking connection (%d secs)" % paused
+                    response = self.client.is_connected()
+                if response.value == 1:
+                    dialog.showerror("Landialler: error",
+                                     "Error: Unable to disconnect. " + \
+                                     "You are probably still online.")
                 sys.exit()
 
         except socket.error, e:
