@@ -35,8 +35,7 @@ import time
 try:
     import syslog
 except ImportError, e:
-    if os.name == "posix":
-        sys.stderr.write("can't import syslog: %s" % e)
+    pass
 
 
 __version__ = "0.3"
@@ -67,7 +66,10 @@ class Logger:
         """
         # default attributes
         self.logfile = logfile
-        self.use_syslog = use_syslog
+        if os.name == "posix" and use_syslog:
+            self.use_syslog = 1
+        else:
+            self.use_syslog = 0
         if not hasattr(self, 'debug'):
             self.debug = 0
 
@@ -174,7 +176,7 @@ class Daemon:
         # info on the following.
         pid = os.fork()
         if pid:
-            os._exit(0) # kill parent
+            os._exit(0)  # kill parent
 
         os.setpgrp()
         os.umask(0)
@@ -237,13 +239,6 @@ def test():
     log.log_info("an info log message")
     log.log_err("an error log message")
     log.log_notice("a notice log message")
-    #d = Daemon()
-    #d.debug = 1
-    #print "converting to daemon... ",
-    #d.daemonise()
-    #print "done.",  # shouldn't see this!
-    #if "syslog" in dir():
-    #    syslog.closelog()
 
 
 if __name__ == '__main__':
