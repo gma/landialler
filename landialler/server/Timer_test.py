@@ -29,13 +29,13 @@ class TimerTestCase(unittest.TestCase):
 
     """Tests the Timer class."""
 
-    def testElapsedTime(self):
-        """Check elapsed seconds"""
+    def test_elapsed_seconds(self):
+        """Check elapsed seconds since timer started"""
         t = Timer()
         t.start()
         time.sleep(2)
         t.stop()
-        self.assertEquals(t.getElapsedSeconds(), 2)
+        self.assertEquals(t.get_elapsed_seconds(), 2)
 
 
 if __name__ == "__main__":

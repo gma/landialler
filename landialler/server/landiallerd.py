@@ -137,21 +137,21 @@ class API(gmalib.Logger):
         the actual connection will be successfully set up immediately.
 
         """
-        if self.conn.isConnected():
+        if self.conn.is_connected():
             self.log_debug("connect() already connected")
             self.log_info("%s connected, %s client(s) in total" %
-                          (client, self.conn.countClients()))
+                          (client, self.conn.count_clients()))
             return xmlrpclib.True
-        elif self.conn.currentlyConnecting:
+        elif self.conn.currently_connecting:
             self.log_debug("connect() currently connecting")
             self.log_info("%s connected, %s client(s) in total" %
-                          (client, self.conn.countClients()))
+                          (client, self.conn.count_clients()))
             return xmlrpclib.False
         else:
             self.log_debug("connect() running connect command")
             self.log_info("%s connected, initiating connection" % client)
-            if self.conn.runConnectCommand():
-                self.conn.currentlyConnecting = 1
+            if self.conn.run_connect_command():
+                self.conn.currently_connecting = 1
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
@@ -171,12 +171,12 @@ class API(gmalib.Logger):
         should be usable as a dictionary key.
 
         """
-        if (self.conn.countClients() > 1) and (all != "yes"):
+        if (self.conn.count_clients() > 1) and (all != "yes"):
             self.log_debug('disconnect(all="%s", client=%s) removed client' %
                            (all, client))
-            self.conn.forgetClient(client)
+            self.conn.forget_client(client)
             self.log_info("%s disconnected, %s client(s) remaining" %
-                          (client, self.conn.countClients()))
+                          (client, self.conn.count_clients()))
             return xmlrpclib.True
         else:
             self.log_debug('disconnect(all="%s", client=%s) disconnecting' %
@@ -184,9 +184,9 @@ class API(gmalib.Logger):
             if client:
                 self.log_info("%s disconnected, terminating connection" %
                               client)
-            self.conn.currentlyConnecting = 0
-            self.conn.forgetAllClients()
-            if self.conn.runDisconnectCommand():
+            self.conn.currently_connecting = 0
+            self.conn.forget_all_clients()
+            if self.conn.run_disconnect_command():
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
@@ -205,23 +205,23 @@ class API(gmalib.Logger):
         is_connected    -- 1 if connected, 0 otherwise
 
         """
-        self.conn.rememberClient(client)
-        if self.conn.isConnected():
-            self.conn.currentlyConnecting = 0
-            if not self.conn.wasConnected:
-                self.conn.startTimer()
-            self.conn.wasConnected = 1
-            numClients = self.conn.countClients()
+        self.conn.remember_client(client)
+        if self.conn.is_connected():
+            self.conn.currently_connecting = 0
+            if not self.conn.was_connected:
+                self.conn.start_timer()
+            self.conn.was_connected = 1
+            numClients = self.conn.count_clients()
         else:
-            if self.conn.wasConnected:
-                self.conn.stopTimer()
-            self.conn.wasConnected = 0
+            if self.conn.was_connected:
+                self.conn.stop_timer()
+            self.conn.was_connected = 0
             numClients = 0
         self.log_debug("get_status(%s): clients=%s, isCon=%s, wasCon=%s" %
-                       (client, numClients, self.conn.isConnected(),
-                        self.conn.wasConnected))
-        return (numClients, self.conn.isConnected(),
-                self.conn.getTimeConnected())
+                       (client, numClients, self.conn.is_connected(),
+                        self.conn.was_connected))
+        return (numClients, self.conn.is_connected(),
+                self.conn.get_time_connected())
 
 
 class Connection(gmalib.Logger):
@@ -240,23 +240,23 @@ class Connection(gmalib.Logger):
 
     def __init__(self):
         self.__dict__ = Connection.__shared_state
-        if not hasattr(self, "clientTracker"):
+        if not hasattr(self, "client_tracker"):
             global debug, use_syslog, logfile
             self.debug = debug
             gmalib.Logger.__init__(self,
                                    logfile=logfile, use_syslog=use_syslog)
             self.log_debug("creating new Connection object")
-            self.clientTracker = {}
+            self.client_tracker = {}
             self.config = gmalib.SharedConfigParser()
-            self.currentlyConnecting = 0
-            self.wasConnected = 0 # should only be used by API.get_status()
+            self.currently_connecting = 0
+            self.was_connected = 0 # should only be used by API.get_status()
             self.timer = Timer()
 
-    def countClients(self):
+    def count_clients(self):
         """Return the number of active clients."""
-        return len(self.listClients())
+        return len(self.list_clients())
 
-    def isConnected(self):
+    def is_connected(self):
         """Return 1 if the connection is up, 0 otherwise.
 
         Runs the external command as specified in the configuration
@@ -266,32 +266,32 @@ class Connection(gmalib.Logger):
         cmd = self.config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:  # connected
-            self.currentlyConnecting = 0
+            self.currently_connecting = 0
             self.timer.start()
             return 1
         else:
             return 0
 
-    def rememberClient(self, client):
+    def remember_client(self, client):
         """Record time of the client's last HTTP connection."""
-        self.clientTracker[client] = time.time()
+        self.client_tracker[client] = time.time()
 
-    def forgetClient(self, client):
+    def forget_client(self, client):
         """Stop treating this client as active."""
         try:
-            self.log_debug("forgetClient: forgetting %s" % client)
-            del self.clientTracker[client]
+            self.log_debug("forget_client: forgetting %s" % client)
+            del self.client_tracker[client]
             self.log_info("%s timed out, %s client(s) remaining" %
-                          (client, self.countClients()))
+                          (client, self.count_clients()))
         except KeyError:
             pass
 
-    def forgetAllClients(self):
+    def forget_all_clients(self):
         """Assume that all clients are inactive."""
-        self.log_debug("forgetAllClients: clearing client list")
-        self.clientTracker.clear()
+        self.log_debug("forget_all_clients: clearing client list")
+        self.client_tracker.clear()
 
-    def forgetOldClients(self):
+    def forget_old_clients(self):
         """Forget about clients that haven't connected recently.
 
         We keep track of the number of users by counting the number
@@ -301,16 +301,16 @@ class Connection(gmalib.Logger):
 
         """
         timeout = 30
-        for client in self.listClients():
-            self.log_debug("forgetOldClients: checking %s" % client)
-            if (time.time() - self.clientTracker[client]) > timeout:
-                self.forgetClient(client)
+        for client in self.list_clients():
+            self.log_debug("forget_old_clients: checking %s" % client)
+            if (time.time() - self.client_tracker[client]) > timeout:
+                self.forget_client(client)
 
-    def listClients(self):
+    def list_clients(self):
         """Return a list of client identifiers."""
-        return self.clientTracker.keys()
+        return self.client_tracker.keys()
 
-    def runConnectCommand(self):
+    def run_connect_command(self):
         cmd = self.config.get("commands", "connect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         self.log_debug("connect command returned: %s" % rval)
@@ -319,7 +319,7 @@ class Connection(gmalib.Logger):
         else:
             return 0
 
-    def runDisconnectCommand(self):
+    def run_disconnect_command(self):
         """Return true if disconnect command run okay, false otherwise."""
         cmd = self.config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
@@ -329,17 +329,17 @@ class Connection(gmalib.Logger):
         else:
             return 0
 
-    def startTimer(self):
+    def start_timer(self):
         self.log_debug("starting timer")
         self.timer.reset()
         self.timer.start()
 
-    def stopTimer(self):
+    def stop_timer(self):
         self.log_debug("stopping timer")
         self.timer.stop()
 
-    def getTimeConnected(self):
-        return self.timer.getElapsedTime()
+    def get_time_connected(self):
+        return self.timer.get_elapsed_time()
 
 
 class CleanerThread(threading.Thread, gmalib.Logger):
@@ -383,12 +383,12 @@ class CleanerThread(threading.Thread, gmalib.Logger):
 
         conn = Connection()
         while 1:
-            conn.forgetOldClients()
+            conn.forget_old_clients()
             self.log_debug("cleaner: clients=%s, isConn=%s, curConn=%s, isTiming=%s" %
-                           (conn.countClients(), conn.isConnected(),
-                            conn.currentlyConnecting, conn.timer.isRunning))
-            if conn.countClients() < 1:
-                if conn.currentlyConnecting or conn.isConnected():
+                           (conn.count_clients(), conn.is_connected(),
+                            conn.currently_connecting, conn.timer.is_running))
+            if conn.count_clients() < 1:
+                if conn.currently_connecting or conn.is_connected():
                     self.log_info("clients timed out, terminating connection")
                     api = API()
                     api.disconnect(all="yes")
@@ -463,17 +463,17 @@ class Timer(gmalib.Logger):
         self.debug = debug
         gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
 
-        self.startTime = 0  # seconds since epoch when timer started
-        self.isRunning = 0  # set to true when timer is running
+        self.start_time = 0  # seconds since epoch when timer started
+        self.is_running = 0  # set to true when timer is running
         self.reset()
 
     def start(self):
         """Start the timer."""
-        self.isRunning = 1
+        self.is_running = 1
 
     def stop(self):
         """Stop the timer."""
-        self.isRunning = 0
+        self.is_running = 0
 
     def reset(self):
         """Reset the timer to zero.
@@ -482,15 +482,15 @@ class Timer(gmalib.Logger):
 
         """
         self.log_debug("Timer: resetting time to zero")
-        self.startTime = int(time.time())
+        self.start_time = int(time.time())
 
-    def getElapsedSeconds(self):
+    def get_elapsed_seconds(self):
         """Return seconds since timer started."""
-        return int(time.time()) - int(self.startTime)
+        return int(time.time()) - int(self.start_time)
 
-    def getElapsedHoursMinsSecs(self):
+    def get_elapsed_hours_mins_secs(self):
         """Return tuple of hours, mins, secs elapsed since started."""
-        secs = self.getElapsedSeconds()
+        secs = self.get_elapsed_seconds()
         hours = int(secs / 3600)
         secs = secs - (hours * 3600)
         mins = int(secs / 60)
@@ -498,13 +498,13 @@ class Timer(gmalib.Logger):
         self.log_debug("Timer: %02d:%02d:%02d elapsed" % (hours, mins, secs))
         return (hours, mins, secs)
 
-    def getElapsedTime(self):
+    def get_elapsed_time(self):
         """Return human readable representation of elapsed time.
 
         The string returned is of the format "HH:MM:SS".
 
         """
-        hours, mins, secs = self.getElapsedHoursMinsSecs()
+        hours, mins, secs = self.get_elapsed_hours_mins_secs()
         return "%02d:%02d:%02d" % (hours, mins, secs)
 
 
@@ -517,17 +517,17 @@ class App(gmalib.Daemon, gmalib.Logger):
         global debug, use_syslog, logfile
         self.debug = debug
         gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
-        self.runAsDaemon = 1
+        self.become_daemon = 1
 
-    def checkPlatform(self):
+    def check_platform(self):
         """Check OS is supported."""
         if os.name != "posix":
             print "Sorry, only POSIX compliant systems are supported."
             sys.exit()
 
     def daemonise(self):
-        """Run parent's daemonise() if runAsDaemon attribute is set."""
-        if self.runAsDaemon:
+        """Run parent's daemonise() if become_daemon attribute is set."""
+        if self.become_daemon:
             gmalib.Daemon.daemonise(self)
 
     def getopt(self):
@@ -549,9 +549,9 @@ class App(gmalib.Daemon, gmalib.Logger):
                 global debug
                 debug = self.debug = 1
             elif o == "-f":
-                self.runAsDaemon = 0
+                self.become_daemon = 0
             elif o == "-h":
-                self.usageMessage()
+                self.usage_message()
             elif o == "-l":
                 global logfile
                 logfile = v
@@ -561,7 +561,7 @@ class App(gmalib.Daemon, gmalib.Logger):
                 global use_syslog
                 use_syslog = 1
 
-    def preLoadConfig(self):
+    def pre_load_config(self):
         """Load configuration files into SharedConfigParser object."""
         # pre-load configuration files, cached by SharedConfigParser
         try:
@@ -574,8 +574,8 @@ class App(gmalib.Daemon, gmalib.Logger):
 
     def main(self):
         """Start the XML-RPC server."""
-        self.checkPlatform()
-        self.preLoadConfig()
+        self.check_platform()
+        self.pre_load_config()
         try:
             self.log_info("starting up")
             self.getopt()
@@ -586,7 +586,7 @@ class App(gmalib.Daemon, gmalib.Logger):
             sys.stderr.write("%s\n" % e)
         except getopt.GetoptError, e:
             sys.stderr.write("%s\n" % e)
-            self.usageMessage()
+            self.usage_message()
         
         self.config = gmalib.SharedConfigParser()
 
@@ -598,7 +598,7 @@ class App(gmalib.Daemon, gmalib.Logger):
         except KeyboardInterrupt:
             print "Caught Ctrl-C, shutting down."
 
-    def usageMessage(self):
+    def usage_message(self):
         """Print usage message to sys.stderr and exit."""
         message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
 
