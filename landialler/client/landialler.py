@@ -175,7 +175,7 @@ class App(gmalib.Application):
             if os.name == "posix":
                 files.append("/usr/local/etc/landialler.conf")
             files.append("landialler.conf")
-            self.config.read("landialler.conf")
+            self.config.read(files)
             hostname = self.config.get("xmlrpcserver", "hostname")
             port = int(self.config.get("xmlrpcserver", "port"))
 
