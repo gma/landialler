@@ -38,10 +38,10 @@ class View:
         self.model = model
         self.model.attach(self)  # observe the model
 
-    def show(self):
+    def draw(self):
         """Create and display the user interface (abstract method)."""
         raise NotImplementedError, \
-              ("%s has not implemented show()" % self.__class__)
+              ("%s has not implemented draw()" % self.__class__)
 
     def update(self):
         """Update the status data.
@@ -60,16 +60,31 @@ class ConnectingDialog(View):
     """Display a message explaining that the server is connecting.
 
     The dialog also has a Cancel button, allowing the user to cancel
-    the connection request at any time.
+    the connection request at any time. If the cancel button is
+    pressed the application should exit (see cleanup() for how to
+    handle this).
 
     """
 
     def __init__(self, model):
         View.__init__(self, model)
         self.controller = controllers.ConnectingDialogController(model, self)
-        self.title = "Connecting..."
+        self.title = "Connecting"
         self.text = "Please wait, connecting..."
-        self.buttons = [("Cancel", self.controller.cancel_cb)]
+        # we use lambda to pass parameters into the callback method
+        callback = (lambda c=self.cleanup, s=self: s.controller.cancel_cb(c))
+        # buttons = { name: (position in list, callback) }
+        self.buttons = { 'cancel': (0, callback) }
+
+    def cleanup(self):
+        """Destroy the dialog window.
+
+        GUI specific code for cleaning up the window after the cancel
+        button has been pressed, or the dialog has been closed, should
+        be put in this method. Override it in the sub class.
+
+        """
+        pass
 
 
 class DisconnectDialog(View):
@@ -91,8 +106,36 @@ class DisconnectDialog(View):
         self.controller = controllers.DisconnectDialogController(model, self)
         self.title = "Disconnect"
         self.text = "Disconnect all users?"
-        self.buttons = [("Yes", self.controller.yes_cb),
-                        ("No", self.controller.no_cb)]
+        # we use lambda to pass parameters into the callback method
+        yes_cb = (lambda c=self.cleanup, s=self: s.controller.yes_cb(c))
+        no_cb = (lambda c=self.cleanup, s=self: s.controller.no_cb(c))
+        # buttons = { name: (position in list, callback) }
+        self.buttons = { 'yes': (0, yes_cb), 'no': (1, no_cb) }
+
+
+class DroppedDialog(View):
+
+    """Warn user that the connection has been dropped.
+
+    If the connection has suddenly gone off line there will be 0
+    active users and self.model.is_connected will be 0. It is likely
+    that either a) the connection has dropped out for some reason, or
+    b) somebody else has hung up the connection.
+
+    This dialog simply points that out to the user and then quits the
+    application when the user clicks OK.
+
+    """
+
+    def __init__(self, model):
+        View.__init__(self, model)
+        self.controller = controllers.DroppedDialogController(model, self)
+        self.title = "Dropped"
+        self.text = "Connection dropped (perhaps somebody hung up)"
+        # we use lambda to pass parameters into the callback method
+        callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
+        # buttons = { name: (position in list, callback) }
+        self.buttons = { 'OK': (0, callback) }
 
 
 class MainWindow(View):
@@ -112,8 +155,17 @@ class MainWindow(View):
         self.title = "LANdialler"
         self.status_rows = [("Connection status:", "Offline"),
                             ("Current users:", 0)]
-        self.buttons = [("Disconnect", self.controller.disconnect_cb)]
+        # we use lambda to pass parameters into the callback method
+        callback = (lambda c=self.cleanup, s=self:
+                    s.controller.disconnect_cb(c))
+        # buttons = { name: (position in list, callback) }
+        self.buttons = { 'disconnect': (0, callback) }
 
-    def format_time(self, seconds):
-        """Returns formatted string for displaying time spent online."""
-        return "(0:00:00)"
+    def status_check(self):
+        """Call the model.get_server_status() periodically.
+
+        The toolkit specific sub class should override this method to
+        enable periodic status updates.
+
+        """
+        print "FIXME: %s.status_check() is not written!!!" % self.__class__
