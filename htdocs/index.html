@@ -1,278 +1,310 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<!-- <!doctype html public "-//W3C//DTD HTML 3.2//EN"> -->
 <html>
   <head>
-    <title>landialler: Home</title>
+    <title>LANdialler: Home</title>
     <meta name="keywords" content="modem, modem sharing, dial up,
 	  internet, online, linux, windows, lan, soho, home network">
     <meta name="description" content="landialler enables several
 	  computers on a LAN share (and control) the modem on a single
 	  computer. It runs on any operating system that supports Python.">
+    <link rel="stylesheet" href="landialler.css" type="text/css">
   </head>
 
   <body bgcolor="#ffffff">
-    <blockquote>
+    <table align="center" bgcolor="#ffffff" width="80%">
+      <tbody>
 
-      <center>
-	<h1>landialler</h1>
-	<font size="-1">
-	  [&nbsp;<a href="#about">about</a>&nbsp;|&nbsp;<a
-                    href="#screenshots">screenshots</a>&nbsp;|&nbsp;<a
-                    href="#download">download</a>&nbsp;]
-	</font>
-      </center>
+	<tr>
+	  <td colspan="2">
+	    <table align="center" bgcolor="#ffffff" width="100%">
+	      <tbody>
+		<!-- toolbar -->
+		<tr>
+		  <td align="left">
+		    <table bgcolor="#000000" cellspacing="1" width="100%">
+		      <tbody>
+			<tr>
+			  <td>
+			    <table align="right" cellpadding=""
+				   bgcolor="#cccccc" width="100%">
+			      <tbody>
+				<tr>
+				  <td align="right" class="toolbar">
+				    <a href="#about">about</a>
+				    <a href="#screenshots">screenshots</a>
+				  </td>
+				</tr>
+			      </tbody>
+			    </table>
+			  </td>
+			</tr>
+		      </tbody>
+		    </table>
+		  </td>
+		</tr>
+	      </tbody>
+	    </table>
+	  </td>
+	</tr>
 
-      <p>
-	Welcome to the landialler project home page. Apologies for the
-	lack of visual stimulation; so far I've been concentrating on
-	landialler's portabiltiy instead of making this web page look
-	gorgeous.
-      </p>
+	<tr>
+	  <!-- sidebar -->
+	  <td valign="top">
+	    <table>
+	      <tbody>
+		<tr>
+		  <td>
+		    <table bgcolor="#000000" cellpadding="3" width="190">
+		      <tbody>
+			<tr>
+			  <td class="title_bar">
+			    <strong>News</strong>
+			  </td>
+			</tr>
+			<tr>
+			  <td bgcolor="#cccccc" class="sidebar">
+			    <strong>17 October 2001 - 0.2pre1
+			    Released!</strong><br>
+			    Better user interface and multi-user
+			    functionality.  The client code has been
+			    fully redesigned and now follows the
+			    <em>MVC design pattern</em>&nbsp;-&nbsp;it
+			    can be easily ported easily to other GUI
+			    toolkits!
+			  </td>
+			</tr>
+		      </tbody>
+		    </table>
+		  </td>
+		</tr>
+		<tr>
+		  <td>
+		    <table bgcolor="#000000" cellpadding="3" width="190">
+		      <tbody>
+			<tr>
+			  <td class="title_bar">
+			    <strong>Download</strong>
+			  </td>
+			</tr>
+			<tr>
+			  <td bgcolor="#cccccc" class="sidebar">
+			    <strong>9 September 2001 - 0.1 Released!</strong><br>
+			    
+			    First working release.
+			  </td>
+			</tr>
+		      </tbody>
+		    </table>
+		  </td>
+		</tr>
+		<tr>
+		  <td>
+		    <table bgcolor="#000000" cellpadding="3" width="190">
+		      <tbody>
+			<tr>
+			  <td class="title_bar">
+			    <strong>Links</strong>
+			  </td>
+			</tr>
+			<tr>
+			  <td bgcolor="#cccccc" class="sidebar">
+			    <ul>
+			      <li>
+				<a href="http://www.python.org/">Python</a>
+			      </li>
+			    </ul>
+			  </td>
+			</tr>
+		      </tbody>
+		    </table>
+		  </td>
+		</tr>
+	      </tbody>
+	    </table>
 
-      <a name="about"><h2>About</h2></a>
-      <p>
-	landialler enables several computers on a LAN (Local Area
-	Network) to share control of a dial up connection to the
-	Internet. To see if landialler would be useful to you, try
-	answering these questions:
-      </p>
-      <ol>
-	<li>
-	  Do you have several computers at home? Can they be connected
-	  together to form a small network?
-	  <p>
-	</li>
-	<li>
-	  Do you connect to the Internet intermittently (e.g. via a
-	  phone line)?
-	  <p>
-	</li>
-	<li>
-	  Can you configure your network so that all your computers
-	  can access the Internet at once? This is the trickiest bit,
-	  but is well worth the effort. There are lots of instructions
-	  available on how to set it up with Linux; see the <a
-	  href="#further-reading">further reading</a> section for more
-	  details.
-	</li>
-      </ol>
+	  </td>
 
-      <p>
-	If you said <strong>yes</strong> (or nearly yes) to all or
-	most of the above questions then (with a bit of tweaking)
-	landialler will enable any of the computers on your home
-	network to control your Internet connection.
-      </p>
-      <p>
-	If you said <strong>no</strong> to all of them, then
-	landialler is probably not going to be of much use to you.
-      </p>
+	  <!-- main cell -->
+	  <td>
+	    <p>
+	      LANdialler enables several computers on a LAN (Local
+	      Area Network) to share control of a dial up connection
+	      to the Internet.
+	    </p>
+	    <ol>
+	      <li>
+		Do you have several computers at home? Can they be
+		connected together to form a small network?
+		<p>
+	      </li>
+	      <li>
+		Would you like all your computers to be able to share
+		the same modem, controlling it as if they were
+		connected directly to it?
+		<p>
+	      </li>
+	    </ol>
 
-      <p>
-	landialler comes in two parts:
-      </p>
-      <ul>
-	<li>
-	  <strong>The client</strong><br>
-	  The client is a small graphical application that is run on
-	  a computer without a modem.
-	  <p>
-	</li>
-	<li>
-	  <strong>The server</strong><br>
+	    <p>
+	      If so, you'll probably be interested in LANdialler.
+	    </p>
+	    <p>
+	      If you said <strong>no</strong> to all of them, then
+	      LANdialler is probably not going to be of much use to you.
+	    </p>
 
-	  The server is a daemon program (i.e. it is always running)
-	  that sits on the computer that has the modem, waiting for a
-	  client to ask it to connect to the Internet. Currently, only
-	  POSIX compliant operating systems (i.e. Unix) are
-	  supported. If there is demand for Windows support then it
-	  will be added in due course.
-	</li>
-      </ul>
+	    <p>
+	      LANdialler comes in two parts:
+	    </p>
+	    <ul>
+	      <li>
+		<strong>The client</strong><br>
+		The client is a small graphical application that is run on
+		a computer without a modem.
+		<p>
+	      </li>
+	      <li>
+		<strong>The server</strong><br>
 
-      <p>
-	The client and server are both written in <a
-	href="http://www.python.org/">Python</a> and communicate with
-	each other using <a href="http://www.xmlrpc.com/">XML-RPC</a>.
-      </p>
+		The server is a daemon program (i.e. it is always
+		running) that sits on the computer that has the modem,
+		waiting for a client to ask it to connect to the
+		Internet. Currently, only POSIX compliant operating
+		systems (i.e. Unix) are supported. If there is demand
+		for Windows support then it will be added in due
+		course.
+	      </li>
+	    </ul>
 
-      <a name="screenshots"><h2>Screenshots</h2></a>
-      <p>
-	These screenshots were made on Windows, but the landialler
-	client works equally well on Linux (though it has to be said
-	it doesn't look very nice&nbsp;-&nbsp; the Tk GUI toolkit is
-	not an attractive beast).
-      </p>
+	    <p>
+	      The client and server are both written in <a
+	      href="http://www.python.org/">Python</a> and communicate
+	      with each other using <a
+	      href="http://www.xmlrpc.com/">XML-RPC</a>.
+	    </p>
 
-      <table align="center" cellpadding="3" cellspacing="5">
-	<tbody>
-	  <tr>
-	    <td>
-	      <img alt="Go online dialog"
-		   src="images/ss/go-online.gif" height="119"
-		   width="209"><br>
-	      <font size="-2">
-		<strong>Are you sure now?</strong>
-	      </font>
-	    </td>
-	    <td>
-	      <img alt="Click to disconnect dialog"
-		   src="images/ss/disconnect.gif" height="119" width="183"><br>
-	      <font size="-2">
-		<strong>Success!</strong>
-	      </font>
-	    </td>
-	    <td>
-	      <img alt="Click to disconnect dialog"
-		   src="images/ss/retry.gif" height="119" width="176"><br>
-	      <font size="-2">
-		<strong>Ahh, go on go on go on, you will...</strong>
-	      </font>
-	    </td>
-	  </tr>
-	</tbody>
-      </table>
+	    <p>
+	      So what's happening here?
+	    </p>
 
-      <p>
-	So what's happening here?
-      </p>
+	    <ol>
+	      <li>
+		After "Yes" has been clicked on the first dialog the
+		client sends an XML-RPC message to the server,
+		instructing the modem to connect to the Internet. The
+		server actually runs an operating system dependent
+		script, so LANdialler can be easily configured to use
+		different operating systems and different dial up
+		hardware and software.
+		<p>
+	      </li>
 
-      <ol>
-	<li>
-	  After "Yes" has been clicked on the first dialog the client
-	  sends an XML-RPC message to the server, instructing the
-	  modem to connect to the Internet. The server actually runs
-	  an operating system dependent script, so landialler can be
-	  easily configured to use different operating systems and
-	  different dial up hardware and software.
-	  <p>
-	</li>
+	      <li>
+		Once the script has started and the server is dialling
+		up, the client continually asks the server for a
+		progress update. If the connection is made inside the
+		(configurable) time limit then the second dialog pops
+		up. To close the connection just click OK (yep, you're
+		right - that button should say "Disconnect", but I
+		need to learn some Tk first).
+		<p>
+	      </li>
+	      
+	      <li>
+		Finally, if the time limit is hit before the
+		connection has been made successfully you get the
+		option to try again. You may want to tweak the time
+		out value, which is easy because it's stored in the
+		LANdialler configuration file. The default time limit
+		for setting up a new connection is two minutes.
+		<p>
+	      </li>
+	    </ol>
 
-        <li>
-	  Once the script has started and the server is dialling up,
-	  the client continually asks the server for a progress
-	  update. If the connection is made inside the (configurable)
-	  time limit then the second dialog pops up. To close the
-	  connection just click OK (yep, you're right - that button
-	  should say "Disconnect", but I need to learn some Tk first).
-	  <p>
-	</li>
+	    <a name="download"><h2>Download</h2></a>
 
-	<li>
-	  Finally, if the time limit is hit before the connection has
-	  been made successfully you get the option to try again. You
-	  may want to tweak the time out value, which is easy because
-	  it's stored in the landialler configuration file. The
-	  default time limit for setting up a new connection is two
-	  minutes.
-	  <p>
-	</li>
-      </ol>
+	    <p>
+	      Both the client (called landialler) and the server
+	      (called landiallerd) are available from the SourceForge
+	      project page. You will also want to grab the gmalib.py
+	      library while you're there...
+	    </p>
 
-      <a name="download"><h2>Download</h2></a>
-
-      <p>
-	Both the client (called landialler) and the server (called
-	landiallerd) are available from the SourceForge project
-	page. You will also want to grab the gmalib.py library while
-	you're there...
-      </p>
-
-      <p align="center">
-	<a href="http://sourceforge.net/projects/landialler/">download
-	  from SourceForge</a>
-      </p>
+	    <p align="center">
+	      <a
+		 href="http://sourceforge.net/projects/landialler/">download
+		from SourceForge</a>
+	    </p>
 	
-      <a name="further-reading"><h2>Further Reading</h2></a>
+	    <a name="further-reading"><h2>Further Reading</h2></a>
 
-      <p>
-	To be able to run the landialler server you need a Unix box
-	configured to do some sort of Network Address Translation
-	(NAT) or <a
-	href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO-2.html#ss2.1">IP
-	Masquerading</a>. You can use any modern Unix system, so long
-	as it can run Python 2.1 software. I use <a
-	href="http://www.linux.com/">Linux</a>, so I've included
-	information on that here. You could use any of the BSD
-	variants (e.g. <a href="http://www.freebsd.org/">FreeBSD</a>,
-	<a href="http://www.openbsd.org/">OpenBSD</a>, <a
-	href="http://www.netbsd.org/">NetBSD</a>), <a
-	href="http://www.sun.com/software/solaris/">Solaris</a>,
-	etc. instead if you prefer.
-      </p>
-      <p>
-	If it wasn't for the excellent documentation then setting it
-	up would be quite a long and painful process for the
-	uninitiated. First find out which version of the Linux kernel
-	you are running	(type <kbd>uname&nbsp;-r</kbd>) and then follow the
-	relevant links below.
-      </p>
+	    <p>
+	      To be able to run the LANdialler server you need a Unix
+	      box configured to do some sort of Network Address
+	      Translation (NAT) or <a
+	      href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO-2.html#ss2.1">IP
+	      Masquerading</a>. You can use any modern Unix system, so
+	      long as it can run Python 2.1 software. I use <a
+	      href="http://www.linux.com/">Linux</a>, so I've included
+	      information on that here. You could use any of the BSD
+	      variants (e.g. <a
+	      href="http://www.freebsd.org/">FreeBSD</a>, <a
+	      href="http://www.openbsd.org/">OpenBSD</a>, <a
+	      href="http://www.netbsd.org/">NetBSD</a>), <a
+	      href="http://www.sun.com/software/solaris/">Solaris</a>,
+	      etc. instead if you prefer.
+	    </p>
+	    <p>
+	      If it wasn't for the excellent documentation then
+	      setting it up would be quite a long and painful process
+	      for the uninitiated. First find out which version of the
+	      Linux kernel you are running (type
+	      <kbd>uname&nbsp;-r</kbd>) and then follow the relevant
+	      links below.
+	    </p>
+	    
+	    <ul>
+	      <li>
+		David Ranch's <a
+		href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO.html">Linux
+		IP Masquerade HOWTO</a> contains full instructions for
+		Linux kernel versions 2.0 and 2.2.
+		<p>
+	      </li>
+	      <li>
+		Rusty Russell's <a
+		href="http://netfilter.samba.org/unreliable-guides/">Unreliable
+		Guides</a> provide full coverage of the new routing
+		features of 2.4 kernels. Of particular use are the
+		sections that tell you how to configure a simple yet
+		secure home firewall;
+		<p>
+		<ul>
+		  <li>
+		    <a
+		    href="http://netfilter.samba.org/unreliable-guides/NAT-HOWTO/NAT-HOWTO.linuxdoc-4.html#ss4.1">I
+		    just want masquerading! Help!</a>
+		  </li>
+		  <li>
+		    <a
+		    href="http://netfilter.samba.org/unreliable-guides/packet-filtering-HOWTO/packet-filtering-HOWTO.linuxdoc-5.html">Rusty's
+		    Really Quick Guide to Packet Filtering</a>
+		  </li>
+		</ul>
+		<p>
+		  I use kernel 2.4 on Debian Linux version 2.2. You
+		  can have a look at <a
+		  href="packet-filtering.html">my scripts</a> to get
+		  the idea.
+		</p>
+	      </li>
+	    </ul>
 
-      <ul>
-	<li>
-	  David Ranch's <a
-	  href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO.html">Linux
-	  IP Masquerade HOWTO</a> contains full instructions for
-	  Linux kernel versions 2.0 and 2.2.
-	  <p>
-	</li>
-	<li>
-	  Rusty Russell's <a
-	  href="http://netfilter.samba.org/unreliable-guides/">Unreliable
-	  Guides</a> provide full coverage of the new routing features
-	  of 2.4 kernels. Of particular use are the sections that tell
-	  you how to configure a simple yet secure home firewall;
-	  <p>
-	  <ul>
-	    <li>
-	      <a
-	      href="http://netfilter.samba.org/unreliable-guides/NAT-HOWTO/NAT-HOWTO.linuxdoc-4.html#ss4.1">I
-	      just want masquerading! Help!</a>
-	    </li>
-	    <li>
-	      <a
-	      href="http://netfilter.samba.org/unreliable-guides/packet-filtering-HOWTO/packet-filtering-HOWTO.linuxdoc-5.html">Rusty's
-	      Really Quick Guide to Packet Filtering</a>
-	    </li>
-	  </ul>
-	  <p>
-	    I use kernel 2.4 on Debian Linux version 2.2. You can have
-	    a look at <a href="packet-filtering.html">my scripts</a>
-	    to get the idea.
-	  </p>
-	</li>
-      </ul>
+	  </td>
+	</tr>
+      </tbody>
+    </table>
 
-      <center>
-	<font size="-1">
-	  [&nbsp;<a href="#about">about</a>&nbsp;|&nbsp;<a
-                    href="#screenshots">screenshots</a>&nbsp;|&nbsp;<a
-                    href="#download">download</a>&nbsp;]
-        </font>
-      </center>
 
-      <hr size="1">
-      <table border="0" cellpadding="0" cellspacing="0">
-	<tbody>
-	  <tr>
-	    <td align="left">
-	      <a href="http://sourceforge.net/"><img
-                 src="http://sourceforge.net/sflogo.php?group_id=34228"
-		 width="88" height="31" border="0" alt="SourceForge logo"></a>
-	    </td>
-	    <td>
-	      &nbsp;&nbsp;
-	    </td>
-	    <td align="left" valign="top">
-	      <font size="-1">
-		Copyright &copy; 2001,
-		Graham Ashton &lt;ashtong@users.sourceforge.net&gt;
-	      </font>
-	    </td>
-	  </tr>
-	</tbody>
-      </table>
-
-    </blockquote>
   </body>
 </html>
