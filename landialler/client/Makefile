@@ -4,7 +4,7 @@ VERS = 0.2pre1
 SRC = AUTHORS COPYING INSTALL MANIFEST README TODO \
       landialler.conf landialler.py
 
-all: tardist zip
+all: 
 
 tardist:
 	@echo "### Building landialler-$(VERS).tar.gz"
