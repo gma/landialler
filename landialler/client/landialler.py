@@ -2,8 +2,21 @@
 #
 # landialler.py - the LAN dialler client
 #
-# Connects to a landiallerd daemon on a local server/router and
-# controls the dial up link from a client workstation.
+# Copyright (C) 2001 Graham Ashton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 # $Id$
 
@@ -130,7 +143,8 @@ class App(gmalib.Application):
         Otherwise returns 0.
 
         """
-        go_online = self.ui.askyesno("Go online?", "Would you like to go online?")
+        go_online = self.ui.askyesno("Go online?",
+                                     "Would you like to go online?")
         if go_online:
             response = self.client.is_connected()  # is the server dialled up?
             if response.value == 1:
@@ -138,7 +152,7 @@ class App(gmalib.Application):
             else:
                 return 1
 
-        return 0  # user clicked "No" or already online
+        return 0
 
     def go_online(self):
         """Instructs the server to start the dial up connection.
