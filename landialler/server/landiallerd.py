@@ -325,6 +325,6 @@ if __name__ == '__main__':
     is_connected = 0   # is the connection currently up?
 
     app = App()
-    app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
+    #app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
     app.debug = 1
     app.main()
