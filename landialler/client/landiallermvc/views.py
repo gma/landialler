@@ -18,7 +18,26 @@
 #
 # $Id$
 
-"""implements a base classes for the MVC View"""
+"""implements base classes for all GUI components
+
+The landialler GUI is based around the Model-View-Controller design
+pattern. It also supports multiple user interface toolkits. The
+toolkit flexibility is achieved through the development of a separate
+module of classes for each toolkit that defines how the windows and
+dialogs should be displayed on screen.
+
+landialler determines which toolkit module to use at run time. So that
+the separate interfaces remain consistent (i.e. buttons have the same
+names, windows have the same titles, etc.) the data required to draw
+the interface is defined in a generic manner, in this module. All
+toolkit modules inherit from this module, implementing the display of
+the data defined in this module.
+
+In other words, if you want to port landialler to Qt (and I hope
+somebody does) you may treat the tkviews.py file as a reference
+implementation, create qtviews.py, and all should be well.
+
+"""
 
 
 import controllers
