@@ -85,9 +85,11 @@ The author can be contacted at ashtong@users.sourceforge.net.
 
 import exceptions
 import ConfigParser
+import getopt
 import gmalib
 import os
 import socket
+import sys
 import xmlrpclib
 
 
@@ -126,18 +128,19 @@ class Model:
 
     """
 
-    def __init__(self, config, server):
+    def __init__(self, config, server, toolkit):
         self.config = config  # ConfigParser object
         self.server = server  # connection to XML-RPC server
         self._observers = []  # observers are MVC views or controllers
         self.check_status_period = 5000  # msec between get_server_status()
-        self.toolkit = None   # toolkit specific view library
+        self.toolkit = toolkit # name of toolkit (lowercase), e.g. "tk"
+        self.views = None     # name of toolkit support module (e.g. "tkviews")
         self.choose_gui_toolkit()
-
+        
         # server status attributes (retrieved via RPC)
         self.is_connected = 0
         self.current_users = 0
-
+        
         # attributes for maintaining state
         self.was_connected = 0  # set to 1 if we have been online
 
@@ -153,25 +156,26 @@ class Model:
 
     def choose_gui_toolkit(self):
         """Work out which GUI toolkit the View components should use.
-
+        
         Imports the correct view module (e.g. tkviews) and makes
         self.toolkit an alias to the module.
-
+        
         """
-        try:
-            toolkit = self.config.get("interface", "toolkit")
-        except ConfigParser.Error:
-            if os.name == "posix":
-                toolkit = "gtk"
-            else:
-                toolkit = "tk"
+        if not self.toolkit:  # i.e. if not already set on command line
+            try:
+                self.toolkit = self.config.get("interface", "toolkit")
+            except ConfigParser.Error:
+                if os.name == "posix":
+                    self.toolkit = "gtk"
+                else:
+                    self.toolkit = "tk"
 
         try:
-            exec("from landiallermvc import %sviews" % toolkit)
-            exec("self.toolkit = %sviews" % toolkit)
+            exec("from landiallermvc import %sviews" % self.toolkit)
+            exec("self.views = %sviews" % self.toolkit)
         except ImportError:
             exec("from landiallermvc import %sviews" % "tk")
-            exec("self.toolkit = %sviews" % "tk")
+            exec("self.views = %sviews" % "tk")
 
     def notify(self):
         """Calls each observer's update() method."""
@@ -192,10 +196,10 @@ class Model:
     
     def server_connect(self):
         """Instructs the server to start the dial up connection.
-
+        
         Calls the XML-RPC API's connect() method. Raises a
         ConnectError exception if the connect() method returns false.
-
+        
         """
         rval = self.server.connect()
         if rval.value == xmlrpclib.False:
@@ -203,11 +207,11 @@ class Model:
 
     def server_disconnect(self, all="no"):
         """Instructs the server to disconnect the dial up connection.
-
+        
         Calls the XML-RPC API's disconnect() method. Returns 1 if the
         server reported that it's disconnect command exited successfully,
         0 otherwise.
-
+        
         """
         rval = self.server.disconnect(all)
         if rval.value == xmlrpclib.True:
@@ -217,46 +221,83 @@ class Model:
 
 
 class App(gmalib.Logger):
+
     def __init__(self):
         """Calls the base class's initialisor."""
         gmalib.Logger.__init__(self, use_syslog=0)
+        self.conf_file = None
+        self.debug = 0
+        self.toolkit = None
+    
+    def get_opt(self):
+        """Parse command line arguments.
+        
+        Reads the command line arguments, looking for the following:
+        
+        -c file      path to configuration file
+        -d           enable debugging for extra output
+        -u toolkit   select user interface toolkit (tk or gtk)
+        
+        """
+        opts, args = getopt.getopt(sys.argv[1:], "c:du:")
+        
+        for o, v in opts:
+            if o == "-c":
+                self.conf_file = v
+            if o == "-d":
+                self.debug = 1
+            if o == "-u":
+                self.toolkit = v
 
     def main(self):
         """The main method, runs the application.
-
+        
         Begins by reading the landialler.conf configuration file. Then
         connects to the XML-RPC server (as specified in the config
         file).
-
-        Initialises and launches the user interface.
-
-        """
-        # load config file
-        config = ConfigParser.ConfigParser()
-        files = []
-        if os.name == "posix":
-            files.append("/usr/local/etc/landialler.conf")
-        files.append("landialler.conf")
-        config.read(files)
-
-        # run the core of the application
-        hostname = config.get("xmlrpcserver", "hostname")
-        port = config.get("xmlrpcserver", "port")
         
-        server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
-        self.log_debug("connected to %s:%s" % (hostname, port))
-        self.model = Model(config, server)
-        window = self.model.toolkit.MainWindow(self.model)
-        window.draw()
-
+        Initialises and launches the user interface.
+        
+        """
         try:
+            # read command line options and config file
+            self.get_opt()
+            config = ConfigParser.ConfigParser()
+            if self.conf_file:
+                if not os.path.exists(self.conf_file):
+                    raise IOError, "File not found: %s" % self.conf_file
+                else:
+                    config.read(self.conf_file)
+            else:
+                files = []
+                if os.name == "posix":
+                    files.append("/usr/local/etc/landialler.conf")
+                files.append("landialler.conf")
+                config.read(files)
+        
+            # run the core of the application
+            hostname = config.get("xmlrpcserver", "hostname")
+            port = config.get("xmlrpcserver", "port")
+        
+            server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
+            self.log_debug("connected to %s:%s" % (hostname, port))
+            self.model = Model(config, server, self.toolkit)
+            window = self.model.views.MainWindow(self.model)
+
+        except Exception, e:
+            print e
+            sys.exit(1)
+
+        # from now on we can do GUI based error messages
+        try:
+            window.draw()
             self.model.get_server_status()
             if not self.model.is_connected:
-                dialog = self.model.toolkit.ConnectingDialog(self.model)
+                dialog = self.model.views.ConnectingDialog(self.model)
                 dialog.draw()
                 self.model.server_connect()
             window.start_event_loop()
-
+        
         except ConnectError:
             self.handle_connect_error()
         except DisconnectError:
@@ -271,7 +312,7 @@ class App(gmalib.Logger):
     def handle_connect_error(self):
         self.log_err("Error: ConnectError")
         msg = "There was a problem\nconnecting to the network."
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
+        dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
@@ -279,7 +320,7 @@ class App(gmalib.Logger):
         self.log_err("Error: DisconnectError")
         msg = "There was a problem disconnecting\nfrom the network. " + \
             "You may not have\nbeen disconnected properly!"
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
+        dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
@@ -287,7 +328,7 @@ class App(gmalib.Logger):
         self.log_err("Error: socket error")
         msg = "Socket error: %s (%d)" % (e.args[1], int(e.args[0]))
         self.log_err(msg)
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
+        dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
@@ -296,19 +337,19 @@ class App(gmalib.Logger):
         msg = "LANdialler is unable to determine the\nstatus of your " + \
             "network connection.\n\nPlease check the connection and\n" + \
             "the server and try again."
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
+        dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
     def handle_error(self, e):
         self.log_err("Error: %s" % e)
         msg = "Error: %s" % e
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
+        dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
 
 if __name__ == "__main__":
     app = App()
-    app.debug = 1
+    #app.debug = 1
     app.main()
