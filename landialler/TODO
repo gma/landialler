@@ -3,17 +3,18 @@ TODO
 
 Prioritised list of things to do:
 
-  - Unit test coverage.
+  - Unit test coverage (in progress).
+
+  - Port XML-RPC code to later versions of Python.
 
   - Replace server's Makefile with distutils.
 
-  - Support for more GUI toolkits (anygui, GTK2, QT).
+  - Merge useful parts of gmalib into landialler, use Python's new
+    logging API.
 
-  - Write a Java client.
+  - Write a client in another language.
 
   - Display how long the server has been online.
-
-  - Display bytes sent/received (total and per client).
 
   - Put retry/cancel buttons on the dropped connection dialog.
 
