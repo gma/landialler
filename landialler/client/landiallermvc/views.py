@@ -68,7 +68,7 @@ class View(Observer.Observer):
               ("%s has not implemented draw()" % self.__class__)
 
 
-class ButtonBar:
+class ButtonBar(View):
 
     """The beginnings of a button handler to simplify the creation and
     layout of groups of buttons. Incomplete and unused.
@@ -83,15 +83,16 @@ class ButtonBar:
         self.buttons.append((text, callback))
 
 
-class Window:
+class Window(View):
     """Contains basic logic for constructing a top level window.
 
     Needs updating to use the ButtonBar class.
 
     """
     
-    def __init__(self):
+    def __init__(self, model):
         """Set button_side attribute to default to RIGHT."""
+        View.__init__(self, model)
         self.button_store = {}  # maintain link to buttons so we config them
         self.button_bar = []
         #self.button_bar = ButtonBar()
@@ -119,28 +120,6 @@ class Window:
         if len(self.button_bar) > 1:
             self.button_bar.sort(lambda a, b: cmp(b[1], a[1]))
 
-
-class ConnectingDialog(View):
-
-    """Display a message explaining that the server is connecting.
-
-    The dialog has a Cancel button, allowing the user to cancel the
-    connection request at any time. If the cancel button is pressed
-    the application should exit (see cleanup() for how to handle
-    this).
-
-    """
-
-    def __init__(self, model):
-        View.__init__(self, model)
-        self.controller = controllers.ConnectingDialogController(model, self)
-        self.title = "Connecting"
-        self.text = "Please wait, connecting..."
-        # we use lambda to pass parameters into the callback method
-        callback = (lambda c=self.cleanup, s=self: s.controller.cancel_cb(c))
-        # buttons = { name: (position in list, callback) }
-        self.buttons = { 'cancel': (0, callback) }
-
     def cleanup(self):
         """Destroy the dialog window (abstract method).
 
@@ -153,7 +132,35 @@ class ConnectingDialog(View):
               ("%s has not implemented cleanup()" % self.__class__)
 
 
-class DisconnectDialog(View):
+class Dialog(Window):
+    def __init__(self, model):
+        Window.__init__(self, model)
+        self.modal = 0
+
+
+class ConnectingDialog(Dialog):
+
+    """Display a message explaining that the server is connecting.
+
+    The dialog has a Cancel button, allowing the user to cancel the
+    connection request at any time. If the cancel button is pressed
+    the application should exit (see cleanup() for how to handle
+    this).
+
+    """
+
+    def __init__(self, model):
+        Dialog.__init__(self, model)
+        self.controller = controllers.ConnectingDialogController(model, self)
+        self.title = "Connecting"
+        self.text = "Please wait, connecting..."
+        # we use lambda to pass parameters into the callback method
+        callback = (lambda c=self.cleanup, s=self: s.controller.cancel_cb(c))
+        # buttons = { name: (position in list, callback) }
+        self.buttons = { 'cancel': (0, callback) }
+
+
+class DisconnectDialog(Dialog):
 
     """Ask if all other users should also be disconnected.
 
@@ -168,8 +175,9 @@ class DisconnectDialog(View):
     """
 
     def __init__(self, model):
-        View.__init__(self, model)
+        Dialog.__init__(self, model)
         self.controller = controllers.DisconnectDialogController(model, self)
+        self.modal = 1
         self.title = "Disconnect"
         self.text = "Disconnect all users?"
         # we use lambda to pass parameters into the callback method
@@ -179,7 +187,7 @@ class DisconnectDialog(View):
         self.buttons = { 'yes': (0, yes_cb), 'no': (1, no_cb) }
 
 
-class DroppedDialog(View):
+class DroppedDialog(Dialog):
 
     """Warn user that the connection has been dropped.
 
@@ -195,8 +203,9 @@ class DroppedDialog(View):
     """
 
     def __init__(self, model):
-        View.__init__(self, model)
+        Dialog.__init__(self, model)
         self.controller = controllers.DroppedDialogController(model, self)
+        self.modal = 1
         self.title = "Dropped"
         self.text = "Connection dropped (perhaps somebody hung up)"
         # we use lambda to pass parameters into the callback method
@@ -205,7 +214,7 @@ class DroppedDialog(View):
         self.buttons = { 'OK': (0, callback) }
 
 
-class MainWindow(View):
+class MainWindow(Window):
 
     """Displays the connection status and a disconnect button.
 
@@ -217,7 +226,7 @@ class MainWindow(View):
     """
 
     def __init__(self, model):
-        View.__init__(self, model)
+        Window.__init__(self, model)
         self.controller = controllers.MainWindowController(model, self)
         self.title = "LANdialler"
         self.status_rows = [("Connection status:", "Offline"),

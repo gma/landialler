@@ -41,10 +41,9 @@ root = Tk()  # Instantiated explicitly so that we can access it later.
              # the main window.
 
 
-class Window(views.Window):
+class Window:
 
     def __init__(self):
-        views.Window.__init__(self)
         self.button_side = RIGHT  # right aline buttons
 
     def draw_buttons(self, parent=None):
@@ -70,7 +69,6 @@ class Dialog(Window):
     def __init__(self):
         """Set default button_side attribute to TOP."""
         Window.__init__(self)
-        self.modal = 0
         self.window = None
 
     def draw(self):
@@ -117,7 +115,6 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
     def __init__(self, model):
         Dialog.__init__(self)
         views.DisconnectDialog.__init__(self, model)
-        self.modal = 1
 
     def cleanup(self):
         """Cleans up after the Yes or No buttons have been pressed.
@@ -137,7 +134,6 @@ class DroppedDialog(Dialog, views.DroppedDialog):
     def __init__(self, model):
         Dialog.__init__(self)
         views.DroppedDialog.__init__(self, model)
-        self.modal = 1
 
     def cleanup(self):
         """Cleans up after the OK button has been pressed.
