@@ -148,8 +148,8 @@ class App(gmalib.Logger):
         dialog.start_event_loop()
 
     def handle_socket_error(self, e):
-        self.log_err("Error: socket error")
-        msg = "Socket error: %s (%d)" % (e.args[1], int(e.args[0]))
+        self.log_err("Error: socket error: %s (%d)" % (e.args[1], e.args[0]))
+        msg = "Unable to connect to server: %s" % e.args[1]
         self.log_err(msg)
         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
