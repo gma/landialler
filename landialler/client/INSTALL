@@ -95,10 +95,7 @@ platform:
 CONFIGURATION
 
 You will probably need to edit the [xmlrpcserver] section of the
-config file. Set the IP address of your landialler server in the
-file. If you find that your Internet connection regularly takes more
-than two minutes to come up then you can increase the timeout
-parameter in the config file to suit (the default is 120 seconds).
+config file. Set the IP address of your landialler server in the file.
 
 Once landialler is installed properly you may find the following command
 line options useful:
