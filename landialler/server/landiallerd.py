@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# landiallerd.py - the LAN dialler daemon
+# landiallerd.py - the LANdialler daemon
 #
 # Copyright (C) 2001 Graham Ashton
 #
@@ -382,12 +382,6 @@ class MyTCPServer(SocketServer.TCPServer):
     """
     
     def __init__(self, server_address, RequestHandlerClass):
-        """Initialise the server instance.
-
-        Sets the allow_reuse_address and debug attributes. Calls the base
-        class's initialiser.
-
-        """
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
                                         RequestHandlerClass)
