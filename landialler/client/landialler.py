@@ -20,6 +20,7 @@
 #
 # $Id$
 
+
 """set up a shared network connection (via the server)
 
 LANdialler enables several computers on a home LAN to remotely control
@@ -79,6 +80,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 
 """
 
+
 # For more information on the Model-View-Controller design pattern,
 # see http://www.ootips.org/mvc-pattern.html
 
@@ -95,7 +97,7 @@ import sys
 import xmlrpclib
 
 
-__version__ = "0.2"
+__version__ = "0.2.1"
 
 
 class App(gmalib.Logger):
@@ -107,85 +109,28 @@ class App(gmalib.Logger):
         self.debug = 0
         self.toolkit = None
     
-    def get_opt(self):
+    def getopt(self):
         """Parse command line arguments.
         
         Reads the command line arguments, looking for the following:
         
         -c file      path to configuration file
         -d           enable debugging for extra output
+        -h	     display this message on stderr
         -u toolkit   select user interface toolkit (tk or gtk)
         
         """
-        opts, args = getopt.getopt(sys.argv[1:], "c:du:")
+        opts, args = getopt.getopt(sys.argv[1:], "c:dhu:")
         
         for o, v in opts:
             if o == "-c":
                 self.conf_file = v
-            if o == "-d":
+            elif o == "-d":
                 self.debug = 1
-            if o == "-u":
+            elif o == "-h":
+                self.usage_message()
+            elif o == "-u":
                 self.toolkit = v
-
-    def main(self):
-        """The main method, runs the application.
-        
-        Begins by reading the landialler.conf configuration file. Then
-        connects to the XML-RPC server (as specified in the config
-        file).
-        
-        Initialises and launches the user interface.
-        
-        """
-        try:
-            # read command line options and config file
-            self.get_opt()
-            config = ConfigParser.ConfigParser()
-            if self.conf_file:
-                if not os.path.exists(self.conf_file):
-                    raise IOError, "File not found: %s" % self.conf_file
-                else:
-                    config.read(self.conf_file)
-            else:
-                files = []
-                if os.name == "posix":
-                    files.append("/usr/local/etc/landialler.conf")
-                files.append("landialler.conf")
-                config.read(files)
-        
-            # run the core of the application
-            hostname = config.get("xmlrpcserver", "hostname")
-            port = config.get("xmlrpcserver", "port")
-        
-            server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
-            self.log_debug("connected to %s:%s" % (hostname, port))
-            self.model = Model.Model(config, server, self.toolkit)
-            window = self.model.views.MainWindow(self.model)
-        
-        except Exception, e:
-            print e
-            sys.exit(1)
-        
-        # from now on we can do GUI based error messages
-        try:
-            window.draw()
-            self.model.get_server_status()
-            if not self.model.is_connected:
-                dialog = self.model.views.ConnectingDialog(self.model)
-                dialog.draw()
-                self.model.server_connect()
-            window.start_event_loop()
-        
-        except landiallermvc.ConnectError:
-            self.handle_connect_error()
-        except landiallermvc.DisconnectError:
-            self.handle_disconnect_error()
-        except landiallermvc.StatusError:
-            self.handle_status_error()
-        except socket.error, e:
-            self.handle_socket_error(e)
-        except Exception, e:
-            self.handle_error(e)
 
     def handle_connect_error(self):
         self.log_err("Error: ConnectError")
@@ -226,6 +171,88 @@ class App(gmalib.Logger):
         dialog.draw()
         dialog.start_event_loop()
 
+    def main(self):
+        """The main method, runs the application.
+        
+        Begins by reading the landialler.conf configuration file. Then
+        connects to the XML-RPC server (as specified in the config
+        file).
+        
+        Initialises and launches the user interface.
+        
+        """
+        try:
+            # read command line options and config file
+            self.getopt()
+            config = ConfigParser.ConfigParser()
+            if self.conf_file:
+                if not os.path.exists(self.conf_file):
+                    raise IOError, "File not found: %s" % self.conf_file
+                else:
+                    config.read(self.conf_file)
+            else:
+                files = []
+                if os.name == "posix":
+                    files.append("/usr/local/etc/landialler.conf")
+                files.append("landialler.conf")
+                config.read(files)
+        
+            # run the core of the application
+            hostname = config.get("xmlrpcserver", "hostname")
+            port = config.get("xmlrpcserver", "port")
+        
+            server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
+            self.log_debug("connected to %s:%s" % (hostname, port))
+            self.model = Model.Model(config, server, self.toolkit)
+            window = self.model.views.MainWindow(self.model)
+
+        except getopt.GetoptError, e:
+            sys.stderr.write("%s\n" % e)
+            self.usage_message()
+
+        except SystemExit:  # ignore calls to sys.exit()
+            raise
+
+        except Exception, e:
+            sys.stderr.write("%s\n" % e)
+            sys.exit(1)
+        
+        # from now on we can do GUI based error messages
+        try:
+            window.draw()
+            self.model.get_server_status()
+            if not self.model.is_connected:
+                dialog = self.model.views.ConnectingDialog(self.model)
+                dialog.draw()
+                self.model.server_connect()
+            window.start_event_loop()
+        
+        except landiallermvc.ConnectError:
+            self.handle_connect_error()
+        except landiallermvc.DisconnectError:
+            self.handle_disconnect_error()
+        except landiallermvc.StatusError:
+            self.handle_status_error()
+        except socket.error, e:
+            self.handle_socket_error(e)
+        except Exception, e:
+            self.handle_error(e)
+
+    def usage_message(self):
+        """Print usage message to sys.stderr and exit."""
+        message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
+
+Options:
+
+    -c file     path to configuration file
+    -d          enable debugging for extra output
+    -h	        display this message on stderr
+    -u toolkit  select user interface toolkit (tk or gtk)
+
+""" % os.path.basename(sys.argv[0])
+        sys.stderr.write(message)
+        sys.exit(1)
+        
 
 if __name__ == "__main__":
     app = App()
