@@ -27,7 +27,7 @@ you may have it already). If not you will need to copy the
 xmlrpclib.py file into your Python system directory (on Windows) or
 into Python's site-packages directory (Unix).
 
-Then copy the gmalib.py file into the same directory.
+Then install gmalib according to the instructions that come with it.
 
 To install the client itself, follow the instructions for your
 platform:
