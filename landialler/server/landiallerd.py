@@ -107,10 +107,10 @@ class Connection:
     """Controls a dial up connection.
 
     Provides methods for controlling/querying the status of a dial up
-    connection (e.g. modem connection to the Internet). All instances
-    of this class share their state (see the Borg design pattern in
-    the ASPN Python Cookbook) so that status information is maintained
-    between different client HTTP requests.
+    connection (e.g. modem/ISDN connection to the Internet). All
+    instances of this class share their state (see the Borg design
+    pattern in the ASPN Python Cookbook) so that status information is
+    maintained between different client HTTP requests.
 
     The following methods are part of the LANdialler XML-RPC API, and
     are called directly whenever a client makes an HTTP request to the
@@ -159,20 +159,18 @@ class Connection:
         elif self.nowConnecting:
             return xmlrpclib.False
         else:
-            cmd = self.config.get("commands", "connect")
-            rval = os.system("%s > /dev/null 2>&1" % cmd)
-            if rval == 0:
-                self.nowConnecting = 1
-                print "connect command ran successfully"
-                return xmlrpclib.True
-            else:
-                sys.stderr.write("connect command failed (%s)\n" % rval)
-            return xmlrpclib.False
+            return self.runConnectCommand()
 
-    def countClients(self):
-        """Return the number of active clients."""
-        self.forgetOldClients()
-        return len(self.clientTracker.keys())
+    def runConnectCommand(self):
+        cmd = self.config.get("commands", "connect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        if rval == 0:
+            self.nowConnecting = 1
+            print "connect command ran successfully"
+            return xmlrpclib.True
+        else:
+            sys.stderr.write("connect command failed (%s)\n" % rval)
+            return xmlrpclib.False
 
     def disconnect(self, all="no", client=None):
         """Close the connection.
@@ -193,16 +191,19 @@ class Connection:
             self.forgetClient(client)
             return xmlrpclib.True
         else:
-            cmd = self.config.get("commands", "disconnect")
-            rval = os.system("%s > /dev/null 2>&1" % cmd)
-            if rval == 0:
-                self.nowConnecting = 0
-                self.forgetAllClients()
-                print "disconnect command run successfully"
-                return xmlrpclib.True
-            else:
-                sys.stderr.write("disconnect command failed (%s)\n" % rval)
-                return xmlrpclib.False
+            return self.runDisconnectCommand()
+
+    def runDisconnectCommand(self):
+        cmd = self.config.get("commands", "disconnect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        if rval == 0:
+            self.nowConnecting = 0
+            self.forgetAllClients()
+            print "disconnect command run successfully"
+            return xmlrpclib.True
+        else:
+            sys.stderr.write("disconnect command failed (%s)\n" % rval)
+            return xmlrpclib.False
 
     def get_status(self, client):
         """Returns the number of clients and connection status.
@@ -218,12 +219,32 @@ class Connection:
 
         """
         self.rememberClient(client)
-        if self.isConnected() and self.nowConnecting:
+        if self.isConnected():
             self.nowConnecting = 0
             numClients = self.countClients()
         else:
             numClients = 0
         return (numClients, self.isConnected())
+
+    def countClients(self):
+        """Return the number of active clients."""
+        self.forgetOldClients()
+        return len(self.listClients())
+
+    def isConnected(self):
+        """Return 1 if the connection is up, 0 otherwise.
+
+        Runs the external command as specified in the configuration
+        file to determine if the connection is up.
+
+        """
+        cmd = self.config.get("commands", "is_connected")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        if rval == 0:
+            self.nowConnecting = 0
+            return 1
+        else:
+            return 0
 
     def rememberClient(self, client):
         """Record time of the client's last HTTP connection."""
@@ -250,24 +271,13 @@ class Connection:
 
         """
         timeout = 30
-        for client in self.clientTracker.keys():
+        for client in self.listClients():
             if (time.time() - self.clientTracker[client]) > timeout:
                 self.forgetClient(client)
 
-    def isConnected(self):
-        """Return 1 if the connection is up, 0 otherwise.
-
-        Runs the external command as specified in the configuration
-        file to determine if the connection is up.
-
-        """
-        cmd = self.config.get("commands", "is_connected")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:
-            self.nowConnecting = 0
-            return 1
-        else:
-            return 0
+    def listClients(self):
+        """Return a list of client identifiers."""
+        return self.clientTracker.keys()
 
 
 class CleanerThread(threading.Thread, gmalib.Logger):
