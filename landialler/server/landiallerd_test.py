@@ -126,7 +126,7 @@ class ModemTest(unittest.TestCase):
         self.assertEqual(modem.is_connected(), False)
 
     def test_timer(self):
-        """Check the timer is only running when modem known to be connected"""
+        """Check the timer is stopped when we hang up"""
         self.config.value = self.SUCCESSFUL_COMMAND
         modem = landiallerd.Modem(self.config)
         modem.dial()
@@ -146,6 +146,18 @@ class ModemTest(unittest.TestCase):
         finally:
             landiallerd.time = real_time
 
+    def test_timer_started_when_online(self):
+        """Check the timer is only started when we're connected"""
+        self.config.value = self.FAILING_COMMAND
+        modem = landiallerd.Modem(self.config)
+        modem.is_connected()
+        try:
+            real_time = landiallerd.time
+            landiallerd.time = MockTime(18)
+            self.assertEqual(modem.timer.elapsed_seconds, 0)
+        finally:
+            landiallerd.time = real_time
+        
 
 class MockTimer:
 
@@ -171,9 +183,12 @@ class ModemProxyTest(unittest.TestCase):
 
     def test_dial_return_code(self):
         """Check the proxied return code of modem's dial() method"""
-        modem = mock.Mock({'dial': False})
+        modem = mock.Mock({'dial': False, 'is_connected': False})
         proxy = landiallerd.ModemProxy(modem)
         self.assertEqual(proxy.add_client('client-id-1'), False)
+        self.assertEqual(len(modem.getNamedCalls('dial')), 1)
+        self.assertEqual(proxy.add_client('client-id-2'), False)
+        self.assertEqual(len(modem.getNamedCalls('dial')), 1)
 
         modem = mock.Mock({'dial': True})
         proxy = landiallerd.ModemProxy(modem)
@@ -462,6 +477,23 @@ class AutoDisconnecThreadTest(unittest.TestCase):
         thread = landiallerd.AutoDisconnectThread(proxy)
         self.assert_(thread.isDaemon())
         thread.finished.set()
+        
+    def test_old_clients_removed(self):
+        """Check the thread causes old clients to be removed"""
+        modem = mock.Mock()
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.add_client('client-1')
+        self.assertEqual(proxy.count_clients(), 1)
+        try:
+            real_time = landiallerd.time
+            landiallerd.time = MockTime(63)
+            thread = landiallerd.AutoDisconnectThread(proxy)
+            thread.start()
+            self.let_thread_work()
+            thread.finished.set()
+            self.assertEqual(proxy.count_clients(), 0)
+        finally:
+            landiallerd.time = real_time
         
 
 if __name__ == '__main__':
