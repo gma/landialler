@@ -153,13 +153,13 @@ class Modem(object):
         self._config_parser = config_parser
         self.timer = Timer()
 
-    def dial(self):
-        log.info('Dialling')
+    def connect(self):
+        log.info('Connecting')
         self.timer.reset()
         os.system(self._config_parser.get('commands', 'connect'))
 
-    def hang_up(self):
-        log.info('Hanging up, online for %s seconds' %
+    def disconnect(self):
+        log.info('Disconnecting, online for %s seconds' %
                  self.timer.elapsed_seconds)
         self.timer.stop()
         os.system(self._config_parser.get('commands', 'disconnect'))
@@ -188,7 +188,7 @@ class ModemProxy(object):
             self._clients[client_id] = time.time()
         if not (self._is_dialling or self.is_connected()):
             self._is_dialling = True
-            self._modem.dial()
+            self._modem.connect()
 
     def refresh_client(self, client_id):
         self._clients[client_id] = time.time()
@@ -198,7 +198,7 @@ class ModemProxy(object):
             del self._clients[client_id]
         if not self._clients:
             if self.is_connected() or self._is_dialling:
-                self.hang_up()
+                self.disconnect()
 
     def remove_old_clients(self):
         for client_id, time_last_seen in self._clients.items():
@@ -218,9 +218,9 @@ class ModemProxy(object):
     def get_time_connected(self):
         return self._modem.timer.elapsed_seconds
 
-    def hang_up(self):
+    def disconnect(self):
         self._is_dialling = False
-        self._modem.hang_up()
+        self._modem.disconnect()
 
 
 class API(object):
@@ -255,10 +255,13 @@ class API(object):
         should be usable as a dictionary key.
 
         """
-        log.info('%s disconnected' % client_id)
+        message = '%s disconnected' % client_id
+        if bool(all):
+            message += ' (all users)'
+        log.info(message)
         self._modem_proxy.remove_client(client_id)
-        if all:
-            self._modem_proxy.hang_up()
+        if bool(all):
+            self._modem_proxy.disconnect()
         return xmlrpclib.True
                 
     def get_status(self, client_id):
