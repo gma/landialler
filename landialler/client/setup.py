@@ -17,6 +17,10 @@ setup(name="landialler",
       url="http://landialler.sourceforge.net/",
       packages=['landiallermvc'])
 
+# only continue if we're doing an "install"
+if sys.argv[1] <> 'install':
+    sys.exit(0)
+
 def error_msg(message):
     print 'Error: %s' % message
     sys.exit(1)
