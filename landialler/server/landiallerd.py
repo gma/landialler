@@ -368,9 +368,9 @@ class CleanerThread(threading.Thread, gmalib.Logger):
         of the run() method every "interval" seconds.
 
         """
-        threading.Thread.__init__(self, name=CleanerThread)
-        self.setDaemon(1)
         self.interval = interval  # time before re-running clean up
+        threading.Thread.__init__(self, name=CleanerThread)
+        self.setDaemon(1)  # we're a daemon thread (see __init__ docs)
         self.pauser = threading.Event()
 
         global debug, logfile, use_syslog
