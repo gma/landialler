@@ -320,14 +320,62 @@ class ModemProxyTest(unittest.TestCase):
 
     def test_timer(self):
         """Check the proxy can return time spent online"""
+
         class Timer:
+
             pass
+
         timer = Timer()
         timer.elapsed_seconds = 14
         modem = landiallerd.Modem(MockConfigParser())
         modem.timer = timer
         proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.get_time_online(), 14)
+        self.assertEqual(proxy.get_time_connected(), 14)
+
+    def test_forget_old_clients(self):
+        """Check the proxy forgets about old clients"""
+        modem = mock.Mock()
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.dial('client-id-1')
+        self.assertEqual(proxy.count_clients(), 1)
+        try:
+            real_time = landiallerd.time
+            offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
+            landiallerd.time = MockTime(offset)
+            self.assertEqual(proxy.count_clients(), 0)
+        finally:
+            landiallerd.time = real_time
+
+    def test_forgetting_drops_connection(self):
+        """Check forgetting the last client drops the connection"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.dial('client-id-1')
+        try:
+            real_time = landiallerd.time
+            offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
+            landiallerd.time = MockTime(offset)
+            proxy.count_clients()
+            hang_up_calls = modem.getNamedCalls('hang_up')
+            self.assertEqual(len(hang_up_calls), 1)
+        finally:
+            landiallerd.time = real_time
+        
+    def test_refresh_client(self):
+        """Check refreshing a client updates time client was last seen"""
+        modem = mock.Mock()
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.dial('client-id-1')
+        try:
+            real_time = landiallerd.time
+            offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
+            landiallerd.time = MockTime(offset)
+            proxy.refresh_client('client-id-1')
+            self.assertEqual(proxy.count_clients(), 1)
+            hang_up_calls = modem.getNamedCalls('hang_up')
+            self.assertEqual(len(hang_up_calls), 0)
+        finally:
+            landiallerd.time = real_time
 
 
 if __name__ == '__main__':
