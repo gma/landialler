@@ -472,16 +472,19 @@ class Timer(gmalib.Logger):
         self.debug = debug
         gmalib.Logger.__init__(self, log_file, use_syslog)
 
-        self.start_time = 0  # seconds since epoch when timer started
-        self.is_running = 0  # set to true when timer is running
+        self._start_time = 0  # seconds since epoch
+        self._stop_time = 0
+        self.is_running = 0
         self.reset()
 
     def start(self):
         """Start the timer."""
+        self._start_time = time.time()
         self.is_running = 1
 
     def stop(self):
         """Stop the timer."""
+        self._stop_time = time.time()
         self.is_running = 0
 
     def reset(self):
@@ -491,20 +494,22 @@ class Timer(gmalib.Logger):
 
         """
         self.log_debug("Timer: resetting time to zero")
-        self.start_time = int(time.time())
+        self._start_time = time.time()
 
-    def get_elapsed_seconds(self):
+    def _get_elapsed_seconds(self):
         """Return seconds since timer started."""
-        return int(time.time()) - int(self.start_time)
+        if self.is_running:
+            return time.time() - self._start_time
+        else:
+            return self._stop_time - self._start_time
 
-    def get_elapsed_hours_mins_secs(self):
+    def _get_elapsed_hours_mins_secs(self):
         """Return tuple of hours, mins, secs elapsed since started."""
-        secs = self.get_elapsed_seconds()
+        secs = self._get_elapsed_seconds()
         hours = int(secs / 3600)
         secs = secs - (hours * 3600)
         mins = int(secs / 60)
         secs = secs - (mins * 60)
-        self.log_debug("Timer: %02d:%02d:%02d elapsed" % (hours, mins, secs))
         return (hours, mins, secs)
 
     def get_elapsed_time(self):
@@ -513,7 +518,7 @@ class Timer(gmalib.Logger):
         The string returned is of the format "HH:MM:SS".
 
         """
-        hours, mins, secs = self.get_elapsed_hours_mins_secs()
+        hours, mins, secs = self._get_elapsed_hours_mins_secs()
         return "%02d:%02d:%02d" % (hours, mins, secs)
 
 
