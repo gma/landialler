@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>LANdialler</title>
+    <link rel="stylesheet" type="text/css" href="default.css">
     <meta name="keywords" content="landialler, landialer, lan dialler,
           lan dialer, lan, dial, dialer, dialler, modem, local area network,
           modem sharing, dial up, local area network, internet, online, linux,
@@ -9,61 +10,44 @@
     <meta name="description" content="landialler enables several
 	  computers on a LAN share (and control) the modem on a single
 	  computer. It runs on any operating system that supports Python.">
-    <link rel="stylesheet" href="landialler.css" type="text/css">
-    <style type="text/css">
-    <!--
-    li { font-size: 10pt; }
-    p { font-size: 10pt; }
-    td { font-size: 10pt; }
-    -->
-    </style>
   </head>
 
-  <body bgcolor="#ffffff">
-    <blockquote>
-      <h1 class="pagetitle">LANdialler</h1>
+  <body>
 
-      <p align="center" class="toolbar">
-	[&nbsp;<a
-	href="./#news">news</a>&nbsp;|&nbsp;<a
-	href="./#about">about</a>&nbsp;|&nbsp;<a
-	href="./#download">download</a>&nbsp;]
-      </p>
+    <!--#include virtual="ssi/navbar.html" -->
+    <!--#include virtual="ssi/sidebar.html" -->
 
-      <a name="news"></a>
+    <div id="body">
       <h1>News</h1>
-
       <ul>
 	<li>
 	  <p>
 	    <strong>Python 2.3 and GTK2 port released shortly</strong>
 	    (13 March 2004)<br/>
-
-	    It's taken longer than I'd hoped, but a new Python 2.3
-	    compatible version of LANdialler is now available from <a
-	    href="http://sourceforge.net/cvs/?group_id=34228">CVS</a>
-	    (scroll down to the "Anonymous CVS Access" section). I've
-	    not made packages yet as there's quite a bit of work to do
-	    on the installation and packaging, and it is not yet
-	    tested on Windows. If you'd like to try it check it out
-	    from CVS and run both the client and server from within
-	    their current directories. I've uploaded a <a
-	    href="screenshots.html">screenshot</a> to tempt you into
-	    it.
+	      
+	      It's taken longer than I'd hoped, but a new Python 2.3
+	      compatible version of LANdialler is now available from <a
+		href="http://sourceforge.net/cvs/?group_id=34228">CVS</a>
+	      (scroll down to the "Anonymous CVS Access" section). I've
+	      not made packages yet as there's quite a bit of work to do
+	      on the installation and packaging, and it is not yet tested
+	      on Windows. If you'd like to try it check it out from CVS
+	      and run both the client and server from within their current
+	      directories. I've uploaded a <a
+		href="screenshots.html">screenshot</a> to tempt you into it.
 	  </p>
 	</li>
 	<li>
 	  <p>
 	    <strong>Development back underway</strong> (18 January
-	    2004)<br> I've made very few changes to LANdialler for a
-	    long time now, primarily because it just worked. However,
-	    it no longer works out of the box with the later versions
-	    of Python due to the absorption of the XML-RPC module into
+	    2004)<br>
+
+	    I've made very few changes to LANdialler for a long time
+	    now, primarily because it just worked. However, it no
+	    longer works out of the box with the later versions of
+	    Python due to the absorption of the XML-RPC module into
 	    the Python standard library. This is the first thing that
-	    will be fixed. <strong>Note: The instructions below refer to 
-	    running LANdialler with Python 2.1. If you want to use a 
-	    later version of Python please wait a week or two until the 
-	    new version is ready.</strong>
+	    will be fixed.
 	  </p>
 	  <p>
 	    I'm also intending to port the Unix GUI to GTK2, a change 
@@ -74,184 +58,22 @@
 	</li>
 	
       </ul>
-    
-      <a name="about"></a>
-      <h1>About</h1>
 
-      <table align="right" border="0" hspace="10" vspace="5">
-        <tbody>
-          <tr>
-            <td>
-              <img alt="Screenshot" title="Running under Tk on Linux" 
-                align="right"
-                src="images/ss/tk-linux-online-0.2pre2.gif" width="195"
-                height="132">
-            </td>
-          </tr>
-          <tr>
-            <td align="right" class="toolbar">
-              [ <a href="screenshots.html">more screenshots</a> ]
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      
-      <p>
-	LANdialler enables several computers on a LAN (Local Area
-	Network) to share control of a dial up connection to the
-	Internet.
-      </p>
-      
-      <p>
-	If you have a small home or office network (a LAN) that
-	connects to the Internet via a dial up link on a Linux
-	computer, then LANdialler could be of real use to you. If you
-	haven't got a Linux router yet find out how to <a
-	href="routing-docs.html">set one up</a>. The LANdialler client
-	software should run on most operating systems, including
-	Windows and Linux.
-      </p>
-
-      <p>
-	LANdialler is released under the terms of the <a
-	href="http://www.gnu.org/licenses/gpl.txt">GNU General Public
-	License</a>.
-      </p>
-
-      <h2>How does it work?</h2>
-            
-      <p>
-	LANdialler consists of two programs:
-      </p>
-
-      <ul>
-	<li>
-	  <strong>The client</strong> is run on all desktop computers
-	  that require Internet access. It talks to the server,
-	  requesting Internet connectivity for as long as the user
-	  requires it. The interface is very simple, which is
-	  officially a "good thing".
-	  <p>
-	</li>
-	<li>
-	  <strong>The server</strong> runs on the Linux router and
-	  manages the state of the dial up connection. It keeps track
-	  of the number of people who have asked to go online and
-	  keeps the Internet connection up until the last user
-	  disconnects.
-	</li>
-      </ul>
-  
-      <p>
-	Because the dial up connection is handled by your Linux router
-	your desktop computers can remain safely protected from prying
-	eyes by your router's firewall (assuming you have configured
-	it&nbsp;-&nbsp;if not why not?).
-      </p>
-            
-      <p>
-	The client and server communicate with one another over the
-	local network through the <a
-	href="http://www.xmlrpc.com/">XML-RPC</a> protocol.
-      </p>
-
-      <a name="download"></a>
-      <h1>Download</h1>
-
-      <p>
-	The latest versions of LANdialler are always available from
-	the <a
-	href="http://sf.net/project/showfiles.php?group_id=34228">project
-	files</a> page. You should download the latest versions of all
-	three packages.  Installation instructions are included with
-	the source code.
-      </p>
-
-      <h2>Requirements</h2>
-
-      <p>
-	Both the client and server are written in the <a
-	href="http://www.python.org/">Python</a> programming
-	language. Please make sure that you have a recent version (2.1
-	or later) installed. You can <a
-	href="http://www.python.org/download/">download it</a> for
-	free.
-      </p>
-            
-      <p>
-	The client should run on any operating system with Python and
-	Tk support&nbsp;-&nbsp;it has been tested on both Windows and
-	<a href="http://www.linux.com/">Linux</a>.
-      </p>
-            
-      <p>
-	The server should run on any POSIX compliant operating system,
-	but has only been tested on Debian GNU/Linux v2.2. You could
-	use any of the BSD variants (e.g. <a
-	href="http://www.freebsd.org/">FreeBSD</a>, <a
-	href="http://www.openbsd.org/">OpenBSD</a>, <a
-	href="http://www.netbsd.org/">NetBSD</a>) or <a
-	href="http://www.sun.com/software/solaris/">Solaris</a>,
-	etc. instead if you prefer (success reports would be very
-	welcome). Just make sure you can configure it to route IP
-	packets between your network and the Internet.  There is lots
-	of <a href="routing-docs.html">documentation</a> available for
-	Linux if you're not sure how to set it up.
-      </p>
-      
-      <p>
-	Both the client and the server require PythonWare's <a
-	href="http://www.pythonware.com/products/xmlrpc/">xmlrpclib</a>
-	library.
-      </p>
-
-      <a name="feedback">
       <h1>Feedback</h1>
             
       <p>
 	If you find LANdialler useful, or have some suggestons for
 	possible new features we'd love to hear from you. Please
 	either drop into the <a
-	href="http://sourceforge.net/forum/forum.php?forum_id=106888"
-	>forum</a> or <a
+	href="http://sourceforge.net/forum/forum.php?forum_id=106888">forum</a> or <a
 	href="http://sourceforge.net/tracker/?atid=410222&group_id=34228&func=browse"
 	>add a feature request</a>. Alternatively, an email to <a
 	href="http://sourceforge.net/project/memberlist.php?group_id=34228"
 	>one of the developers</a> would be much appreciated.
       </p>
 
-      <p align="center" class="toolbar">
-	[&nbsp;<a
-	href="./#news">news</a>&nbsp;|&nbsp;<a
-	href="./#about">about</a>&nbsp;|&nbsp;<a
-	href="./#download">download</a>&nbsp;]
-      </p>
+      <!--#include virtual="ssi/copyright.html" -->
 
-      <hr>
-
-      <table border="0" cellpadding="0" cellspacing="0">
-	<tbody>
-	  <tr>
-	    <td align="left">
-	      <a href="http://sourceforge.net/"><img
-	      src="http://sourceforge.net/sflogo.php?group_id=34228"
-	      width="88" height="31" border="0" alt="SourceForge
-	      logo"></a>
-	    </td>
-	    <td>
-	      &nbsp;&nbsp;
-	    </td>
-	    <td align="left" valign="top">
-	      <font size="-1">
-		Copyright &copy; 2001-2004,
-		Graham Ashton &lt;ashtong@users.sourceforge.net&gt;
-	      </font>
-	    </td>
-	  </tr>
-	</tbody>
-      </table>
-
-    </blockquote>
-
+    </div>
   </body>
 </html>
