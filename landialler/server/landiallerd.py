@@ -96,7 +96,7 @@ import xmlrpcserver
 try:
     import syslog
 except ImportError, e:
-    if os.name == 'posix':
+    if os.name == "posix":
         print "can't import syslog: %s" % e
 
 
@@ -146,14 +146,14 @@ class MyHandler(gmalib.Logger, xmlrpcserver.RequestHandler):
         the client.
 
         """
-        my_api = ['connect', 'disconnect', 'get_status']
+        my_api = ["connect", "disconnect", "get_status"]
         if not method in my_api:
-            raise xmlrpclib.Fault(123, 'Unknown method name')
+            raise xmlrpclib.Fault(123, "Unknown method name")
         else:
-            if method == 'get_status':
+            if method == "get_status":
                 (host, port) = self.client_address
                 params = (host,)
-            elif method == 'disconnect':
+            elif method == "disconnect":
                 (host, port) = self.client_address
                 params = (params[0], host)
             return apply(eval("api_" + method), params)
@@ -195,20 +195,15 @@ class CleanerThread(threading.Thread):
         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
         # for a full example of the while loop's timer code.
     
-        global mutex, current_users, is_connected, user_tracker
+        global mutex, current_users, is_connected, now_connecting, user_tracker
 
         while 1:
             mutex.acquire()
 
-            timeout = 30  # number of seconds before client deemed to be dead
-            for client in user_tracker.keys():
-                if (time.time() - user_tracker[client]) > timeout:
-                    del user_tracker[client]
-
-            current_users = len(user_tracker.keys())
-
-            if is_connected and current_users < 1:
-                api_disconnect(all='yes')
+            current_users = count_users()
+            is_connected = check_connection_status()
+            if (current_users < 1) and (now_connecting or is_connected):
+                api_disconnect(all="yes")
 
             mutex.release()
             self.pauser.wait(self.interval)
@@ -248,16 +243,7 @@ class App(gmalib.Daemon):
         self.log_info("starting server")
 
         self.getopt()
-
-        # load configuration files
-        try:
-            self.config = gmalib.SharedConfigParser()
-            self.config.read(["/usr/local/etc/landiallerd.conf",
-                              "/etc/landiallerd.conf", "landiallerd.conf"])
-        except Exception, e:
-            self.log_err("Terminating - error reading config file: %s" % e)
-            sys.exit()
-
+        self.config = gmalib.SharedConfigParser()  # pre-cached
         self.daemonise()
 
         # start the server and start taking requests
@@ -321,7 +307,7 @@ def api_connect():
             return xmlrpclib.False
 
 
-def api_disconnect(all='no', client=None):
+def api_disconnect(all="no", client=None):
     """Close the connection.
 
     If there are other users online and the all argument is not set
@@ -338,7 +324,7 @@ def api_disconnect(all='no', client=None):
     """
     global mutex, current_users, is_connected, now_connecting, user_tracker
     
-    if (current_users > 1) and (all <> 'yes'):  # other users still online
+    if (current_users > 1) and (all <> "yes"):  # other users still online
         del user_tracker[client]
         return xmlrpclib.True
 
@@ -360,37 +346,91 @@ def api_disconnect(all='no', client=None):
 def api_get_status(client):
     """Return current_users and is_connected.
 
+    The client parameter should uniquely identify the client, and
+    should be usable as a dictionary key. The IP address is usually
+    used.
+
+    The two values returned are:
+
     current_users -- The number of users sharing the connection
     is_connected  -- 1 if connected, 0 otherwise
 
     """
-    global mutex, current_users, is_connected, now_connecting, user_tracker
+    global mutex, is_connected, now_connecting, user_tracker
 
     mutex.acquire()
 
-    # register client's connection, purge old data
+    # register client's connection
     user_tracker[client] = time.time()
 
-    # get current_users and is_connected
-    config = gmalib.SharedConfigParser()
-    cmd = config.get("commands", "is_connected")
-    rval = os.system("%s > /dev/null 2>&1" % cmd)
-    if rval == 0:
-        current_users = len(user_tracker.keys())
-        is_connected = 1
+    # get dummy_current_users and is_connected
+    is_connected = check_connection_status()
+    if is_connected:
         now_connecting = 0
+        dummy_current_users = len(user_tracker.keys())
     else:
-        current_users = 0  # ignore contents of user_tracker, we're not online
-        is_connected = 0
+        dummy_current_users = 0
 
     mutex.release()
 
-    return (current_users, is_connected)
+    return (dummy_current_users, is_connected)
+    
+
+def check_connection_status():
+    """Run the external is_connected command.
+
+    Returns 1 if the external command runs successfully, 0 otherwise.
+
+    """
+    global mutex, is_connected, now_connecting
+    
+    config = gmalib.SharedConfigParser()
+    cmd = config.get("commands", "is_connected")
+    rval = os.system("%s > /dev/null 2>&1" % cmd)
+
+    mutex.acquire()
+    if rval == 0:
+        is_connected = 1
+        now_connecting = 0
+    else:
+        is_connected = 0
+    mutex.release()
+
+    return is_connected
 
 
-if __name__ == '__main__':
+def count_users():
+    """Counts the number of currently active clients.
+
+    Returns the number of clients that have run the API's get_status()
+    procedure in the last 30 seconds.
+    
+    """
+    global mutex, is_connected, user_tracker
+
+    mutex.acquire()
+    timeout = 30  # number of seconds before client deemed to be dead
+    for client in user_tracker.keys():
+        if (time.time() - user_tracker[client]) > timeout:
+            del user_tracker[client]
+    num_users = len(user_tracker.keys())
+    mutex.release()
+
+    return num_users
+        
+
+if __name__ == "__main__":
     if os.name != "posix":
         print "Sorry, only POSIX compliant systems are currently supported."
+        sys.exit()
+
+    # pre-load configuration files, cached by SharedConfigParser
+    try:
+        config = gmalib.SharedConfigParser()
+        config.read(["/usr/local/etc/landiallerd.conf",
+                     "/etc/landiallerd.conf", "landiallerd.conf"])
+    except Exception, e:
+        print "Terminating - error reading config file: %s" % e
         sys.exit()
 
     # global variables for maintaining state
