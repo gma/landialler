@@ -244,7 +244,9 @@ class MainWindow(View):
         """Call the model.get_server_status() periodically (abstract method).
 
         The toolkit specific sub class should override this method to
-        enable periodic status updates.
+        enable periodic status updates by calling the model's
+        get_server_status() method every model.status_check_period
+        milliseconds.
 
         """
         raise NotImplementedError, \
