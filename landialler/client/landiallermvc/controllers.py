@@ -30,7 +30,7 @@ and logic. For example, buttons in the GUI run controller methods when
 they're clicked. The controllers are responsible for interfacing with
 the application.
 
-Each window or dialog (see the views module) has it's own
+Each window or dialog (see the landialler.views module) has it's own
 corresponding controller class which contains methods specific to that
 view.
 
@@ -46,16 +46,16 @@ class Controller:
         # self.model.attach(self)  # observe the model
         self.view = view
 
-    def update(self):
-        """Called by the model's notify() method.
+##    def update(self):
+##        """Called by the model's notify() method.
 
-        The controllers can observe the model if required, in which
-        they should override this method. They should also call their
-        model's attach() method, as this is currently done
-        automatically for controllers.
+##        The controllers can observe the model if required, in which
+##        they should override this method. They should also call their
+##        model's attach() method, as this is currently done
+##        automatically for controllers.
 
-        """
-        pass
+##        """
+##        pass
 
 
 class ConnectingDialogController(Controller):
