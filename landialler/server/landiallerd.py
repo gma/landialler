@@ -94,7 +94,7 @@ import os
 # import sys
 # import threading
 import time
-# import xmlrpclib
+import xmlrpclib
 
 # try:
 #     import syslog
@@ -115,94 +115,79 @@ import time
 # log = Dummy()
 
 
-# class API:
+class API:
     
-#     """Implements the LANdialler API.
+    """Implements the LANdialler API.
 
-#     All accessible methods in this class form a part of the LANdialler
-#     XML-RPC API, and are called directly whenever a client makes an
-#     HTTP request to the server.
+    All accessible methods in this class form a part of the LANdialler
+    XML-RPC API, and are called directly whenever a client makes an
+    HTTP request to the server.
 
-#     Their return values are passed directly back to the XML-RPC
-#     clients.
+    """
 
-#     """
+    def __init__(self, modem_proxy):
+        self._modem_proxy = modem_proxy
 
-#     def __init__(self, modem):
-#         self._modem = modem
+    def connect(self, client_id):
+        """Open the connection.
 
-#     def connect(self, client):
-#         """Open the connection.
+        The client parameter should be a hashable (e.g. string) that
+        uniquely identifies the client (e.g. the IP address).
 
-#         The client parameter should be a hashable that uniquely
-#         identifies the client (e.g. the IP address).
+        If the server is already connected the XML-RPC True value is
+        returned. If the server is in the process of connecting then
+        an XML-RPC False value is returned.
 
-#         If the server is already connected the XML-RPC True value is
-#         returned. If the server is in the process of connecting then
-#         an XML-RPC False value is returned.
+        Otherwise an attempt is made to make a connection by running
+        an external dial up command (see landiallerd.conf). If the
+        external command runs successfully (and therefore returns 0)
+        then the XML-RPC True value is returned, False otherwise. The
+        external command should return immediately (i.e. not block
+        whilst the connection is made) irrespective of whether or not
+        the actual connection will be successfully set up immediately.
 
-#         Otherwise an attempt is made to make a connection by running
-#         an external dial up command (see landiallerd.conf). If the
-#         external command runs successfully (and therefore returns 0)
-#         then the XML-RPC True value is returned, False otherwise. The
-#         external command should return immediately (i.e. not block
-#         whilst the connection is made) irrespective of whether or not
-#         the actual connection will be successfully set up immediately.
+        """
+        return self._modem_proxy.dial(client_id)
 
-#         """
-#         if self._modem.is_connected:
-#             return xmlrpclib.True
-#         elif self._modem.is_connecting:
-#             return xmlrpclib.False
-#         else:
-#             if self._modem.dial():
-#                 self._modem.is_connecting = 1
-#                 return xmlrpclib.True
-#             else:
-#                 return xmlrpclib.False
+    def disconnect(self, client_id, all=xmlrpclib.False):
+        """Close the connection.
 
-#     def disconnect(self, all="no", client=None):
-#         """Close the connection.
+        If there are other users online and the all argument is not
+        set to "yes" then the XML-RPC True value is returned.
 
-#         If there are other users online and the all argument is not
-#         set to "yes" then the XML-RPC True value is returned.
+        Otherwise the connection is dropped by running an external
+        dial up termination script. As with connect(), the return
+        value of the external script is converted into the XML-RPC
+        True or False value, and returned.
 
-#         Otherwise the connection is dropped by running an external
-#         dial up termination script. As with connect(), the return
-#         value of the external script is converted into the XML-RPC
-#         True or False value, and returned.
+        The client argument should uniquely identify the client, and
+        should be usable as a dictionary key.
 
-#         The client argument should uniquely identify the client, and
-#         should be usable as a dictionary key.
-
-#         """
-#         if (self._modem.count_clients() > 1) and (all != "yes"):
-#             self._modem.forget_client(client)
-#             return xmlrpclib.True
-#         else:
-#             if client:
-#                 log.info("%s disconnected, terminating connection" % client)
-#             self._modem.is_connecting = 0
-#             self._modem.forget_all_clients()
-#             if self._modem.hangup():
-#                 return xmlrpclib.True
-#             else:
-#                 return xmlrpclib.False
+        """
+        if self._modem_proxy.is_connected():
+            return self._modem_proxy.hang_up(client_id, bool(all))
+        else:
+            return True
                 
-#     def get_status(self, client):
-#         """Returns the number of clients and connection status.
+    def get_status(self, client_id):
+        """Returns the number of clients and connection status.
 
-#         The client parameter should uniquely identify the client, and
-#         should be usable as a dictionary key. The IP address is
-#         usually used.
+        The client parameter should uniquely identify the client, and
+        should be usable as a dictionary key. The IP address is
+        usually used.
 
-#         The values returned are:
+        The values returned are:
 
-#         current_clients -- The number of users sharing the connection
-#         is_connected    -- 1 if connected, 0 otherwise
-#         time_connected  -- Formatted string of time on-line (%H:%M:%S)
+        current_clients -- The number of users sharing the connection
+        is_connected    -- 1 if connected, 0 otherwise
+        time_connected  -- Number of seconds connected
 
-#         """
+        """
+        self._modem_proxy.refresh_client(client_id)
+        return (self._modem_proxy.count_clients(),
+                self._modem_proxy.is_connected(),
+                self._modem_proxy.get_time_connected())
+    
 #         self._modem.remember_client(client)
 #         if self._modem.is_connected:
 #             self._modem.is_connecting = 0
@@ -509,10 +494,10 @@ class Timer:
 
     def __init__(self):
         """Run the start() method."""
-        self._start_time = 0  # seconds since epoch
-        self._stop_time = 0
-        self.is_running = True
+        self._start_time = None  # seconds since epoch
+        self._stop_time = None
         self.reset()
+        self.is_running = False
 
     def start(self):
         """Start the timer."""
@@ -560,8 +545,8 @@ class Modem:
         return os.system(command) == 0
 
     def is_connected(self):
-#         if not self.timer.is_running:
-#             self.timer.start()
+        if not self.timer.is_running:
+            self.timer.start()
         command = self._config_parser.get('commands', 'is_connected')
         return os.system(command) == 0
 
@@ -573,7 +558,7 @@ class ModemProxy:
     def __init__(self, modem):
         self._modem = modem
         self._clients = {}
-        self._is_dialling = False
+        self._is_dialling = False  # TODO: remove/sort this attribute out
 
     def _add_client(self, client_id):
         if client_id not in self._clients:
@@ -590,16 +575,19 @@ class ModemProxy:
 
     def dial(self, client_id):
         self._add_client(client_id)
-        if not self._is_dialling:
+        if self.is_connected() or self._is_dialling:
+            return True
+        else:
             self._is_dialling = True
             return self._modem.dial()
 
     def hang_up(self, client_id, all=False):
         if client_id in self._clients:
             del self._clients[client_id]
-        if self.is_connected():
-            if all or not self._clients:
-                self._modem.hang_up()
+        if self.is_connected() and (all or not self._clients):
+            return self._modem.hang_up()
+        else:
+            return True
 
     def is_connected(self):
         return self._modem.is_connected()
