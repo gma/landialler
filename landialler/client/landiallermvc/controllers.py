@@ -40,32 +40,70 @@ class Controller:
     def update(self):
         """Called by the model's notify() method.
 
-        The controllers don't currently need to observe the model,
-        though may in the future. This method is included here for
-        completeness/documentation purposes.
+        The controllers can observe the model if required, in which
+        they should override this method.
 
         """
         pass
 
 
 class ConnectingDialogController(Controller):
-    def cancel_cb(self):
-        """Called when the Cancel button is pressed."""
-        print "ConnectingDialogController.cancel_cb called"
+    def cancel_cb(self, cleanup_view):
+        """Called when the Cancel button is pressed.
+
+        The cleanup_view argument should be a function object that can
+        be run to close down the toolkit's main window and cleanly
+        exit the application.
+
+        The XML-RPC API's server_disconnect() method is called, then
+        the cleanup_view object is called. Note that this method is
+        typically called when either the main window's close button or
+        the Disconnect button are clicked.
+
+        """
         self.model.server_disconnect()
+        cleanup_view()
 
 
 class DisconnectDialogController(Controller):
-    def yes_cb(self):
+    def yes_cb(self, cleanup_view):
         """Called when the Yes button is pressed."""
-        print "DisconnectDialogController.yes_cb called"
+        self.model.server_disconnect(all='yes')
+        cleanup_view()
         
-    def no_cb(self):
+    def no_cb(self, cleanup_view):
         """Called when the No button is pressed."""
-        print "DisconnectDialogController.no_cb called"
+        self.model.server_disconnect(all='no')
+        cleanup_view()
 
+
+class DroppedDialogController(Controller):
+    def ok_cb(self, cleanup_view):
+        """Called when the OK button is pressed.
+
+        Simply exits the application.
+
+        """
+        cleanup_view()
+        
 
 class MainWindowController(Controller):
-    def disconnect_cb(self):
-        """Called when the Disconnect button is pressed."""
-        print "MainWindowController.disconnect_cb called"
+    def disconnect_cb(self, cleanup_view):
+        """Called when the Disconnect button is pressed.
+
+        The cleanup_view argument should be a function object that can
+        be run to close down the toolkit's main window and cleanly
+        exit the application.
+
+        The model's server_disconnect() method is called, then the
+        cleanup_view object is called. Note that this method is
+        typically called when either the main window's close button or
+        the Disconnect button are clicked.
+
+        """
+        if self.model.current_users > 1:
+            dialog = self.model.toolkit.DisconnectDialog(self.model)
+            dialog.draw()
+        else:
+            self.model.server_disconnect()
+        cleanup_view()
