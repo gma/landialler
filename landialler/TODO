@@ -3,26 +3,20 @@ TODO
 
 The following updates should make it into release 0.2 proper:
 
-  - Handle two client's trying to start the connection at the same
-    time more gracefully.
-
-  - Add an Observer class and make View and Controller inherit from it.
-
-  - Add views.Dialog and get tkviews.Dialog to inherit from it, making
-    cleanup() an abstract method of views.Dialog. Move all occurrences
-    of the modal attribute into views.py.
-
-  - Add support to the client for detecting time outs, allowing the
-    client to retry the connection from scratch, with a retry/cancel
-    dialog.
-
   - Stop xmlrpcserver from writing to syslog all the time.
 
 These changes will come along later, probably for the 1.0 release.
 
-  - Add retry/cancel dialog if the connection drops out.
+  - Add support to the client for detecting time outs, allowing the
+    client to retry the connection from scratch, with a retry/cancel
+    dialog. Should this really go in the server and API?
+
+  - Put retry/cancel buttons on the dropped connection dialog, instead
+    of just OK.
 
   - Add support for monitoring how long the server has been online.
+
+  - A ButtonBar class for creating and drawing rows of one or more button.
 
   - A GTK+ port, and an anygui port; Tk is not that attractive on
     Linux.
