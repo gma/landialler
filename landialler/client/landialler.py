@@ -13,7 +13,6 @@ import os
 import posixpath
 import socket
 import sys
-import syslog
 import time
 import Tkinter
 import tkMessageBox as dialog
@@ -45,14 +44,10 @@ class App(application.Application):
         except ConfigParser.NoOptionError, e:
             msg = "Error reading config file: %s" % e
             self.log_err(msg)
-            dialog.showerror("Error", msg)
+            dialog.showerror("Landialler: Error", msg)
             sys.exit()
     
     def run(self):
-        if os.name == "posix":
-            syslog.openlog(posixpath.basename(sys.argv[0]),
-                           syslog.LOG_PID | syslog.LOG_CONS)
-
         root = Tkinter.Tk()
         root.withdraw()
 
@@ -68,10 +63,11 @@ class App(application.Application):
 
             response = self.client.is_connected()
             if response.value == 1:
-                dialog.showinfo("Already online", "You are already online")
+                dialog.showinfo("Landialler: already online",
+                                "You are already online")
                 sys.exit()
             else:
-                go_online = dialog.askyesno("Go online?",
+                go_online = dialog.askyesno("Landialler: go online?",
                                             "Would you like to go online?")
                 if not go_online:
                     sys.exit()
@@ -87,15 +83,18 @@ class App(application.Application):
                     print "checking connection (%d secs)" % paused
                     response = self.client.is_connected()
                     if response.value == 1:
-                        dialog.showinfo("Connected!", "You are now online")
+                        dialog.showinfo("Landialler: connected!",
+                                        "You are now online")
                         break
                     else:
                         time.sleep(5)
                         paused += 5
 
-                # The next dialog should be minimised until the user is
+                # The next OK button shouldn't be clicked until we're
                 # ready to disconnect from the Internet.
-                dialog.showinfo("Disconnect?", "Click OK to disconnect")
+                
+                dialog.showinfo("Landialler: disconnect?",
+                                "Click OK to disconnect")
                 self.client.disconnect()
                 sys.exit()
 
@@ -104,16 +103,13 @@ class App(application.Application):
             if e.args[0] == 111:  # connection refused
                 msg = "Sorry, I couldn't connect to the landialler server. " + \
                       "Is it turned on?"
-                dialog.showerror("Error", msg)
+                dialog.showerror("Landialler: error", msg)
             else:
-                dialog.showerror("Error",
+                dialog.showerror("Landialler: error",
                                  "Error %d: %s" % (e.args[0], e.args[1]))
 
 ##         except Exception, e:
 ##             self.log_err("Untrapped error: %s" % e)
-
-        if os.name == "posix":
-            syslog.closelog()
 
 
 if __name__ == '__main__':
