@@ -130,7 +130,7 @@ class FatalErrorController(Controller):
         dialog and the main window.
 
         Then calls the model's server_disconnect() method to make sure
-        that the connection doesn't hang around after we've gone. -
+        that the connection doesn't hang around after we've gone.
 
         """
         self.model.server_disconnect()
