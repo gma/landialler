@@ -1,7 +1,7 @@
 # $Id$
 #
-# Used by distutils to generate the MANIFEST file, which controlls
-# what makes it into the distribution.
+# Used by distutils to generate the MANIFEST file, which controls what
+# makes it into the distribution.
 
 include AUTHORS
 include COPYING
