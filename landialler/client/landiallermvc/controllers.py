@@ -62,7 +62,7 @@ class ConnectingDialogController(Controller):
 
     """Controller for the ConnectingDialog view class."""
     
-    def cancel_cb(self):
+    def cancel_cb(self, *args):
         """Called when the Cancel button is pressed.
 
 	The XML-RPC API's server_disconnect() method is called, then the
@@ -82,7 +82,7 @@ class DisconnectDialogController(Controller):
 
     """Controller for the DisconnectDialog view class."""
     
-    def yes_cb(self):
+    def yes_cb(self, *args):
         """Called when the Yes button is pressed.
 
         The model's server_disconnect() method is called with the
@@ -97,7 +97,7 @@ class DisconnectDialogController(Controller):
         if hasattr(self.view, "cleanup"):
             self.view.cleanup()
 
-    def no_cb(self):
+    def no_cb(self, *args):
         """Called when the No button is pressed.
 
         The model's server_disconnect() method is called with the
@@ -112,7 +112,7 @@ class DisconnectDialogController(Controller):
 
 
 class DroppedDialogController(Controller):
-    def ok_cb(self):
+    def ok_cb(self, *args):
         """Called when the OK button is pressed.
 
         Simply calls the cleanup_view function object, which should
@@ -124,7 +124,7 @@ class DroppedDialogController(Controller):
 
 
 class FatalErrorController(Controller):
-    def ok_cb(self):
+    def ok_cb(self, *args):
         """Called when the OK button is pressed.
 
         Calls the cleanup_view function object, which should
@@ -136,7 +136,7 @@ class FatalErrorController(Controller):
 
 
 class MainWindowController(Controller):
-    def disconnect_cb(self):
+    def disconnect_cb(self, *args):
         """Called when the Disconnect button is pressed.
 
         If there are other users a DisconnectDialog class is
