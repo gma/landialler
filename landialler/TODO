@@ -7,11 +7,6 @@ Things to be done, in no particular order:
 
   - Report the number of total bytes sent/received, and per client.
 
-  - Rename classes in views.py by placing "Abstract" on the front of each.
-
-  - Refactor the window/dialog classes so that they inherit from the
-    toolkit's windows, instead of having self.window attributes.
-
   - Add support to the client for detecting time outs, allowing the
     client to retry the connection from scratch, with a retry/cancel
     dialog. Should this really go in the server and API?
