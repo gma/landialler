@@ -28,7 +28,6 @@ import gmalib
 import os
 import socket
 import xmlrpclib
-# from landialler import controllers
 
 
 __version__ = "0.2pre1"
@@ -46,6 +45,9 @@ class Model:
         self.config = config  # ConfigParser object
         self.server = server  # connection to XML-RPC server
         self._observers = []  # observers are MVC views or controllers
+        self.status_check_period = 5000  # msec between get_server_status()
+        self.toolkit = None   # toolkit specific view library
+        self.choose_gui_toolkit()
 
         # server status attributes (retrieved via RPC)
         self.is_connected = 0
@@ -60,6 +62,26 @@ class Model:
         for observer in self._observers:
             if observer is observer:
                 self._observers.remove[observer]
+
+    def choose_gui_toolkit(self):
+        """Work out which GUI toolkit the View components should use.
+
+        Imports the correct view module (e.g. tkviews) and makes
+        self.toolkit an alias to the module.
+
+        """
+        # determine which GUI toolkit to use
+        # FIXME: Improve behaviour when no toolkit entry in config file
+        # so that gtk can be the default on Unix. :)
+        try:
+            toolkit = self.config.get("interface", "toolkit")
+        except ConfigParser.NoOptionError:
+            toolkit = "tk"
+        except ImportError:
+            toolkit = tk
+            
+        exec("from landialler import %sviews" % toolkit)
+        exec("self.toolkit = %sviews" % toolkit)
 
     def notify(self):
         """Calls each observer's update() method."""
@@ -90,7 +112,7 @@ class Model:
         else:
             return 0
 
-    def server_disconnect(self):
+    def server_disconnect(self, all='no'):
         """Instructs the server to disconnect the dial up connection.
 
         Calls the XML-RPC API's disconnect() method. Returns 1 if the
@@ -98,7 +120,7 @@ class Model:
         0 otherwise.
 
         """
-        rval = self.server.disconnect()
+        rval = self.server.disconnect(all)
         if rval.value == xmlrpclib.True:
             return 1
         else:
@@ -148,29 +170,15 @@ class App(gmalib.Application):
             else:
                 print "%d: %s" % (e.args[0], e.args[1])
 
-        # determine which GUI toolkit to use
-        # FIXME: improve behaviour when no toolkit entry in config file
-        try:
-            toolkit = config.get("interface", "toolkit")
-        except ConfigParser.NoOptionError:
-            toolkit = "tk"
-        except ImportError:
-            toolkit = tk
-            
-        exec("from landialler import %sviews" % toolkit)
-        exec("ui = %sviews" % toolkit)
-
+        # start the GUI
         model = Model(config, server)
         model.get_server_status()
         if not model.is_connected:
-            dialog = ui.ConnectingDialog(model)
-            dialog.show()
+            dialog = model.toolkit.ConnectingDialog(model)
+            dialog.draw()
             model.server_connect()
-        print "status: %s, %s" % (model.is_connected, model.current_users)
-        window = ui.MainWindow(model)
-        model.get_server_status()
-        print "status: %s, %s" % (model.is_connected, model.current_users)
-        window.show()
+        window = model.toolkit.MainWindow(model)
+        window.draw()  # starts event handling loop
 
 
 if __name__ == '__main__':
