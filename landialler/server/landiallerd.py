@@ -20,17 +20,19 @@
 #
 # $Id$
 
-"""Landialler Enables several computers on a home LAN to remotely
+"""serves landialler XML-RPC requests
+
+Landialler enables several computers on a home LAN to remotely
 control a dial up device (e.g. modem) that is connected to a single
 Unix workstation.
 
 There are two programs that make up landialler; the client and the
 server. This is the server that runs on the Unix workstation.
 
-It runs in the background (as a daemon) waiting for landialler clients
-to connect to it and request an Internet connection (through the
-landialler XML-RPC API). By default it listens for connections on port
-6543.
+The client and server communicate via XML-RPC. The server runs in the
+background (as a daemon) waiting for landialler clients to connect to
+it and request an Internet connection (through the landialler XML-RPC
+API). By default the server listen for connections on port 6543.
 
 The client/server API defines three procedures that the client can
 call; connect(), disconnect() and is_connected(). These are
@@ -57,19 +59,20 @@ Note that you can also configure the TCP port number that landiallerd
 uses to talk to the clients.
 
 The connect and disconnect scripts above should both make sure that
-they exit immediately; the connect command MUST NOT hang around
-indefinitely waiting to see if the connection has been made, but
-should only check that the commands that it has run have started
-correctly. If you know how to integrate landialler cleanly with your
-own operating system's dial up systems then please send them in and
-they will be made available on the web site (the author only uses
-Debian).
+they exit immediately; the connect command MUST NOT block before the
+connection has been made, but should only check that the commands that
+it has run have started correctly. If you know how to integrate
+landialler cleanly with your own operating system's dial up systems
+then please send them in and they will be made available on the web
+site (the author only uses Debian).
+
+Error, informational and debugging messages are written to the syslog.
 
 More information on landialler is available at the project home page:
 
   http://landialler.sourceforge.net/
 
-Author: Graham Ashton <ashtong@users.sourceforge.net>
+The author (Graham Ashton) can be contacted at ashtong@users.sourceforge.net.
 
 """
 
@@ -82,6 +85,8 @@ import sys
 import syslog
 import xmlrpclib
 import xmlrpcserver
+
+__version__ = "0.1"
 
 
 class MyTCPServer(SocketServer.TCPServer):
