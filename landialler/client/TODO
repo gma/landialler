@@ -1,0 +1,25 @@
+TODO
+----
+
+This file documents upcoming fixes/things on my mind/stuff I'd like to
+do, in no particular order.
+
+  - Keep track of the number of clients that have requested
+    connectivity so that the Net connection isn't dropped until the
+    last landialler client has been closed.
+
+  - Drastically improve the interface so that the user is provided
+    with some proper feedback, both whilst the connection is being setup
+    (i.e. the "Yes, I'm still alive, hang on" kind of thing), and
+    whilst connected (e.g. "You've been connected for 23 mins, 2 people
+    on line"). This will involve learning some Tk, as will making it
+    possible to minimise the "Connected" dialog...
+
+  - A GTK+/GNOME port as Tk is *really* ugly on Linux. Perhaps I
+    should do wxWindows() instead but I'd quite like to have a GNOME
+    applet for this stuff.
+
+  - Improve support for trapping exceptions (e.g. missing config files
+    aren't trapped properly yet! - how embarrassing?).
+
+$Id$
