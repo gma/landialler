@@ -63,8 +63,8 @@ they exit immediately; the connect command MUST NOT block before the
 connection has been made, but should only check that the commands that
 it has run have started correctly. If you know how to integrate
 landialler cleanly with your own operating system's dial up systems
-then please send them in and they will be made available on the web
-site (the author only uses Debian).
+then please send suggestions in and they will be made available on the
+web site, with credits.
 
 Error, informational and debugging messages are written to the syslog.
 
@@ -76,7 +76,7 @@ The author (Graham Ashton) can be contacted at ashtong@users.sourceforge.net.
 
 """
 
-__version__ = "0.1"
+__version__ = "0.2pre1"
 
 import getopt
 import gmalib
@@ -84,9 +84,15 @@ import os
 import posixpath
 import SocketServer
 import sys
-import syslog
+import time
 import xmlrpclib
 import xmlrpcserver
+
+try:
+    import syslog
+except ImportError, e:
+    if os.name == "posix":
+        print "can't import syslog: %s" % e
 
 
 class MyTCPServer(SocketServer.TCPServer):
@@ -199,15 +205,17 @@ class MyHandler(xmlrpcserver.RequestHandler):
         else:
             return xmlrpclib.False
 
-    def api_time_online(self, params):
-        """Returns number of seconds the connection has been up.
+    def api_time_connected(self, params):
+        """Returns seconds since the epoch when the connection was made.
 
-        If the connection is down it returns -1 instead.
+        If the connection is currently up it returns the number of
+        seconds since the epoch at the time that it was first realised
+        that the connection came up. Otherwise (if the connection is
+        down) it returns -1 instead.
 
         """
 
-        from random import random
-        return int(random() * 10)
+        return time.time() - 1723
 
 
 class App(gmalib.Daemon):
@@ -221,12 +229,12 @@ class App(gmalib.Daemon):
 
         Reads the command line arguments, looking for the following:
 
-        -d   enable debugging for extra output
-        -f   run in the foreground (not as a daemon)
+        -d  enable debugging for extra output
+        -f  run in the foreground (not as a daemon)
 
         """
 
-        opts, args = getopt.getopt(sys.argv[1:], "df")
+        opts, args = getopt.getopt(sys.argv[1:], "dft")
 
         for o, v in opts:
             if o == "-d":
@@ -235,7 +243,6 @@ class App(gmalib.Daemon):
                 self.log_to_console = 1
                 self.be_daemon = 0
 
-        print "be_daemon=%s" % self.be_daemon
         self.log_debug("App.getopt(): opts=%s, args=%s" % (opts, args))
 
     def main(self):
@@ -268,7 +275,7 @@ class App(gmalib.Daemon):
 
 if __name__ == '__main__':
     if os.name != "posix":
-        print "Sorry, only Unix (and similar) operating systems are supported."
+        print "Sorry, only POSIX compliant Operating Systems are supported."
         sys.exit()
     app = App()
     # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
