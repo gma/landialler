@@ -36,10 +36,9 @@ from Tkinter import *
 import views
 
 
-root = Tk()  # Instantiated explicitly so that we can access it later.
-             # Also means that we don't get a spare top level window
-             # floating around if we create a dialog before drawing
-             # the main window.
+NoDefaultRoot()  # prevent immediate instantiation of a root window
+
+main_win = None   # global var that refers to the main windows Tk() object
 
 
 class Window:
@@ -73,13 +72,18 @@ class Dialog(Window):
 
     def draw(self):
         """Displays the dialog's message and buttons."""
-        self.window = Toplevel()
+        self.window = Tk()
         self.window.resizable(0, 0)
         self.window.title(self.title)
         self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close
         frame = Frame(self.window, bd=6)
+
+        # Tk is crap at labels. If it's a long one we use a Message() object
+        # instead, of a fixed width.
+
         max_cols = 15
         max_pixels = 160
+
         if len(self.text) > max_cols:
             widget = Message(frame, text=self.text, width=max_pixels)
         else:
@@ -87,6 +91,7 @@ class Dialog(Window):
         widget.pack()
         frame.pack()
         self.draw_buttons(self.window)
+        self.window.wait_visibility(main_win)
         self.window.focus_set()
         if self.modal:
             self.window.grab_set()
@@ -100,9 +105,14 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
         views.ConnectingDialog.__init__(self, model)
 
     def cleanup(self):
-        global root
-        self.window.destroy()
-        root.quit()
+        self.window.quit()
+    
+    def draw(self):
+        """Wait until main window displayed before displaying."""
+        Dialog.draw(self)
+        print "calling wait_visibility"
+        global main_win
+        self.window.wait_visibility(main_win)
 
     def update(self):
         if self.model.is_connected:
@@ -126,9 +136,7 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         views.DroppedDialog.__init__(self, model)
 
     def cleanup(self):
-        global root
-        self.window.destroy()
-        root.quit()
+        self.window.quit()
 
     def update(self):
         if self.model.is_connected:
@@ -142,9 +150,7 @@ class FatalErrorDialog(Dialog, views.FatalErrorDialog):
         views.FatalErrorDialog.__init__(self, model, err_msg)
 
     def cleanup(self):
-        global root
-        self.window.destroy()
-        root.quit()
+        self.window.quit()
 
 
 class MainWindow(Window, views.MainWindow):
@@ -152,15 +158,9 @@ class MainWindow(Window, views.MainWindow):
     def __init__(self, model):
         Window.__init__(self)
         views.MainWindow.__init__(self, model)
-        global root
-        self.window = root
+        self.window = Tk()
         self.window.resizable(0, 0)
-        self.default_var = []  # stores variable values (i.e. actual status)
         self.update_var = []   # StringVar() object's for auto label updating
-        for row in self.status_rows:
-            (label, value) = row
-            self.default_var.append(value)
-            self.update_var.append(StringVar())
 
     def cleanup(self):
         self.window.quit()
@@ -169,11 +169,11 @@ class MainWindow(Window, views.MainWindow):
         self.window.title(self.title)
         on_delete_cb = self.buttons['disconnect'][1]  # same as disconnect btn
         self.window.protocol('WM_DELETE_WINDOW', on_delete_cb)
-        self.draw_labels()
-        self.draw_buttons()
+        self.draw_labels(self.window)
+        self.draw_buttons(self.window)
         self.status_check()
         self.update()  # update labels immediately
-        mainloop()
+        self.window.mainloop()
 
     def draw_labels(self, parent=None):
         """Draws frame containing status display."""
@@ -183,12 +183,13 @@ class MainWindow(Window, views.MainWindow):
         row = 0
         for tuple in self.status_rows:
             (label, value) = tuple
+
             widget = Label(frame2, text=label)
             widget.grid(row=row, sticky=W, padx=2, pady=2)
 
-            var = StringVar()
-            var.set(self.default_var[row])
-            self.update_var[row] = var
+            var = StringVar(frame2)
+            var.set(value)
+            self.update_var.append(var)
             widget = Label(frame2, textvariable=var)
             widget.grid(row=row, col=1, sticky=E, padx=2, pady=2)
             row += 1
