@@ -27,4 +27,4 @@ tardist:
 uninstall:
 	@echo "### Uninstalling ..."
 	rm -rf $(BIN)/landiallerd.py
-	rm -rf $(MAN)/landiallerd.conf
+	rm -rf $(ETC)/landiallerd.conf
