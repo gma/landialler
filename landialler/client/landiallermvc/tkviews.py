@@ -26,7 +26,8 @@
 Most classes in this file are Tk specific sub classes of those in
 views.py that define the MVC views. Where this is not the case they
 are present simply to aid the Tk implementation. Please see views.py
-for more documentation.
+for more documentation, especially for many of the methods, whose
+purpose is only documented in views.py.
 
 """
 
@@ -67,7 +68,6 @@ class Window:
 class Dialog(Window):
 
     def __init__(self):
-        """Set default button_side attribute to TOP."""
         Window.__init__(self)
         self.window = None
 
@@ -99,13 +99,11 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
         views.ConnectingDialog.__init__(self, model)
 
     def cleanup(self):
-        """Cleans up after the dialog has been closed."""
         global root
         self.window.destroy()
         root.quit()
 
     def update(self):
-        """Closes the dialog once the connection is made."""
         if self.model.is_connected:
             self.window.destroy()
     
@@ -117,11 +115,6 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         views.DisconnectDialog.__init__(self, model)
 
     def cleanup(self):
-        """Cleans up after the Yes or No buttons have been pressed.
-
-        Destroys the dialog box.
-
-        """
         self.window.destroy()
 
 
@@ -132,14 +125,8 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         views.DroppedDialog.__init__(self, model)
 
     def cleanup(self):
-        """Cleans up after the OK button has been pressed.
-
-        Exits the application.
-
-        """
         global root
         self.window.destroy()
-        #print "modal: %s" % self.modal
         root.quit()
 
     def update(self):
@@ -154,11 +141,6 @@ class FatalErrorDialog(Dialog, views.FatalErrorDialog):
         views.FatalErrorDialog.__init__(self, model, err_msg)
 
     def cleanup(self):
-        """Cleans up after the OK button has been pressed.
-
-        Exits the application.
-
-        """
         global root
         self.window.destroy()
         root.quit()
@@ -177,7 +159,6 @@ class MainWindow(Window, views.MainWindow):
             self.update_var.append(StringVar())
 
     def cleanup(self):
-        """Destroy the main window."""
         global root
         root.quit()
 
@@ -219,12 +200,6 @@ class MainWindow(Window, views.MainWindow):
         root.after(self.model.status_check_period, self.status_check)  # re-run
 
     def update(self):
-        """Updates the status display.
-
-        Updates the status and user count labels. If the connection
-        has dropped a DroppedDialog is created.
-
-        """
         self.update_var[1].set(self.model.current_users)
         if self.model.is_connected:
             self.update_var[0].set('Online')
