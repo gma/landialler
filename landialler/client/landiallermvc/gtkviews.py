@@ -47,9 +47,9 @@ class Window:
         self.window = GtkWindow(self.window_type)
 
     def draw(self):
-        self.window.set_border_width(2)
+        self.window.set_border_width(1)
         self.window.set_title(self.title)
-        self.window.set_policy(0, 0, 0)  # fixed size window
+        self.window.set_policy(0, 0, 0)  # fix window size
         hbox = GtkHBox()
         self.vbox = GtkVBox()
         hbox.pack_start(self.vbox, expand=1, fill=1, padding=6)
@@ -60,6 +60,7 @@ class Window:
         bbox = GtkHButtonBox()
         bbox.set_layout(BUTTONBOX_END)
         self.create_button_store()
+        self.button_bar.reverse()
         for tup in self.button_bar:
             (name, pos, callback) = tup
             button = GtkButton(name)
@@ -72,26 +73,30 @@ class Window:
     def callback_wrapper(self, widget, controller_callback):
         """Integrates the controllers' callback functions with GTK+.
         
-        In GTK+ a callback function is passed both the widget that raised
-        the signal and optional list of arguments. Normally this is very
-        handy, but in the landiallermvc package we have already implemented
-        our own way of passing arguments into non GUI specific callbacks
-        by using lambda functions that bind to cleanup() methods in the
-        GUI specific view implementation classes. GTK+'s arguments break
-        this system, unless we wrap our own callbacks in a method that knows
-        how to cope with the extra GTK+ arguments.
+        In GTK+ a callback function is passed both the widget that 
+        raised the signal and an optional list of arguments. Normally 
+        this is very handy, but in the landiallermvc package we have 
+        already implemented our own way of passing arguments into non 
+        GUI specific callbacks by using lambda functions that bind to 
+        cleanup() methods in the GUI specific view implementation 
+        classes. GTK+'s arguments break this system, unless we wrap 
+        our own callbacks in a method that knows how to cope with the 
+        extra GTK+ arguments.
         
-        All widgets should be connected to their landialler callbacks through 
-        this method. You don't need to use it for callbacks that aren't
-        defined in the non GTK+ part of landialler.
+        All widgets should be connected to their landialler callbacks 
+        through this method. You don't need to use it for callbacks 
+        that aren't defined in the non GTK+ part of landialler.
         
         The widget argument is automatically filled in by the connect() 
-        method. Pass the true landiallermvc.controller callback method to be 
-        run as a final parameter to the connect() method, and it will be 
-        mapped to the controller_callback argument automatically.
+        method. Pass the true landiallermvc.controller callback method 
+        to be run as a final parameter to the connect() method, and it 
+        will be mapped to the controller_callback argument automatically.
         
         """
         controller_callback()
+
+    def start_event_loop(self):
+        mainloop()
 
 
 class Dialog(Window):
@@ -104,11 +109,14 @@ class Dialog(Window):
         """Displays the dialog's message and buttons."""
         Window.draw(self)
         global main_win
-        self.window.set_transient_for(main_win)
-        self.window.set_modal(1)
+        if main_win:
+            self.window.set_transient_for(main_win)
+        if self.modal:
+            self.window.set_modal(1)
         self.add_label()
         self.add_separator()
         self.add_button_box()
+        print "showing window: %s" % self.__class__
         self.window.show_all()
     
     def add_label(self):
@@ -142,6 +150,7 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         views.DisconnectDialog.__init__(self, model)
     
     def cleanup(self):
+        print "%s.cleanup()" % self.__class__
         self.window.destroy()
 
 
@@ -152,6 +161,7 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         views.DroppedDialog.__init__(self, model)
     
     def cleanup(self):
+        print "%s.cleanup()" % self.__class__
         mainquit()
     
     def update(self):
@@ -161,9 +171,9 @@ class DroppedDialog(Dialog, views.DroppedDialog):
 
 class FatalErrorDialog(Dialog, views.FatalErrorDialog):
 
-    def __init__(self, model):
+    def __init__(self, model, **kwargs):
         Dialog.__init__(self)
-        views.FatalErrorDialog.__init__(self, model)
+        views.FatalErrorDialog.__init__(self, model, **kwargs)
     
     def cleanup(self):
         mainquit()
@@ -196,9 +206,7 @@ class MainWindow(Window, views.MainWindow):
         self.add_status_frame()
         self.add_button_box()
         self.update()
-        timeout_add(self.model.check_status_period, self.check_status)        
         self.window.show_all()
-        mainloop()
 
     def add_status_frame(self):
         """Draws frame containing status display."""
@@ -228,7 +236,11 @@ class MainWindow(Window, views.MainWindow):
 
         frame.add(table)        
         self.vbox.pack_start(frame, expand=1, fill=1, padding=6)
-    
+
+    def start_event_loop(self):
+        timeout_add(self.model.check_status_period, self.check_status)
+        Window.start_event_loop(self)
+
     def update(self):
         users_label = self.status_label["current_users"]
         status_label = self.status_label["is_connected"]
