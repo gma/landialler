@@ -51,8 +51,8 @@ class Window:
         count = 0
         for tup in self.button_bar:
             (name, pos, callback) = tup
-            button = Button(frame, text=name.capitalize(), command=callback)
-            key = name.lower()
+            button = Button(frame, text=name, command=callback)
+            key = name
             self.button_store[key] = button  # so we can call btn.config()
 
             if count % 2: padding = 6
@@ -76,16 +76,7 @@ class Dialog(Window):
         self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close
         frame = Frame(self.window, bd=6)
 
-        # Tk is crap at labels. If it's a long one we use a Message() object
-        # instead, of a fixed width.
-
-        max_cols = 15
-        max_pixels = 160
-
-        if len(self.text) > max_cols:
-            widget = Message(frame, text=self.text, width=max_pixels)
-        else:
-            widget = Label(frame, text=self.text, width=len(self.text))
+        widget = Label(frame, text=self.text)
         widget.pack()
         frame.pack()
         self.draw_buttons(self.window)
@@ -161,7 +152,7 @@ class MainWindow(Window, views.MainWindow):
 
     def draw(self):
         self.window.title(self.title)
-        on_delete_cb = self.buttons['disconnect'][1]  # same as disconnect btn
+        on_delete_cb = self.buttons["Disconnect"][1]  # same as disconnect btn
         self.window.protocol('WM_DELETE_WINDOW', on_delete_cb)
         self.draw_status_frame(self.window)
         self.draw_buttons(self.window)
@@ -195,10 +186,10 @@ class MainWindow(Window, views.MainWindow):
         self.update_var[1].set(self.model.current_users)
         if self.model.is_connected:
             self.update_var[0].set('Online')
-            self.button_store['disconnect'].config(state=ACTIVE)
+            self.button_store["Disconnect"].config(state=ACTIVE)
         else:
             self.update_var[0].set('Offline')
-            self.button_store['disconnect'].config(state=DISABLED)
+            self.button_store["Disconnect"].config(state=DISABLED)
 
         if (not self.model.is_connected) and self.model.was_connected:
             self.model.was_connected = 0
