@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# TkViews.py - GTK+ interface for the landialler client
+# tkviews.py - GTK+ interface for the landialler client
 #
 # Copyright (C) 2001 Graham Ashton
 #
@@ -25,14 +25,14 @@
 
 
 from Tkinter import *
-import Views
+import views
 
 
 root = Tk()
 root.withdraw()
 
 
-class TkDialog:
+class Dialog:
     def __init__(self):
         self.modal = 1
 
@@ -49,17 +49,17 @@ class TkDialog:
             win.wait_window()
 
 
-class TkGoOnlineDialog(Views.GoOnlineDialog, TkDialog):
+class GoOnlineDialog(views.GoOnlineDialog, TkDialog):
     pass
 
 
-class TkConnectingDialog(Views.ConnectingDialog, TkDialog):
+class ConnectingDialog(views.ConnectingDialog, TkDialog):
     pass
     
 
-class TkDisconnectDialog(Views.DisconnectDialog, TkDialog):
+class DisconnectDialog(views.DisconnectDialog, TkDialog):
     pass
 
 
-class TkMainWindow(Views.MainWindow):
+class MainWindow(views.MainWindow):
     pass
