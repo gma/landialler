@@ -22,6 +22,7 @@ tardist:
 	@ls $(SRC) | sed s:^:landiallerd-$(VERS)/: >MANIFEST
 	@(cd ..; ln -s server landiallerd-$(VERS))
 	(cd ..; tar -czvf landiallerd-$(VERS).tar.gz `cat server/MANIFEST`)
+	@(cd ..; mv landiallerd-$(VERS).tar.gz server/dist)
 	@(cd ..; rm landiallerd-$(VERS))
 
 uninstall:
