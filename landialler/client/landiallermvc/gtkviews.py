@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gtkviews.py - GTK+ interface for the landialler client
+# gtkviews.py - GTK+ interface for the LANdialler client
 #
 # Copyright (C) 2001 Graham Ashton
 #
