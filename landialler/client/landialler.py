@@ -29,30 +29,31 @@ workstation. This scenario is explained in more detail on the
 LANdialler web site.
 
 There are two programs that make up a complete LANdialler system; the
-client (landialler) and the server (landiallerd). This program is the
-client.
+client (landialler) and the server (landiallerd). You're reading the
+documentation for the client.
 
-When you run landialler it contacts the server and determines if it is
-currently connected (e.g. dialled up). If so, the user is informed
-that they are currently online. Otherwise the client asks the server
-to connect, displaying confirmation to the user that the server is
-connecting.
+When you run landialler.py it contacts the server and determines if it
+is currently connected (e.g. dialled up). If so, the client registers
+itself with the server as a new client and the user is informed that
+they are currently online. Otherwise the client asks the server to
+connect, displaying feedback to the user confirming that the server is
+currently connecting.
 
 Once the server reports that the connection is made, the client
-displays the number of users currently using the connection. The user
-has the option to disconnect at any time. If there are other users
-online then the user has the option to simply unregister themselves
-(thereby allowing the server to disconnect when all users have
-unregistered), or to actually terminate the connection, disconnecting
-all other users at the same time.
+displays the number of users that are currently using the
+connection. The user has the option to disconnect at any time. If
+there are other users online then the user can choose to either either
+unregister themselves (thereby allowing the server to disconnect when
+all users have unregistered), or to forceably terminate the
+connection, disconnecting all other users at the same time.
 
 If the connection drops out at any time (let's face it, it can happen
 a lot with modems) a dialog box pops up alerting the user, after which
-landialler exits (at some point in the future there will be an option
-for the user to attempt to reconnect instead).
+landialler.py exits (at some point in the future there may be an
+option for the user to attempt to reconnect instead).
 
 All client-server communication takes place via the LANdialler XML-RPC
-API, which is covered in landiallerd's documentation.
+API, which is covered in landiallerd.py's documentation.
 
 The configuration file tells landialler how to contact the server. A
 sample configuration file looks like this:
@@ -61,18 +62,15 @@ sample configuration file looks like this:
   hostname: 192.168.1.1  # your Unix box
   port: 6543             # the default port
 
-  [dialup]
-  timeout: 120           # not currently used
-
 The configuration file should be called "landialler.conf". On POSIX
 operating systems (e.g. Unix or similar) it can either be placed in
 /usr/local/etc, or the current directory. On other operating systems
 it must be placed in the current directory.
 
-On POSIX operating systems, error, informational and debugging
-messages are written to the syslog.
+On POSIX operating systems error, informational and debugging messages
+are written to syslog.
 
-More information on landialler is available at the project home page:
+More information on LANdialler is available at the project home page:
 
   http://landialler.sourceforge.net/
 
