@@ -62,7 +62,7 @@ class ConnectingDialogController(Controller):
 
     """Controller for the ConnectingDialog view class."""
     
-    def cancel_cb(self, cleanup_view):
+    def cancel_cb(self):
         """Called when the Cancel button is pressed.
 
 	The XML-RPC API's server_disconnect() method is called, then the
@@ -74,14 +74,15 @@ class ConnectingDialogController(Controller):
 
         """
         self.model.server_disconnect()
-        cleanup_view()
+        if hasattr(self.view, "cleanup"):
+            self.view.cleanup()
 
 
 class DisconnectDialogController(Controller):
 
     """Controller for the DisconnectDialog view class."""
     
-    def yes_cb(self, cleanup_view):
+    def yes_cb(self):
         """Called when the Yes button is pressed.
 
         The model's server_disconnect() method is called with the
@@ -93,9 +94,10 @@ class DisconnectDialogController(Controller):
 
         """
         self.model.server_disconnect(all='yes')
-        cleanup_view()
+        if hasattr(self.view, "cleanup"):
+            self.view.cleanup()
 
-    def no_cb(self, cleanup_view):
+    def no_cb(self):
         """Called when the No button is pressed.
 
         The model's server_disconnect() method is called with the
@@ -105,33 +107,36 @@ class DisconnectDialogController(Controller):
 
         """
         self.model.server_disconnect(all='no')
-        cleanup_view()
+        if hasattr(self.view, "cleanup"):
+            self.view.cleanup()
 
 
 class DroppedDialogController(Controller):
-    def ok_cb(self, cleanup_view):
+    def ok_cb(self):
         """Called when the OK button is pressed.
 
         Simply calls the cleanup_view function object, which should
         point to the toolkit's DroppedDialog.cleanup() method.
 
         """
-        cleanup_view()
+        if hasattr(self.view, "cleanup"):
+            self.view.cleanup()
 
 
 class FatalErrorController(Controller):
-    def ok_cb(self, cleanup_view):
+    def ok_cb(self):
         """Called when the OK button is pressed.
 
         Calls the cleanup_view function object, which should
         point to the toolkit's FatalError.cleanup() method.
 
         """
-        cleanup_view()
+        if hasattr(self.view, "cleanup"):
+            self.view.cleanup()
 
 
 class MainWindowController(Controller):
-    def disconnect_cb(self, cleanup_view):
+    def disconnect_cb(self):
         """Called when the Disconnect button is pressed.
 
         If there are other users a DisconnectDialog class is
@@ -149,4 +154,5 @@ class MainWindowController(Controller):
             dialog.draw()
         else:
             self.model.server_disconnect()
-            cleanup_view()
+            if hasattr(self.view, "cleanup"):
+                self.view.cleanup()
