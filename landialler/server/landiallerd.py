@@ -78,7 +78,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
-__version__ = "0.2pre3"
+__version__ = "0.2"
 
 
 import getopt
