@@ -49,9 +49,9 @@ class Window:
         self.create_button_store()
         frame = Frame(parent, bd=6)  # padding frame
         count = 0
-        for tuple in self.button_bar:
-            (name, pos, cmd) = tuple
-            button = Button(frame, text=name.capitalize(), command=cmd)
+        for tup in self.button_bar:
+            (name, pos, callback) = tup
+            button = Button(frame, text=name.capitalize(), command=callback)
             key = name.lower()
             self.button_store[key] = button  # so we can call btn.config()
 
@@ -131,7 +131,6 @@ class DroppedDialog(Dialog, views.DroppedDialog):
     def update(self):
         if self.model.is_connected:
             self.window.destroy()
-        
 
 class FatalErrorDialog(Dialog, views.FatalErrorDialog):
 
@@ -153,6 +152,10 @@ class MainWindow(Window, views.MainWindow):
         self.window.resizable(0, 0)
         self.update_var = []   # StringVar() object's for auto label updating
 
+    def check_status(self):
+        self.model.get_server_status()
+        self.window.after(self.model.check_status_period, self.check_status)
+
     def cleanup(self):
         self.window.quit()
 
@@ -160,20 +163,20 @@ class MainWindow(Window, views.MainWindow):
         self.window.title(self.title)
         on_delete_cb = self.buttons['disconnect'][1]  # same as disconnect btn
         self.window.protocol('WM_DELETE_WINDOW', on_delete_cb)
-        self.draw_labels(self.window)
+        self.draw_status_frame(self.window)
         self.draw_buttons(self.window)
-        self.status_check()
+        self.check_status()
         self.update()  # update labels immediately
         self.window.mainloop()
 
-    def draw_labels(self, parent=None):
+    def draw_status_frame(self, parent=None):
         """Draws frame containing status display."""
         frame1 = Frame(parent, bd=6)                 # padding frame
         frame2 = Frame(frame1, bd=2, relief=GROOVE)  # layout frame
 
         row = 0
-        for tuple in self.status_rows:
-            (label, value) = tuple
+        for tup in self.status_rows:
+            (label, value) = tup
 
             widget = Label(frame2, text=label)
             widget.grid(row=row, sticky=W, padx=2, pady=2)
@@ -187,10 +190,6 @@ class MainWindow(Window, views.MainWindow):
 
         frame2.pack()
         frame1.pack()
-
-    def status_check(self):
-        self.model.get_server_status()
-        self.window.after(self.model.status_check_period, self.status_check)
 
     def update(self):
         self.update_var[1].set(self.model.current_users)
