@@ -356,7 +356,7 @@ class ExceptionHandler:
     def __init__(self):
         sys.excepthook = self.handler
 
-    def handler(self, exc_type, exc_value, exc_traceback):
+    def handler(self, exc_type, exc_value, exc_tb):
         if isinstance(exc_value, socket.error):
             dialog = ErrorDialog(
                 "Can't contact server",
@@ -365,8 +365,9 @@ class ExceptionHandler:
                 "set correctly in the client configuration file.")
             dialog.show()
         else:
-            exc_text = ''.join(traceback.format_tb(exc_traceback))
-            print exc_text
+            lines = traceback.format_exception(exc_type, exc_value, exc_tb)
+            exc_text = ''.join(lines)
+            print exc_text,
             dialog = ExceptionDialog(exc_text)
             dialog.show()
 
@@ -384,11 +385,11 @@ class App(object):
         
     def main(self):
         try:
-            ExceptionHandler()
             server = self._connect_to_server()
             modem = RemoteModem(server)
             window = MainWindow(modem)
             window.show()
+            ExceptionHandler()
             gtk.main()
         except KeyboardInterrupt:
             modem.disconnect()
