@@ -147,7 +147,7 @@ def api_connect():
             print "connect command run successfully"
             return xmlrpclib.True
         else:
-            sys.stderr.write("connect command failed (%s)" % rval)
+            sys.stderr.write("connect command failed (%s)\n" % rval)
             return xmlrpclib.False
 
 
@@ -185,7 +185,7 @@ def api_disconnect(all="no", client=None):
             print "disconnect command run successfully"
             return xmlrpclib.True
         else:
-            sys.stderr.write("disconnect command failed (%s)" % rval)
+            sys.stderr.write("disconnect command failed (%s)\n" % rval)
             return xmlrpclib.False
 
 
