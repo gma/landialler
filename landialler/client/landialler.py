@@ -130,7 +130,7 @@ class Model:
         self.config = config  # ConfigParser object
         self.server = server  # connection to XML-RPC server
         self._observers = []  # observers are MVC views or controllers
-        self.status_check_period = 5000  # msec between get_server_status()
+        self.check_status_period = 5000  # msec between get_server_status()
         self.toolkit = None   # toolkit specific view library
         self.choose_gui_toolkit()
 
@@ -163,13 +163,19 @@ class Model:
         # so that gtk can be the default on Unix. :)
         try:
             toolkit = self.config.get("interface", "toolkit")
-        except ConfigParser.NoSectionError:
-            toolkit = "tk"
-        except ConfigParser.NoOptionError:
-            toolkit = "tk"
+        except ConfigParser.Error:
+            print "bummer"
+            if os.name == "posix":
+                toolkit = "gtk"
+            else:
+                toolkit = "tk"
 
-        exec("from landiallermvc import %sviews" % toolkit)
-        exec("self.toolkit = %sviews" % toolkit)
+        try:
+            exec("from landiallermvc import %sviews" % toolkit)
+            exec("self.toolkit = %sviews" % toolkit)
+        except ImportError:
+            exec("from landiallermvc import %sviews" % "tk")
+            exec("self.toolkit = %sviews" % "tk")
 
     def notify(self):
         """Calls each observer's update() method."""
