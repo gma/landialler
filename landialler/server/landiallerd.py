@@ -21,7 +21,7 @@
 # $Id$
 
 
-"""serves landialler clients, manages connecctions
+"""serves LANdialler clients, manages connections
 
 LANdialler enables several computers on a home LAN to remotely control
 a dial up device (e.g. modem) that is connected to a single Unix
@@ -142,7 +142,7 @@ class API(gmalib.Logger):
             self.log_info("%s connected, %s client(s) in total" %
                           (client, self.conn.countClients()))
             return xmlrpclib.True
-        elif self.conn.nowConnecting:
+        elif self.conn.currentlyConnecting:
             self.log_debug("connect() currently connecting")
             self.log_info("%s connected, %s client(s) in total" %
                           (client, self.conn.countClients()))
@@ -151,7 +151,7 @@ class API(gmalib.Logger):
             self.log_debug("connect() running connect command")
             self.log_info("%s connected, initiating connection" % client)
             if self.conn.runConnectCommand():
-                self.conn.nowConnecting = 1
+                self.conn.currentlyConnecting = 1
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
@@ -184,7 +184,7 @@ class API(gmalib.Logger):
             if client:
                 self.log_info("%s disconnected, terminating connection" %
                               client)
-            self.conn.nowConnecting = 0
+            self.conn.currentlyConnecting = 0
             self.conn.forgetAllClients()
             if self.conn.runDisconnectCommand():
                 return xmlrpclib.True
@@ -207,7 +207,7 @@ class API(gmalib.Logger):
         """
         self.conn.rememberClient(client)
         if self.conn.isConnected():
-            self.conn.nowConnecting = 0
+            self.conn.currentlyConnecting = 0
             numClients = self.conn.countClients()
         else:
             numClients = 0
@@ -240,7 +240,7 @@ class Connection(gmalib.Logger):
             self.log_debug("creating new Connection object")
             self.clientTracker = {}
             self.config = gmalib.SharedConfigParser()
-            self.nowConnecting = 0
+            self.currentlyConnecting = 0
 
     def countClients(self):
         """Return the number of active clients."""
@@ -256,7 +256,7 @@ class Connection(gmalib.Logger):
         cmd = self.config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:
-            self.nowConnecting = 0
+            self.currentlyConnecting = 0
             return 1
         else:
             return 0
@@ -363,9 +363,9 @@ class CleanerThread(threading.Thread, gmalib.Logger):
             conn.forgetOldClients()
             self.log_debug("cleaner: clients=%s, conn=%s, nowConn=%s" %
                            (conn.countClients(), conn.isConnected(),
-                            conn.nowConnecting))
+                            conn.currentlyConnecting))
             if conn.countClients() < 1:
-                if conn.nowConnecting or conn.isConnected():
+                if conn.currentlyConnecting or conn.isConnected():
                     self.log_info("clients timed out, terminating connection")
                     api = API()
                     api.disconnect(all="yes")
