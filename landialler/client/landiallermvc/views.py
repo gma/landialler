@@ -47,10 +47,12 @@ class View:
         """Update the status data.
 
         A view is an observer of the model. This method is called
-        automatically by the model's publish-subscribe system.
+        automatically by the model's publish-subscribe system. Views
+        that want to do something when notified of changes should
+        override this method, as it does nothing.
 
         """
-        print "%s.update()" % self.__class__
+        pass
 
 
 class ConnectingDialog(View):
@@ -68,21 +70,6 @@ class ConnectingDialog(View):
         self.title = "Connecting..."
         self.text = "Please wait, connecting..."
         self.buttons = [("Cancel", self.controller.cancel_cb)]
-
-    def cleanup(self):
-        """Run by the controller when the Cancel button is pressed.
-
-        Should contain GUI toolkit specific code for closing the
-        dialog box.
-
-        """
-        pass
-        
-
-##    def update(self):
-##        """Check to see if the server is connected."""
-##        # will need to close window after timeout expires or we go online
-##        pass
 
 
 class DisconnectDialog(View):
@@ -106,15 +93,6 @@ class DisconnectDialog(View):
         self.text = "Disconnect all users?"
         self.buttons = [("Yes", self.controller.yes_cb),
                         ("No", self.controller.no_cb)]
-
-    def cleanup(self):
-        """Run by the controller when the Cancel button is pressed.
-
-        Should contain GUI toolkit specific code for closing the
-        dialog box.
-
-        """
-        pass
 
 
 class MainWindow(View):
