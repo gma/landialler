@@ -92,174 +92,16 @@ import time
 import xmlrpclib
 import xmlrpcserver
 
-
 try:
     import syslog
 except ImportError, e:
     if os.name == "posix":
-        print "can't import syslog: %s" % e
+        sys.stderr.write("can't import syslog: %s" % e)
 
 
-class MyTCPServer(SocketServer.TCPServer):
-
-    """We override TCPServer so that we can set the allow_reuse_socket
-    attribute to true (so we can restart immediately and the TCP
-    socket doesn't sit in the CLOSE_WAIT state instead).
-
-    """
-    
-    def __init__(self, server_address, RequestHandlerClass):
-        """Initialise the server instance.
-
-        Sets the allow_reuse_address attribute to true and then calls
-        the base class's initialisor.
-
-        """
-        self.allow_reuse_address = 1
-        SocketServer.TCPServer.__init__(self, server_address,
-                                        RequestHandlerClass)
-
-
-class MyHandler(gmalib.Logger, xmlrpcserver.RequestHandler):
-
-    """Defines methods that correspond to a procedure in the XML-RPC API."""
-
-    def __init__(self, *args, **kwargs):
-        self.is_connected = 0   # are we currently online?
-        self.current_users = 0  # number of clients using connection
-
-        # FIXME: call base class' __init__ methods safely, so that the
-        # super classes can change internally without blowing this up.
-
-        gmalib.Logger.__init__(self)
-        SocketServer.BaseRequestHandler.__init__(self, *args, **kwargs)
-
-        self.debug = 1
-
-    def call(self, method, params):
-        """Call an API procedure, return it's result.
-
-        Calls one of the methods whose name begins with "api_". For
-        example, if method is set to "a_method" then the
-        "api_a_method" will be called. If the method doesn't exist
-        then an AttributeError is raised, returning a XML-RPC fault to
-        the client.
-
-        """
-        my_api = ["connect", "disconnect", "get_status"]
-        if not method in my_api:
-            raise xmlrpclib.Fault(123, "Unknown method name")
-        else:
-            if method == "get_status":
-                (host, port) = self.client_address
-                params = (host,)
-            elif method == "disconnect":
-                (host, port) = self.client_address
-                params = (params[0], host)
-            return apply(eval("api_" + method), params)
-            
-
-class CleanerThread(threading.Thread):
-
-    """Ensures that the connection is not live when there are no clients.
-
-    If a client is not shut down cleanly it may not be able to call
-    the API's disconnect procedure, thereby leaving the connection
-    open when there are no clients left. This is bad, as it could lead
-    to an expensive telephone bill.
-
-    This thread periodically makes sure that the current_users
-    variable is correctly set by determining how many clients have
-    connected in the last 30 seconds. If current_users is false but
-    is_connected is true, the API's disconnect method is called.
-
-    """
-
-    def __init__(self, interval=10):
-        """Setup the thread object.
-
-        The thread is set to be a daemon thread, so that the server
-        exits without worrying about closing this thread.
-
-        The object also creates an Event object for itself, to
-        facilitate a timer. The timer is used to execute the contents
-        of the run() method every "interval" seconds.
-
-        """
-        threading.Thread.__init__(self, name=CleanerThread)
-        self.setDaemon(1)
-        self.interval = interval  # time before re-running clean up
-        self.pauser = threading.Event()
-    
-    def run(self):
-        # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
-        # for a full example of the while loop's timer code.
-    
-        global mutex, current_users, is_connected, now_connecting, user_tracker
-
-        while 1:
-            mutex.acquire()
-
-            current_users = count_users()
-            is_connected = check_connection_status()
-            if (current_users < 1) and (now_connecting or is_connected):
-                api_disconnect(all="yes")
-
-            mutex.release()
-            self.pauser.wait(self.interval)
-
-
-class App(gmalib.Daemon):
-
-    """A simple wrapper class that initialises and runs the server."""
-    
-    def __init__(self):
-        gmalib.Daemon.__init__(self)
-
-    def getopt(self):
-        """Parse command line arguments.
-
-        Reads the command line arguments, looking for the following:
-
-        -d  enable debugging for extra output
-        -f  run in the foreground (not as a daemon)
-
-        """
-        opts, args = getopt.getopt(sys.argv[1:], "dft")
-
-        for o, v in opts:
-            if o == "-d":
-                self.debug = 1
-            elif o == "-f":
-                self.log_to_console = 1
-                self.be_daemon = 0
-
-        self.log_debug("App.getopt(): opts=%s, args=%s" % (opts, args))
-
-    def main(self):
-        """Read configuration, start the XML-RPC server."""
-        syslog.openlog(posixpath.basename(sys.argv[0]),
-                       syslog.LOG_PID | syslog.LOG_CONS)
-        self.log_info("starting server")
-
-        self.getopt()
-        self.config = gmalib.SharedConfigParser()  # pre-cached
-        self.daemonise()
-
-        # start the server and start taking requests
-        server_port = int(self.config.get("server", "port"))
-        self.server = MyTCPServer(("", server_port), MyHandler)
-        self.server.serve_forever()
-
-        syslog.closelog()
-
-
-# The functions that follow define the XML-RPC API. They are not part
-# of the MyHandler class for a very good reason (namely that MyHandler
-# objects aren't stateful and making them so appears to be needlessly
-# complex).
+# The functions that follow whose names begin "api_" define the XML-RPC API.
 #
-# We maintain state via three global variables:
+# We maintain state via global variables:
 #
 #   current_users  -- the number of people sharing the connection
 #   user_tracker   -- dict of clients and when they checked the status
@@ -417,7 +259,162 @@ def count_users():
     mutex.release()
 
     return num_users
-        
+
+
+class CleanerThread(threading.Thread):
+
+    """Ensures that the connection does not remain live with no clients.
+
+    If a client is not shut down cleanly it may not be able to call
+    the API's disconnect procedure, thereby leaving the connection
+    open when there are no clients left. This is bad, as it could lead
+    to an expensive telephone bill.
+
+    This thread periodically makes sure that the current_users
+    variable is correctly set by determining how many clients have
+    connected in the last 30 seconds. If current_users is false but
+    is_connected is true, the API's disconnect method is called.
+
+    """
+
+    def __init__(self, interval=10):
+        """Setup the thread object.
+
+        The thread is set to be a daemon thread, so that the server
+        exits without worrying about closing this thread.
+
+        The object also creates an Event object for itself, to
+        facilitate a timer. The timer is used to execute the contents
+        of the run() method every "interval" seconds.
+
+        """
+        threading.Thread.__init__(self, name=CleanerThread)
+        self.setDaemon(1)
+        self.interval = interval  # time before re-running clean up
+        self.pauser = threading.Event()
+    
+    def run(self):
+        # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
+        # for a full example of the while loop's timer code.
+    
+        global mutex, current_users, is_connected, now_connecting, user_tracker
+
+        while 1:
+            mutex.acquire()
+
+            current_users = count_users()
+            is_connected = check_connection_status()
+            if (current_users < 1) and (now_connecting or is_connected):
+                api_disconnect(all="yes")
+
+            mutex.release()
+            self.pauser.wait(self.interval)
+
+
+class MyTCPServer(SocketServer.TCPServer):
+
+    """We override TCPServer so that we can set the allow_reuse_socket
+    attribute to true (so we can restart immediately and the TCP
+    socket doesn't sit in the CLOSE_WAIT state instead).
+
+    """
+    
+    def __init__(self, server_address, RequestHandlerClass):
+        """Initialise the server instance.
+
+        Sets the allow_reuse_address and debug attributes. Calls the base
+        class's initialiser.
+
+        """
+        self.allow_reuse_address = 1
+        SocketServer.TCPServer.__init__(self, server_address,
+                                        RequestHandlerClass)
+    
+
+class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
+
+    """Handles XML-RPC requests."""
+
+    def __init__(self, *args, **kwargs):
+        global debug, logfile, use_syslog
+        self.debug = debug
+        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+
+        # FIXME: iterate through all base class' __init__ methods so that
+        #        class hierarchy can change without us worrying about it.
+        SocketServer.BaseRequestHandler.__init__(self, *args, **kwargs)
+
+    def call(self, method, params):
+        """Call an API procedure, return it's result.
+
+        Calls one of the methods whose name begins with "api_". For
+        example, if method is set to "a_method" then the
+        "api_a_method" will be called. If the method doesn't exist
+        then an AttributeError is raised, returning a XML-RPC fault to
+        the client.
+
+        """
+        my_api = ["connect", "disconnect", "get_status"]
+        if not method in my_api:
+            raise xmlrpclib.Fault, "Unknown method name"
+        else:
+            if method == "get_status":
+                (host, port) = self.client_address
+                params = (host,)
+            elif method == "disconnect":
+                (host, port) = self.client_address
+                params = (params[0], host)
+            return apply(eval("api_" + method), params)
+
+    def log_request(self, code="-", size="-"):
+        """Requests are logged if running in debug mode."""
+        if self.debug:
+            self.log_debug('%s - - [%s] "%s" %s %s\n' % \
+                           (self.address_string(),
+                           self.log_date_time_string(),
+                           self.requestline, str(code), str(size)))
+
+
+class App(gmalib.Daemon):
+
+    """A simple wrapper class that initialises and runs the server."""
+    
+    def __init__(self):
+        gmalib.Daemon.__init__(self, logfile="landiallerd.log", use_syslog=1)
+        self.debug = 0
+        self.run_as_daemon = 1
+
+    def getopt(self):
+        """Parse command line arguments.
+
+        Reads the command line arguments, looking for the following:
+
+        -d  enable debugging for extra output
+        -f  run in the foreground (not as a daemon)
+
+        """
+        opts, args = getopt.getopt(sys.argv[1:], "dft")
+
+        for o, v in opts:
+            if o == "-d":
+                global debug
+                debug = self.debug = 1
+            elif o == "-f":
+                self.run_as_daemon = 0
+
+    def main(self):
+        """Read configuration, start the XML-RPC server."""
+        print "starting up"
+        self.getopt()
+        self.config = gmalib.SharedConfigParser()  # pre-cached
+        if self.run_as_daemon:
+            self.daemonise()
+
+        # start the server and start taking requests
+        server_port = int(self.config.get("general", "port"))
+        self.server = MyTCPServer(("", server_port), MyHandler)
+        self.server.serve_forever()
+
 
 if __name__ == "__main__":
     if os.name != "posix":
@@ -438,6 +435,11 @@ if __name__ == "__main__":
     current_users = 0  # number of users online (determined from user_tracker)
     is_connected = 0   # is the connection currently up?
     now_connecting = 0 # is the connection coming up?
+    
+    # global variables for consistent logging
+    debug = 0
+    logfile = "landiallerd.log"
+    use_syslog = 1
 
     mutex = threading.RLock()  # control access to *ALL* the above global vars
 
@@ -445,6 +447,4 @@ if __name__ == "__main__":
     cleaner.start()
     
     app = App()
-    app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
-    app.debug = 1
     app.main()
