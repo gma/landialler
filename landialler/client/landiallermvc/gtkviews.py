@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# GtkViews.py - GTK+ interface for the landialler client
+# gtkviews.py - GTK+ interface for the landialler client
 #
 # Copyright (C) 2001 Graham Ashton
 #
@@ -24,24 +24,24 @@
 """implements the GTK+ landialler user interface"""
 
 
-import Views
+import views
 
 
-class GtkDialog(Views.View):
+class Dialog(views.View):
     pass
 
 
-class GtkGoOnlineDialog(GtkDialog, Views.GoOnLineDialog):
+class GoOnlineDialog(Dialog, views.GoOnLineDialog):
     pass
 
 
-class GtkConnectingDialog(GtkDialog, Views.ConnectingDialog):
+class ConnectingDialog(Dialog, views.ConnectingDialog):
     pass
 
 
-class GtkDisconnectDialog(GtkDialog, Views.DisconnectDialog):
+class DisconnectDialog(Dialog, views.DisconnectDialog):
     pass
 
 
-class GtkMainWindow(Views.MainWindow):
+class MainWindow(views.MainWindow):
     pass

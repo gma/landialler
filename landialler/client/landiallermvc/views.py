@@ -1,4 +1,4 @@
-# Views.py - abstract View class (see the MVC pattern)
+# views.py - abstract View class (see the MVC pattern)
 #
 # Copyright (C) 2001 Graham Ashton
 #
@@ -21,7 +21,7 @@
 """implements a base classes for the MVC View"""
 
 
-import Controllers
+import controllers
 
 
 class View:
@@ -71,7 +71,7 @@ class GoOnlineDialog(View):
     
     def __init__(self, model):
         View.__init__(self, model)
-        self.controller = Controllers.GoOnlineDialogController(model, self)
+        self.controller = controllers.GoOnlineDialogController(model, self)
         self.title = "Go online?"
         self.text = "The server is not currently online. Connect now?"
         self.buttons = [("Yes", self.controller.yes_cb),
@@ -89,7 +89,7 @@ class ConnectingDialog(View):
 
     def __init__(self, model):
         View.__init__(self, model)
-        self.controller = Controllers.ConnectingDialogController(model, self)
+        self.controller = controllers.ConnectingDialogController(model, self)
         self.title = "Connecting..."
         self.text = "Please wait, connecting..."
         self.buttons = [("Cancel", self.controller.cancel_cb)]
@@ -116,7 +116,7 @@ class DisconnectDialog(View):
 
     def __init__(self, model):
         View.__init__(self, model)
-        self.controller = Controllers.DisconnectDialogController(model, self)
+        self.controller = controllers.DisconnectDialogController(model, self)
         self.title = "Disconnect"
         self.text = "Disconnect all users?"
         self.buttons = [("Yes", self.controller.yes_cb),
@@ -136,7 +136,7 @@ class MainWindow(View):
 
     def __init__(self, model):
         View.__init__(self, model)
-        self.controller = Controllers.MainWindowController(model, self)
+        self.controller = controllers.MainWindowController(model, self)
         self.title = "LANdialler: connected"
         self.label1 = "Connection status:"
         self.label2 = "Current users:"

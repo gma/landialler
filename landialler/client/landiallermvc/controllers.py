@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Controllers.py - Controller compenents (see the MVC pattern)
+# controllers.py - Controller compenents (see the MVC pattern)
 #
 # Copyright (C) 2001 Graham Ashton
 #
