@@ -3,10 +3,9 @@ TODO
 
 Things to be done, in no particular order:
 
-  - Modify landialler to make sure that exceptions are trapped
-    properly and a dialog is displayed to the user.
+  - Add support for monitoring how long the server has been online.
 
-  - Stop xmlrpcserver from writing to syslog all the time.
+  - Report the number of total bytes sent/received, and per client.
 
   - Rename classes in views.py by placing "Abstract" on the front of each.
 
@@ -20,12 +19,10 @@ Things to be done, in no particular order:
   - Put retry/cancel buttons on the dropped connection dialog, instead
     of just OK.
 
-  - Add support for monitoring how long the server has been online.
-
   - A ButtonBar class for creating and drawing rows of one or more button.
 
-  - A GTK+ port, and an anygui port; Tk is not that attractive on
-    Linux.
+  - An anygui or PyQT port. How about a native Win32 version with
+    Delphi?
 
   - Improve support for trapping common exceptions (e.g. missing
     config files aren't trapped properly yet).
