@@ -25,14 +25,15 @@ the average application or daemon is included.
 """
 
 import ConfigParser
-import fcntl
 import os
 import posixpath
 import stat
 import sys
 import time
 
-try:
+
+try:  # POSIX only modules
+    import fcntl
     import syslog
 except ImportError, e:
     pass
@@ -97,7 +98,8 @@ class Logger:
         if message[-1:] != "\n":
             fmt += "\n"
         f = open(self.logfile, "a")
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        if os.name == "posix":
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         f.write(fmt % (date_time, posixpath.basename(sys.argv[0]),
                        os.getpid(), priority.upper(), message))
         f.close()
