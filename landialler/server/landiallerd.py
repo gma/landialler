@@ -261,7 +261,7 @@ def count_users():
     return num_users
 
 
-class CleanerThread(threading.Thread):
+class CleanerThread(threading.Thread, gmalib.Logger):
 
     """Ensures that the connection does not remain live with no clients.
 
@@ -292,7 +292,13 @@ class CleanerThread(threading.Thread):
         self.setDaemon(1)
         self.interval = interval  # time before re-running clean up
         self.pauser = threading.Event()
-    
+
+        global mutex, debug, logfile, use_syslog
+        mutex.acquire()
+        self.debug = debug
+        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        mutex.release()
+
     def run(self):
         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
         # for a full example of the while loop's timer code.
@@ -304,6 +310,8 @@ class CleanerThread(threading.Thread):
 
             current_users = count_users()
             is_connected = check_connection_status()
+            self.log_debug("cleaner; users=%s, connected=%s" %
+                           (current_users, is_connected))
             if (current_users < 1) and (now_connecting or is_connected):
                 api_disconnect(all="yes")
 
@@ -336,9 +344,11 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
     """Handles XML-RPC requests."""
 
     def __init__(self, *args, **kwargs):
-        global debug, logfile, use_syslog
+        global mutex, debug, logfile, use_syslog
+        mutex.acquire()
         self.debug = debug
         gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        mutex.release()
 
         # FIXME: iterate through all base class' __init__ methods so that
         #        class hierarchy can change without us worrying about it.
@@ -366,7 +376,7 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
                 (host, port) = self.client_address
                 params = (params[0], host)
             self.log_debug("called %s(%s)" % \
-                           (method, ", ".join(map(str, params))))
+                           (method, ", ".join(map(repr, params))))
             return apply(eval("api_" + method), params)
 
     def log_request(self, code="-", size="-"):
@@ -400,6 +410,9 @@ class App(gmalib.Daemon):
         """
         opts, args = getopt.getopt(sys.argv[1:], "dfl:s")
 
+        global mutex
+        mutex.acquire()
+
         for o, v in opts:
             if o == "-d":
                 global debug
@@ -415,9 +428,10 @@ class App(gmalib.Daemon):
                 global use_syslog
                 use_syslog = 1
 
+        mutex.release()
+
     def main(self):
-        """Read configuration, start the XML-RPC server."""
-        self.getopt()
+        """Start the XML-RPC server."""
         self.config = gmalib.SharedConfigParser()  # pre-cached
         if self.run_as_daemon:
             self.daemonise()
@@ -454,10 +468,12 @@ if __name__ == "__main__":
     is_connected = 0   # is the connection currently up?
     now_connecting = 0 # is the connection coming up?
     
+    app = App()
+    app.getopt()
+
     cleaner = CleanerThread()
     cleaner.start()
     
-    app = App()
     try:
         app.main()
     except IOError, e:
