@@ -309,13 +309,11 @@ class CleanerThread(threading.Thread, gmalib.Logger):
     
         global mutex, current_users, is_connected, now_connecting, user_tracker
 
-        print "cleaner running pre loop"
         while 1:
             mutex.acquire()
 
             current_users = count_users()
             is_connected = check_connection_status()
-            print "cleaner running"
             self.log_debug("CleanerThread: users=%s, connected=%s" %
                            (current_users, is_connected))
             if (current_users < 1) and (now_connecting or is_connected):
