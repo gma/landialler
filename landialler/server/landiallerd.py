@@ -392,11 +392,13 @@ class App(gmalib.Daemon):
 
         Reads the command line arguments, looking for the following:
 
-        -d  enable debugging for extra output
-        -f  run in the foreground (not as a daemon)
+        -d          enable debugging for extra output
+        -f          run in the foreground (not as a daemon)
+        -l file     log events to file
+        -s          log events to syslog
 
         """
-        opts, args = getopt.getopt(sys.argv[1:], "dft")
+        opts, args = getopt.getopt(sys.argv[1:], "dfl:s")
 
         for o, v in opts:
             if o == "-d":
@@ -404,6 +406,14 @@ class App(gmalib.Daemon):
                 debug = self.debug = 1
             elif o == "-f":
                 self.run_as_daemon = 0
+            elif o == "-l":
+                global logfile
+                logfile = v
+                if not os.path.exists(logfile):
+                    raise IOError, ("File not found: %s" % logfile)
+            elif o == "-s":
+                global use_syslog
+                use_syslog = 1
 
     def main(self):
         """Read configuration, start the XML-RPC server."""
@@ -434,7 +444,7 @@ if __name__ == "__main__":
 
     # global variables for maintaining consistent logging across classes
     debug = 0
-    logfile = "landiallerd.log"
+    logfile = None
     use_syslog = 1
 
     # global variables for maintaining state
@@ -448,4 +458,7 @@ if __name__ == "__main__":
     cleaner.start()
     
     app = App()
-    app.main()
+    try:
+        app.main()
+    except IOError, e:
+        print e
