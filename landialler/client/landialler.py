@@ -182,6 +182,7 @@ class MainWindow(Window):
 
     CHECK_STATUS_PERIOD = 1000 * 2
     STATUS_LABEL = '<span size="larger" weight="bold">You are %s</span>'
+    TITLE = 'LANdialler'
     UPDATE_TIMER_PERIOD = 100
 
     def __init__(self, modem):
@@ -193,6 +194,7 @@ class MainWindow(Window):
         self._last_check_time = None
         self._status_timeout = None
         gtk.timeout_add(self.UPDATE_TIMER_PERIOD, self._update_timer)
+        self.connect()
 
     def update(self):
         self._last_check_time = time.time()
@@ -212,6 +214,7 @@ class MainWindow(Window):
         self.details_label.set_label(
             '%s %s, online for %s' %
             (self._modem.num_users, user_str, time_str))
+        self.root_widget.set_title('%s (connected)' % MainWindow.TITLE)
         self.connect_button.set_sensitive(gtk.FALSE)
         self.disconnect_button.set_sensitive(gtk.TRUE)
 
@@ -225,6 +228,7 @@ class MainWindow(Window):
     def _set_status_disconnected(self):
         self._set_status_label('disconnected')
         self.details_label.set_label('')
+        self.root_widget.set_title(MainWindow.TITLE)
         self.connect_button.set_sensitive(gtk.TRUE)
         self.disconnect_button.set_sensitive(gtk.FALSE)
 
@@ -240,8 +244,8 @@ class MainWindow(Window):
     def _check_status(self):
         self._modem.get_status()
         return gtk.TRUE
-        
-    def on_connect_button_clicked(self, *args):
+
+    def connect(self):
         if self._status_timeout:
             gtk.timeout_remove(self._status_timeout)
         self._status_timeout = gtk.timeout_add(
@@ -249,6 +253,9 @@ class MainWindow(Window):
         self._modem.dial()
         dialog = ConnectingDialog(self._modem)
         dialog.show()
+
+    def on_connect_button_clicked(self, *args):
+        self.connect()
 
     def on_disconnect_button_clicked(self, *args):
         dialog = DisconnectDialog(self._modem)
