@@ -76,7 +76,9 @@ The author (Graham Ashton) can be contacted at ashtong@users.sourceforge.net.
 
 """
 
+
 __version__ = "0.2pre1"
+
 
 import getopt
 import gmalib
@@ -88,14 +90,16 @@ import time
 import xmlrpclib
 import xmlrpcserver
 
+
 try:
     import syslog
 except ImportError, e:
-    if os.name == "posix":
+    if os.name == 'posix':
         print "can't import syslog: %s" % e
 
 
 class MyTCPServer(SocketServer.TCPServer):
+
     """We override TCPServer so that we can set the allow_reuse_socket
     attribute to true (so we can restart immediately and the TCP
     socket doesn't sit in the CLOSE_WAIT state instead).
@@ -109,116 +113,47 @@ class MyTCPServer(SocketServer.TCPServer):
         the base class's initialisor.
 
         """
-        
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
                                         RequestHandlerClass)
 
 
-class MyHandler(xmlrpcserver.RequestHandler):
+class MyHandler(gmalib.Logger, xmlrpcserver.RequestHandler):
+
     """Defines methods that correspond to a procedure in the XML-RPC API."""
 
+    def __init__(self, *args, **kwargs):
+        self.is_connected = 0   # are we currently online?
+        self.current_users = 0  # number of clients using connection
+
+        # FIXME: call base class' __init__ methods safely, so that the
+        # super classes can change internally without blowing this up.
+
+        gmalib.Logger.__init__(self)
+        SocketServer.BaseRequestHandler.__init__(self, *args, **kwargs)
+
+        self.debug = 1
+
     def call(self, method, params):
-        """Call the XML-RPC procedure and return it's result.
+        """Call an API procedure, return it's result.
 
-        Calls one of the other methods in this class (which define the
-        server's API) and returns the other method's return value. If
-        the procedure doesn't exist then an AttributeError is raised,
-        returning a XML-RPC fault to the client.
-
-        """
-
-        try:
-            server_method = getattr(self, "api_%s" % method)
-        except:
-            raise AttributeError, \
-                  "Server does not have XML-RPC procedure %s" % method
-
-        return server_method(params)
-
-    ### remaining methods are part of the XML-RPC API.
-
-    def api_connect(self, params):
-        """Connect to the Internet.
-
-        Attempts to connect to the Internet by running an external
-        dial up script. This method currently blindly returns the
-        XML-RPC True value, as it does not check the return value of
-        the external script (the standard interface between
-        landiallerd.py and external scripts is yet to be defined).
-        This will be fixed in a future release.
+        Calls one of the methods whose name begins with "api_". For
+        example, if method is set to "a_method" then the
+        "api_a_method" will be called. If the method doesn't exist
+        then an AttributeError is raised, returning a XML-RPC fault to
+        the client.
 
         """
-
-        config = gmalib.SharedConfigParser()
-        cmd = config.get("commands", "connect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-
-        if rval == 0:
-            return xmlrpclib.True
+        my_api = ["connect", "disconnect", "get_status"]
+        if not method in my_api:
+            raise xmlrpclib.Fault(123, 'Unknown method name')
         else:
-            return xmlrpclib.False
-
-    def api_count_users(self, params):
-        """Returns the number of clients currently using landiallerd."""
-
-        from random import random
-        return int(random() * 10)
-
-    def api_disconnect(self, params):
-        """Disconnect from the Internet.
-
-        Drops the Internet connection by running an external dial up
-        termination script.
-
-        As with api_connect(), the return value of the external script
-        is not checked and the XML-RPC True value is always returned,
-        irrespective of success.
-
-        """
-
-        config = gmalib.SharedConfigParser()
-        cmd = config.get("commands", "disconnect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-
-        if rval == 0:
-            return xmlrpclib.True
-        else:
-            return xmlrpclib.False
-
-    def api_is_connected(self, params):
-        """Check if we are connected to the Internet.
-
-        Runs an external command to determine whether or not the
-        server is currently dialled up. If the external command exits
-        with a return code of 0 then we return true, otherwise false.
-
-        """
-
-        config = gmalib.SharedConfigParser()
-        cmd = config.get("commands", "is_connected")
-        
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-
-        if rval == 0:
-            return xmlrpclib.True
-        else:
-            return xmlrpclib.False
-
-    def api_time_connected(self, params):
-        """Returns seconds since the epoch when the connection was made.
-
-        If the connection is currently up it returns the number of
-        seconds since the epoch at the time that it was first realised
-        that the connection came up. Otherwise (if the connection is
-        down) it returns -1 instead.
-
-        """
-
-        return time.time() - 1723
+            return apply(eval("api_" + method), params)
+            
 
 
 class App(gmalib.Daemon):
+
     """A simple wrapper class that initialises and runs the server."""
     
     def __init__(self):
@@ -233,7 +168,6 @@ class App(gmalib.Daemon):
         -f  run in the foreground (not as a daemon)
 
         """
-
         opts, args = getopt.getopt(sys.argv[1:], "dft")
 
         for o, v in opts:
@@ -247,7 +181,6 @@ class App(gmalib.Daemon):
 
     def main(self):
         """Read configuration, start the XML-RPC server."""
-
         syslog.openlog(posixpath.basename(sys.argv[0]),
                        syslog.LOG_PID | syslog.LOG_CONS)
         self.log_info("starting server")
@@ -273,11 +206,94 @@ class App(gmalib.Daemon):
         syslog.closelog()
 
 
+# The functions that follow define the XML-RPC API. They are not part
+# of the MyHandler class for a very good reason (namely that MyHandler
+# objects aren't stateful and making them so appears to be needlessly
+# complex).
+#
+# We maintain state via two global variables:
+#
+#   current_users  -- the number of people sharing the connection
+#   is_connected   -- whether or not the server is connected
+
+def api_connect():
+    """Connect to the Internet.
+
+    If the server is already connected the current_users attribute
+    is incremented by 1 and the XML-RPC True value is returned.
+
+    Otherwise an attempt is made to make a connection by running
+    an external dial up script. If the external script runs
+    successfully (and therefore returns 0) then the XML-RPC True
+    value is returned, False otherwise. The script should return
+    immediately (i.e. not block whilst the connection is made)
+    irrespective of whether or not the actual connection will be
+    successfully set up by the script.
+
+    """
+    global current_users, is_connected
+    print "current_users:", current_users
+    if is_connected:
+        current_users += 1
+        return xmlrpclib.True
+
+    elif current_users > 0:  # in process of connecting
+        current_users += 1
+        return xmlrpclib.True
+
+    else:
+        config = gmalib.SharedConfigParser()
+        cmd = config.get("commands", "connect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+
+        if rval == 0:
+            current_users += 1
+            print "current_users now:", current_users
+            return xmlrpclib.True
+        else:
+            return xmlrpclib.False
+
+def api_disconnect():
+    """Disconnect from the Internet.
+
+    Decrements the number of current users by 1. If there are
+    other users online then the XML-RPC True value is returned.
+
+    If not then the connection is dropped by running an external
+    dial up termination script. As with api_connect(), the return
+    value of the external script is converted into the XML-RPC
+    True or False value, and returned.
+
+    """
+    global current_users
+    current_users -= 1
+    if current_users > 0:
+        return xmlrpclib.True  # other users still online
+
+    else:
+        config = gmalib.SharedConfigParser()
+        cmd = config.get("commands", "disconnect")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        if rval == 0:
+            return xmlrpclib.True
+        else:
+            return xmlrpclib.False
+
+def api_get_status():
+    """Return current_users and is_connected."""
+    global current_users, is_connected
+    return (current_users, is_connected)
+
+
 if __name__ == '__main__':
     if os.name != "posix":
-        print "Sorry, only POSIX compliant Operating Systems are supported."
+        print "Sorry, only POSIX compliant systems are currently supported."
         sys.exit()
+
+    current_users = 0  # global variables for
+    is_connected = 0   # maintaining state
+
     app = App()
-    # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
-    # app.debug = 1
+    app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
+    app.debug = 1
     app.main()
