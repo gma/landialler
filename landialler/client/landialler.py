@@ -75,9 +75,6 @@ operating systems (e.g. Unix or similar) it can either be placed in
 /usr/local/etc, or the current directory. On other operating systems
 it must be placed in the current directory.
 
-On POSIX operating systems, error, informational and debugging
-messages are written to the syslog.
-
 More information on landialler is available at the project home page:
 
   http://landialler.sourceforge.net/
