@@ -20,6 +20,7 @@
 #
 # $Id$
 
+
 """serves landialler clients, manages connecctions
 
 LANdialler enables several computers on a home LAN to remotely control
@@ -78,7 +79,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
-__version__ = "0.2"
+__version__ = "0.2.1"
 
 
 import getopt
@@ -134,7 +135,7 @@ def api_connect():
     if do_nothing1:
         return xmlrpclib.True   # already connected
     elif do_nothing2:
-        return xmlrpclib.False  # another client started a connection, not up yet
+        return xmlrpclib.False  # another client began connecting, not up yet
     else:
         config = gmalib.SharedConfigParser()
         cmd = config.get("commands", "connect")
@@ -409,11 +410,12 @@ class App(gmalib.Daemon):
 
         -d          enable debugging for extra output
         -f          run in the foreground (not as a daemon)
+        -h          print usage message to stderr
         -l file     log events to file
         -s          log events to syslog
 
         """
-        opts, args = getopt.getopt(sys.argv[1:], "dfl:s")
+        opts, args = getopt.getopt(sys.argv[1:], "dfhl:s")
 
         global mutex
         mutex.acquire()
@@ -424,6 +426,8 @@ class App(gmalib.Daemon):
                 debug = self.debug = 1
             elif o == "-f":
                 self.run_as_daemon = 0
+            elif o == "-h":
+                self.usage_message()
             elif o == "-l":
                 global logfile
                 logfile = v
@@ -458,13 +462,13 @@ class App(gmalib.Daemon):
 
     def usage_message(self):
         """Print usage message to sys.stderr and exit."""
-        message = """
-Usage: %s [-d] [-f] [-l file] [-s]
+        message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
 
 Options:
 
     -d          enable debug messages
     -f          run in foreground instead of as a daemon
+    -h		display this message on stderr
     -l file     write log messages to file
     -s          write log messages to syslog
 
