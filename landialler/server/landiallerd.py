@@ -169,6 +169,11 @@ class Connection:
                 sys.stderr.write("connect command failed (%s)\n" % rval)
             return xmlrpclib.False
 
+    def countClients(self):
+        """Return the number of active clients."""
+        self.forgetOldClients()
+        return len(self.clientTracker.keys())
+
     def disconnect(self, all="no", client=None):
         """Close the connection.
 
@@ -215,7 +220,10 @@ class Connection:
         self.rememberClient(client)
         if self.isConnected() and self.nowConnecting:
             self.nowConnecting = 0
-        return (self.countClients(), self.isConnected())
+            numClients = self.countClients()
+        else:
+            numClients = 0
+        return (numClients, self.isConnected())
 
     def rememberClient(self, client):
         """Record time of the client's last HTTP connection."""
@@ -245,14 +253,6 @@ class Connection:
         for client in self.clientTracker.keys():
             if (time.time() - self.clientTracker[client]) > timeout:
                 self.forgetClient(client)
-
-    def countClients(self):
-        """Return the number of active clients."""
-        self.forgetOldClients()
-        if self.isConnected():
-            return len(self.clientTracker.keys())
-        else:
-            return 0
 
     def isConnected(self):
         """Return 1 if the connection is up, 0 otherwise.
