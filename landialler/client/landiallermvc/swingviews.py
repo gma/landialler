@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# gtkviews.py - GTK+ interface for the LANdialler client
+# swingviews.py - Java Swing interface for the LANdialler client
 #
 # Copyright (C) 2001 Graham Ashton
 #
@@ -28,6 +28,8 @@ views.py that define the MVC views. Where this is not the case they
 are present simply to aid the Swing implementation. Please see views.py
 for more documentation, especially for many of the methods, whose
 purpose is only documented in views.py.
+
+You will need jython configured to run the Swing interface.
 
 """
 
