@@ -50,9 +50,9 @@ A sample configuration file should be included with the package, but
 the following should serve as a good example:
 
   [commands]
-  connect: /usr/local/bin/dialup
-  disconnet: /usr/local/bin/kill-dialup
-  is_connected: /sbin/ifconfig ppp0
+  connect: /usr/local/bin/start-connection
+  disconnet: /usr/local/bin/stop-connection
+  is_connected: /sbin/ifconfig ppp0 | grep "inet addr" >/dev/null
 
   [server]
   port: 6543
@@ -68,7 +68,10 @@ know how to integrate landialler cleanly with your own operating
 system's dial up systems then please send suggestions in and they will
 be made available on the web site, with credits.
 
-Error, informational and debugging messages are written to the syslog.
+To see a list of the available command line options, use the -h
+switch. For example, error, informational and debugging messages can
+be written to the syslog if the -s switch is used, or to a separate
+log file if -l is used.
 
 More information on landialler is available at the project home page:
 
@@ -220,7 +223,10 @@ class Connection:
 
     def forgetClient(self, client):
         """Stop treating this client as active."""
-        del self.clientTracker[client]
+        try:
+            del self.clientTracker[client]
+        except KeyError:
+            pass
 
     def forgetAllClients(self):
         """Assume that all clients are inactive."""
@@ -350,9 +356,10 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
     def call(self, procedure, params):
         """Call an API procedure, return it's result.
 
-        Calls one of the API's procedures. If the procedure isn't
-        supported then an AttributeError is raised, returning a
-        XML-RPC fault to the client.
+        Calls one of the API's methods on an instance of the
+        Connection class. If the procedure isn't supported then an
+        AttributeError is raised, returning a XML-RPC fault to the
+        client.
 
         """
         if not procedure in ["connect", "disconnect", "get_status"]:
@@ -390,6 +397,12 @@ class App(gmalib.Daemon):
         self.debug = 0
         self.runAsDaemon = 1
 
+    def checkPlatform(self):
+        """Check OS is supported."""
+        if os.name != "posix":
+            print "Sorry, only POSIX compliant systems are supported."
+            sys.exit()
+
     def daemonise(self):
         """Run parent's daemonise() if runAsDaemon attribute is set."""
         if self.runAsDaemon:
@@ -425,6 +438,17 @@ class App(gmalib.Daemon):
             elif o == "-s":
                 global use_syslog
                 use_syslog = 1
+
+    def loadConfig(self):
+        """Load configuration files into SharedConfigParser object."""
+        # pre-load configuration files, cached by SharedConfigParser
+        try:
+            config = gmalib.SharedConfigParser()
+            config.read(["/usr/local/etc/landiallerd.conf",
+                         "/etc/landiallerd.conf", "landiallerd.conf"])
+        except Exception, e:
+            print "Terminating - error reading config file: %s" % e
+            sys.exit()
 
     def main(self):
         """Start the XML-RPC server."""
@@ -464,23 +488,12 @@ Options:
 
 
 if __name__ == "__main__":
-    if os.name != "posix":
-        print "Sorry, only POSIX compliant systems are currently supported."
-        sys.exit()
+    app = App()
+    app.checkPlatform()
+    app.loadConfig()
 
-    # pre-load configuration files, cached by SharedConfigParser
-    try:
-        config = gmalib.SharedConfigParser()
-        config.read(["/usr/local/etc/landiallerd.conf",
-                     "/etc/landiallerd.conf", "landiallerd.conf"])
-    except Exception, e:
-        print "Terminating - error reading config file: %s" % e
-        sys.exit()
-
-    # global variables for maintaining consistent logging across classes
     debug = 0
     logfile = None
     use_syslog = 0
-    
-    app = App()
+
     app.main()
