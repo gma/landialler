@@ -11,31 +11,14 @@ REQUIREMENTS
 
   - Unix, or similar POSIX compliant Operating System (e.g. Linux)
 
-  - Python 2.1 compiled with support for threads. Note that thread
-    support is enabled by default from Python 2.1 onwards. There's a
-    good chance that landiallerd will work with Python 2.0 (untested).
-
-  - xmlrpclib, from http://www.pythonware.com/products/xmlrpc/
-
-  - gmalib, available from http://sourceforge.net/projects/landialler/
+  - Python 2.3 compiled with support for threads. Note that thread
+    support is enabled by default if your system supports it.
 
 
 INSTALLATION
 
-I will ignore the first two requirements and assume that if you have
-got this far that you are there already. If not you might want to get
-hold of a copy of Linux and the Python language (http://www.python.org/).
-
-Next, download xmlrpclib from the URL above (xmlrpclib should be
-included with the main Python source tree from Python 2.2 onwards, so
-it may be in your source tree already). If not, copy both xmlrpclib.py
-and xmlrpcserver.py into Python's site-packages directory
-(e.g. /usr/local/lib/python2.1/site-packages).
-
-Then install gmalib according to the instructions that come with it.
-
-Now you are ready to install the LANdialler server. Untar the source
-code, change into the directory created, and type (as root):
+Untar the source code, change into the directory created, and type (as
+root):
 
   # make install
 
@@ -76,18 +59,14 @@ positive integer if we are not. None of the commands should block
 up software, rather than waiting to see whether or not the dial up
 software is successful in attempting to connect to the Internet.
 
-The default commands work on Debian GNU/Linux (the author's preferred
-environment) especially if the pppconfig package is used to set up the
-PPP parameters, thereby enabling the pon and poff commands (which
-makes life very easy for connecting to many ISPs).
-
-In future it may make sense to collect scripts that work well on
-different Operating Systems. If there is demand for this then they can
-be collected and made available on the landialler web site.
+The default commands are known to work on Debian GNU/Linux and Gentoo
+Linux, as they use the pppconfig utility to set up the PPP parameters,
+thereby enabling the pon and poff commands (which makes life very easy
+for connecting to many ISPs).
 
 If you have problems installing either the client or the server then I
 will try and help you if I can. Please make sure that you send me as
-much information as you can, including the operating system (and
+much information as possible, including the operating system (and
 version number) that you are using, the version of Python and any
 output that you see when you launch the software (either on the
 command line or in syslog).

@@ -9,50 +9,35 @@ not quite there yet.
 
 REQUIREMENTS
 
-  - Any operating system that supports Python 2.1 and Tk
-  - Python 2.1 with Tk support (may work with Python 2.0)
-  - xmlrpclib, from http://www.pythonware.com/products/xmlrpc/
-  - gmalib, available from http://sourceforge.net/projects/landialler/
+  - Python 2.3 with support for either Tk or PyGTK2.
 
-If you want to use the GTK+ user interface (instead of Tk) then you will
-also need the GTK+ libraries and the Python bindings:
+PyGTK2 is available from http://www.daa.com.au/~james/pygtk/. Note
+that LANdialler no longer works with PyGTK 0.6.x.
 
-  - GTK+ is available from http://www.gtk.org/
-  - PyGTK is available from http://www.daa.com.au/~james/pygtk/
-
-Installing GTK+ support is recommended if you are running on a Unix or
-Linux platform as it makes things look much nicer. It behaves better too.
-If PyGTK is installed correctly it will be used by default on Unix systems.
+Using PyGTK instead of Tk is recommended if you are running on a Unix
+or Linux platform (it's much nicer to use). If PyGTK2 is installed
+correctly it will be used by default on Unix systems.
 
 
 INSTALLATION
 
-I will ignore the first two requirements; if you're not sure whether
-or not you've got Python visit http://www.python.org/ and download the
-latest version for your platform.
+If you need to install Python, Tk or PyGTK2 you must follow the
+instructions that come with those packages.
 
-Now, download xmlrpclib from the URL above (xmlrpclib should be
-included with the main Python source tree from Python 2.2 onwards, so
-you may have it already). If not you will need to copy the
-xmlrpclib.py file into your Python system directory (on Windows) or
-into Python's site-packages directory (Unix).
+To install LANdialler follow the instructions for your platform:
 
-Then install gmalib according to the instructions that come with it.
+  WINDOWS
 
-To install the client itself, follow the instructions for your
-platform:
-
-  Windows
     - Download the latest landialler ZIP file, and unzip into a temporary
       directory.
 
     - From within the landialler directory, run "python setup.py install"
-      to install the landiallermvc package.
+      This will install the landiallermvc library.
 
     - Create a landialler directory (e.g. C:\Program Files\landialler)
       and copy landialler.py and landialler.conf into the new directory.
       If you want to put the landialler.conf file in a different directory
-      you may, but see the -c command line option notes below.
+      you may, but see the notes on the -c command line option below.
 
     - Right click the desktop to create a new shortcut and point
       it towards landialler.py. Make sure that the shortcut runs
@@ -62,7 +47,8 @@ platform:
             up when you run landialler.py then rename landialler.py to
             landialler.pyw and use that instead.
 
-  Unix (or Linux)
+  UNIX (OR LINUX)
+
     - Simply type "python setup.py install" to have everything done for
       you.
 
@@ -70,26 +56,17 @@ platform:
             landialler.conf will be copied into /usr/local/etc
 
       If you want to put the configuration file somewhere else you may,
-      but see the -c command line option notes below.
+      but see the notes on the -c command line option below.
 
-    - If your system has Python support for GTK+ it will be used by default.
-      If you'd prefer to use Tk instead you have two choices; 1) edit the
-      /usr/local/etc/landialler.conf file, adding a section that looks
-      like this:
+    - If your system has support for GTK2 it will be used by default.
+      If you'd prefer to use Tk instead you have two choices; 1) edit
+      the /usr/local/etc/landialler.conf file, adding a section that
+      looks like this:
 
         [interface]
         toolkit: tk
 
-      or 2) run landialler with the "-u tk" command line switch. If you have
-      any difficulty getting GTK+ support to work send me an email with a
-      description of the problem and I'll see if I can help you to get it
-      working.
-
-  MacOS
-    - I'm afraid I don't have access to a Mac and so have no idea how
-      to install landialler. I'm not even sure if it works, but I'd be
-      surprised if it didn't. If you let me know I'll gratefully
-      include the information here though.
+      or 2) run landialler with the "-u tk" command line switch.
 
 
 CONFIGURATION
@@ -110,5 +87,6 @@ much information as you can, including the operating system (and
 version number) that you are using, the version of Python and any
 output that you see when you launch the software (either on the
 command line or in syslog).
+
 
 $Id$
