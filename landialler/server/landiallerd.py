@@ -20,6 +20,7 @@
 #
 # $Id$
 
+import ConfigParser
 import gmalib
 import os
 import posixpath
@@ -48,7 +49,7 @@ class MyTCPServer(SocketServer.TCPServer):
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
                                         RequestHandlerClass)
-        
+
 
 class MyHandler(xmlrpcserver.RequestHandler):
     """Defines methods that correspond to a procedure in the XML-RPC API."""
@@ -139,24 +140,20 @@ class App(gmalib.Daemon):
         """Calls the base class's initialisor."""
         gmalib.Daemon.__init__(self)
 
-    def read_config(self):
-        """Map config file settings to instance attributes.
+    def run(self):
+        """Start the landiallerd server."""
 
-        This really ought to be sorted out so that the
-        load_sys_config() library method can do everything for us - it
-        is currently quite horrible. Making a mental note to fix the
-        library in a future release.
+        syslog.openlog(posixpath.basename(sys.argv[0]),
+                       syslog.LOG_PID | syslog.LOG_CONS)
+        self.log_info("starting server")
 
-        """
-
-        self.sys_config_files = ["/usr/local/etc/landiallerd.conf",
-                                 "/etc/landiallerd.conf",
-                                 os.getcwd() + os.sep + "landiallerd.conf"]
-        self.load_sys_config()
-
+        # load configuration files
         try:
-            self.server_ip = self.config.get("server", "ip")
-            self.server_port = int(self.config.get("server", "port"))
+            self.config = ConfigParser.ConfigParser()
+            self.config.read(["/usr/local/etc/landiallerd.conf",
+                              "/etc/landiallerd.conf", "landiallerd.conf"])
+            server_ip = self.config.get("server", "ip")
+            server_port = self.config.get("server", "port")
 
         except ConfigParser.ParsingError, e:
             self.log_err("Error reading config file: %s" % e)
@@ -169,17 +166,9 @@ class App(gmalib.Daemon):
         except ConfigParser.NoOptionError, e:
             self.log_err("Error reading config file: %s" % e)
             sys.exit()
-        
-    def run(self):
-        """Start the landiallerd server."""
 
-        syslog.openlog(posixpath.basename(sys.argv[0]),
-                       syslog.LOG_PID | syslog.LOG_CONS)
-        self.log_info("starting server")
-
-        self.read_config()
-
-        self.server = MyTCPServer((self.server_ip, self.server_port), MyHandler)
+        # start the server and start taking requests
+        self.server = MyTCPServer((server_ip, server_port), MyHandler)
         self.server.serve_forever()
 
         syslog.closelog()
