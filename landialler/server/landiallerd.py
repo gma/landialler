@@ -150,6 +150,9 @@ class MyHandler(gmalib.Logger, xmlrpcserver.RequestHandler):
             if method == 'get_status':
                 (host, port) = self.client_address
                 params = (host,)
+            elif method == 'disconnect':
+                (host, port) = self.client_address
+                params = (params[0], host)
             return apply(eval("api_" + method), params)
             
 
@@ -213,17 +216,18 @@ class App(gmalib.Daemon):
 # objects aren't stateful and making them so appears to be needlessly
 # complex).
 #
-# We maintain state via two global variables:
+# We maintain state via three global variables:
 #
 #   current_users  -- the number of people sharing the connection
+#   user_tracker   -- dict of clients and when they checked the status
 #   is_connected   -- whether or not the server is connected
 
 
 def api_connect():
-    """Connect to the Internet.
+    """Open the connection.
 
-    If the server is already connected the current_users attribute
-    is incremented by 1 and the XML-RPC True value is returned.
+    If the server is already connected the the XML-RPC True value is
+    returned.
 
     Otherwise an attempt is made to make a connection by running
     an external dial up script. If the external script runs
@@ -234,14 +238,8 @@ def api_connect():
     successfully set up by the script.
 
     """
-    global current_users, is_connected
-    print "current_users:", current_users
+    global is_connected
     if is_connected:
-        current_users += 1
-        return xmlrpclib.True
-
-    elif current_users > 0:  # in process of connecting
-        current_users += 1
         return xmlrpclib.True
 
     else:
@@ -250,27 +248,27 @@ def api_connect():
         rval = os.system("%s > /dev/null 2>&1" % cmd)
 
         if rval == 0:
-            current_users += 1
-            print "current_users now:", current_users
             return xmlrpclib.True
         else:
             return xmlrpclib.False
 
 
-def api_disconnect(all=0):
-    """Disconnect from the Internet.
+def api_disconnect(all='no', client=None):
+    """Close the connection.
 
-    Decrements the number of current users by 1. If there are
-    other users online then the XML-RPC True value is returned.
+    If there are other users online and the all argument is not set
+    then the XML-RPC True value is returned.
 
-    If not then the connection is dropped by running an external
-    dial up termination script. As with api_connect(), the return
-    value of the external script is converted into the XML-RPC
-    True or False value, and returned.
+    Otherwise the connection is dropped by running an external dial up
+    termination script. As with api_connect(), the return value of the
+    external script is converted into the XML-RPC True or False value,
+    and returned.
 
     """
     global current_users
-    if (all == 0) and (current_users - 1 > 0):  # other users still online
+    print "all: %s, users: %s" % (all, client)
+    if (current_users - 1 > 0) and (all != 'yes'):  # other users still online
+        del user_tracker[client]
         return xmlrpclib.True
 
     else:
@@ -278,6 +276,7 @@ def api_disconnect(all=0):
         cmd = config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:
+            user_tracker.clear()
             return xmlrpclib.True
         else:
             return xmlrpclib.False
@@ -295,16 +294,15 @@ def api_get_status(client):
         if (now - user_tracker[client]) > timeout:
             del user_tracker[client]
 
-    # count current_users
-    current_users = len(user_tracker.keys())
-
-    # get is_connected
+    # get current_users and is_connected
     config = gmalib.SharedConfigParser()
     cmd = config.get("commands", "is_connected")
     rval = os.system("%s > /dev/null 2>&1" % cmd)
     if rval == 0:
+        current_users = len(user_tracker.keys())
         is_connected = 1
     else:
+        current_users = 0  # ignore contents of user_tracker, we're not online
         is_connected = 0
 
     return (current_users, is_connected)
