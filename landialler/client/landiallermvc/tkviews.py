@@ -50,7 +50,6 @@ class Window:
         self.button_store = {}  # maintain link to buttons so we config them
         
     def draw_buttons(self, parent=None):
-
         """Lays out a set of buttons in a button bar.
 
         Packs the GUI buttons in order, aligned according to the
@@ -58,14 +57,30 @@ class Window:
 
         """        
         frame = Frame(parent, bd=6)  # padding frame
-        self.buttons.reverse()
-        for tuple in self.buttons:
-            (name, cmd) = tuple
-            button = Button(frame, text=name, command=cmd, state=NORMAL)
+
+        # We must sort the buttons into order specified by
+        # self.buttons data structure (that's what the position
+        # element in the tuple is for). Before we can sort them we
+        # need to put them into a list.
+        #
+        # FIXME: there must be a better way of sorting a hash by it's
+        # values than this, surely...
+
+        button_bar = []
+        for name in self.buttons.keys():
+            position = self.buttons[name][0]
+            callback = self.buttons[name][1]
+            button_bar.append((name, position, callback))
+
+        if len(button_bar) > 1:
+            button_bar.sort(lambda a, b: cmp(a[1], b[1]))
+
+        for tuple in button_bar:
+            (name, pos, cmd) = tuple
+            button = Button(frame, text=name.capitalize(), command=cmd)
             button.pack(side=self.button_side)
             key = name.lower()
-            self.button_store[key] = button
-            print "button_store: %s" % self.button_store
+            self.button_store[key] = button  # so we can call btn.config()
         frame.pack(side=self.button_side)
 
 
@@ -78,26 +93,37 @@ class Dialog(Window):
         Window.__init__(self)
         self.modal = 0
         self.button_side = TOP
+        self.win = None
 
-    def show(self):
+    def draw(self):
         """Displays the dialog's message and buttons."""
-        win = Toplevel()
-        win.title(self.title)
-        frame = Frame(win, bd=6)
-        label = Label(frame, text=self.text)
-        label.pack()
+        self.win = Toplevel()
+        self.win.title(self.title)
+        self.win.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close button
+        frame = Frame(self.win, bd=6)
+        if len(self.text) > 30:
+            widget = Message(frame, text=self.text)
+        else:
+            widget = Label(frame, text=self.text)
+        widget.pack()
         frame.pack()
-        self.draw_buttons(win)
+        self.draw_buttons(self.win)
         if self.modal:
-            win.focus_set()
-            win.grab_set()
-            win.wait_window()
+            self.win.focus_set()
+            self.win.grab_set()
+            self.win.wait_window()
 
 
 class ConnectingDialog(Dialog, views.ConnectingDialog):
     def __init__(self, model):
         Dialog.__init__(self)
         views.ConnectingDialog.__init__(self, model)
+
+    def cleanup(self):
+        """Cleans up after the dialog has been closed."""
+        global root
+        self.win.destroy()
+        root.quit()
     
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
@@ -116,6 +142,22 @@ class MainWindow(Window, views.MainWindow):
             (label, value) = row
             self.default_var.append(value)
             self.update_var.append(StringVar())
+
+    def cleanup(self):
+        """Destroy the main window."""
+        global root
+        root.quit()
+
+    def draw(self):
+        """Display the main window."""
+        global root
+        root.title(self.title)
+        on_delete_cb = self.buttons['disconnect'][1]  # same as disconnect btn
+        root.protocol('WM_DELETE_WINDOW', on_delete_cb)
+        self.draw_labels()
+        self.draw_buttons()
+        self.update()  # update labels immediately
+        mainloop()
 
     def draw_labels(self, parent=None):
         """Draws frame containing status display."""
@@ -137,15 +179,6 @@ class MainWindow(Window, views.MainWindow):
 
         frame2.pack()
         frame1.pack()
-
-    def show(self):
-        """Display the main window."""
-        global root
-        root.title(self.title)
-        self.draw_labels()
-        self.draw_buttons()
-        self.update()  # update labels immediately
-        mainloop()
 
     def update(self):
         """Updates the status display."""
