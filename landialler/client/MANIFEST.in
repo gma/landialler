@@ -7,4 +7,5 @@ include AUTHORS
 include COPYING
 include INSTALL
 include README
+include landialler.py
 include landialler.conf
