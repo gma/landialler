@@ -41,7 +41,7 @@ except ImportError, e:
     pass
 
 
-__version__ = "0.2.3"
+__version__ = '0.2.3'
 
 
 class Logger:
@@ -53,22 +53,20 @@ class Logger:
 
     """
 
-    # class vars used for creating log time stamps
-    weekdayname = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    monthname = [None,
+    month_names = [None,
                  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    def __init__(self, logfile=None, use_syslog=0):
+    def __init__(self, log_file=None, use_syslog=0):
         """Initialises the object.
 
-        If specified, the logfile attribute should be the name of a file to
+        If specified, the log_file attribute should be the name of a file to
         append log messages to. If the syslog attribute is true then
         messages will be written to syslog, on POSIX systems.
 
         """
         # default attributes
-        self.logfile = logfile
+        self.log_file = log_file
         if os.name == "posix" and use_syslog:
             self.use_syslog = 1
         else:
@@ -86,12 +84,16 @@ class Logger:
             syslog.closelog()
 
     def _log_date_time_string(self):
-        """Return the current time formatted for logging."""
-        # based on BaseHTTPServer's method of the same name
+        """Return the current time formatted for logging.
+
+        The output format used is based on that used by the
+        BaseHTTPServer class.
+
+        """
         now = time.time()
         year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
         s = "%3s %02d %04d %02d:%02d:%02d" % \
-            (self.monthname[month], day, year, hh, mm, ss)
+            (self.month_names[month], day, year, hh, mm, ss)
         return s
 
     def _to_file(self, priority, message):
@@ -105,55 +107,52 @@ class Logger:
         fmt = "%s %s[%d] %5s: %s"
         if message[-1:] != "\n":
             fmt += "\n"
-        f = open(self.logfile, "a")
+        file_obj = file(self.log_file, "a")
         if os.name == "posix":
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        f.write(fmt % (date_time, posixpath.basename(sys.argv[0]),
+            fcntl.flock(file_obj.fileno(), fcntl.LOCK_EX)
+        file_obj.write(fmt % (date_time, posixpath.basename(sys.argv[0]),
                        os.getpid(), priority.upper(), message))
-        f.close()
+        file_obj.close()
 
     def log_debug(self, message):
         """Log a debug message."""
         if self.debug:
             if self.use_syslog:
                 syslog.syslog(syslog.LOG_DEBUG, message)
-            if self.logfile:
+            if self.log_file:
                 self._to_file("debug", message)
 
     def log_info(self, message):
         """Log info message."""
         if self.use_syslog:
             syslog.syslog(syslog.LOG_INFO, message)
-        if self.logfile:
+        if self.log_file:
             self._to_file("info", message)
 
     def log_notice(self, message):
         """Log a notice message."""
         if self.use_syslog:
             syslog.syslog(syslog.LOG_NOTICE, message)
-        if self.logfile:
+        if self.log_file:
             self._to_file("notice", message)
 
     def log_err(self, message):
         """Log an error message."""
         if self.use_syslog:
             syslog.syslog(syslog.LOG_ERR, message)
-        if self.logfile:
+        if self.log_file:
             self._to_file("error", message)
 
 
 class Daemon:
 
-    """Provides an application with basic daemon functionality (UNIX only).
+    """Provides an application with basic daemon functionality.
+
+    Note: This module only works on POSIX systems.
 
     Any script that needs to run as a daemon (a background process)
-    need only be written in an object oriented manner (e.g. wrap it up
-    in a run() method, or similar), and specify this class as a base
-    class. Treat it as a mixin class.
-
-    A call to self.daemonise() will convert the calling script into a
-    daemon. The sys.stdout and sys.stderr file handles are re-directed
-    via a Logger object.
+    need only be written in an object oriented manner and specify this
+    class as a base class. Treat it as a mixin class.
 
     """
     
@@ -177,7 +176,6 @@ class Daemon:
         be passed into Daemon.__init__().
 
         """
-        # UNIX only, sorry.
         if os.name != "posix":
             print "unable to run as a daemon (POSIX only)"
             return None
@@ -191,6 +189,7 @@ class Daemon:
         os.setpgrp()
         os.umask(0)
 
+        # TODO: Refactor this bit into a separate method.
         # Redirect stdout and stderr to syslog.
         class _StdOutLogDevice(Logger):
             def __init__(self, **kwargs):
@@ -247,7 +246,7 @@ def test():
     if "syslog" in dir():
         syslog.openlog(posixpath.basename(sys.argv[0]))
     
-    log = Logger(logfile="test.log", use_syslog=1)
+    log = Logger(log_file="test.log", use_syslog=1)
     log.log_info("an info log message")
     log.log_err("an error log message")
     log.log_notice("a notice log message")
