@@ -15,6 +15,10 @@ do, in no particular order.
     on line"). This will involve learning some Tk, as will making it
     possible to minimise the "Connected" dialog...
 
+  - Find out why the tkMessageBox.askyesno() dialog box hangs around
+    for ages after the user has pressed a button on Linux. Will, you
+    guessed it, mean I need to find out a bit more about Tk... :(
+
   - A GTK+/GNOME port as Tk is *really* ugly on Linux. Perhaps I
     should do wxWindows() instead but I'd quite like to have a GNOME
     applet for this stuff.
