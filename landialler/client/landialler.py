@@ -25,7 +25,7 @@
 LANdialler enables several computers on a home LAN to remotely control
 a dial up device (e.g. modem) that is connected to a single Unix
 workstation. This scenario is explained in more detail on the
-LANdialler web site (http://landialler.sourceforge.net/).
+LANdialler web site.
 
 There are two programs that make up a complete LANdialler system; the
 client (landialler) and the server (landiallerd). This program is the
@@ -52,6 +52,30 @@ for the user to attempt to reconnect instead).
 
 All client-server communication takes place via the LANdialler XML-RPC
 API, which is covered in landiallerd's documentation.
+
+The configuration file tells landialler how to contact the server. A
+sample configuration file looks like this:
+
+  [xmlrpcserver]
+  hostname: 192.168.1.1  # your Unix box
+  port: 6543             # the default port
+
+  [dialup]
+  timeout: 120           # not currently used
+
+The configuration file should be called "landialler.conf". On POSIX
+operating systems (e.g. Unix or similar) it can either be placed in
+/usr/local/etc, or the current directory. On other operating systems
+it must be placed in the current directory.
+
+On POSIX operating systems, error, informational and debugging
+messages are written to the syslog.
+
+More information on landialler is available at the project home page:
+
+  http://landialler.sourceforge.net/
+
+The author can be contacted at ashtong@users.sourceforge.net.
 
 """
 
