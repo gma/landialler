@@ -130,6 +130,12 @@ a:active {
 	background-color: #eeeeee;
 }
 
+#sidebar div.rule {
+	height: 1px;
+	margin-bottom: 10px;
+	background-color: #eeeeee;
+}
+
 #sidebar ul {
   margin: 0em;
   margin-bottom: 15px;
@@ -142,6 +148,12 @@ a:active {
   padding-left: 2em;
   padding-right: 0em;
   list-style-type: square;
+}
+
+#sidebar img.button {
+  padding-left: 10px;
+  padding-top: 0px;
+  padding-bottom: 5px;
 }
 
 
