@@ -93,7 +93,7 @@ import sys
 import xmlrpclib
 
 
-__version__ = "0.2pre2"
+__version__ = "0.2"
 
 
 class ConnectError(exceptions.Exception):

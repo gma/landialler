@@ -10,7 +10,7 @@ from distutils.core import setup
 import os, sys, shutil
 
 setup(name="landialler",
-      version="0.2pre2",
+      version="0.2",
       description="LANdialler client",
       author="Graham Ashton",
       author_email="ashtong@users.sourceforge.net",

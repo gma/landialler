@@ -6,7 +6,7 @@ ETC = $(DESTDIR)/usr/local/etc
 INSTALL = /usr/bin/install -c
 
 # variables for the tardist target
-VERS = 0.2pre2
+VERS = 0.2
 SRC = AUTHORS COPYING INSTALL Makefile MANIFEST README \
       landiallerd.conf landiallerd.py
 
