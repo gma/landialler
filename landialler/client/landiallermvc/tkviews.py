@@ -36,14 +36,15 @@ from Tkinter import *
 import views
 
 
-main_win = Tk()      # global var that refers to the main windows Tk() object
+NoDefaultRoot()
 
 
 class Window:
 
     def __init__(self):
         self.button_side = RIGHT  # right aline buttons
-        self.window = None
+        self.window = Tk()
+        self.modal = None
 
     def draw_buttons(self, parent=None):
         self.create_button_store()
@@ -53,14 +54,15 @@ class Window:
             (name, pos, callback) = tup
             button = Button(frame, text=name, command=callback)
             key = name
-            self.button_store[key] = button  # so we can call btn.config()
-
+            self.button_store[key] = button  # so we can call button.config()
             if count % 2: padding = 6
             else:         padding = 0
             button.pack(side=self.button_side, padx=padding)
             count += 1
-
         frame.pack(side=self.button_side)
+    
+    def start_event_loop(self):
+        pass  # not required by Tk dialogs, just the main window.
 
 
 class Dialog(Window):
@@ -70,7 +72,6 @@ class Dialog(Window):
 
     def draw(self):
         """Displays the dialog's message and buttons."""
-        self.window = Toplevel()
         self.window.resizable(0, 0)
         self.window.title(self.title)
         self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close
@@ -93,10 +94,11 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
         views.ConnectingDialog.__init__(self, model)
 
     def cleanup(self):
+        self.window.destroy()
         self.window.quit()
     
     def update(self):
-        if self.model.is_connected:
+        if self.model.is_connected and not self.model.was_connected:
             self.window.destroy()
     
 
@@ -108,6 +110,7 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
 
     def cleanup(self):
         self.window.destroy()
+        self.window.quit()
 
 
 class DroppedDialog(Dialog, views.DroppedDialog):
@@ -117,19 +120,22 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         views.DroppedDialog.__init__(self, model)
 
     def cleanup(self):
+        self.window.destroy()
         self.window.quit()
 
     def update(self):
         if self.model.is_connected:
             self.window.destroy()
 
+
 class FatalErrorDialog(Dialog, views.FatalErrorDialog):
 
-    def __init__(self, model, err_msg):
+    def __init__(self, model, **kwargs):
         Dialog.__init__(self)
-        views.FatalErrorDialog.__init__(self, model, err_msg)
+        views.FatalErrorDialog.__init__(self, model, **kwargs)
 
     def cleanup(self):
+        self.window.destroy()
         self.window.quit()
 
 
@@ -138,8 +144,6 @@ class MainWindow(Window, views.MainWindow):
     def __init__(self, model):
         Window.__init__(self)
         views.MainWindow.__init__(self, model)
-        global main_win
-        self.window = main_win
         self.window.resizable(0, 0)
         self.update_var = []   # StringVar() object's for auto label updating
 
@@ -158,7 +162,6 @@ class MainWindow(Window, views.MainWindow):
         self.draw_buttons(self.window)
         self.check_status()
         self.update()  # update labels immediately
-        self.window.mainloop()
 
     def draw_status_frame(self, parent=None):
         """Draws frame containing status display."""
@@ -181,6 +184,9 @@ class MainWindow(Window, views.MainWindow):
 
         frame2.pack()
         frame1.pack()
+    
+    def start_event_loop(self):
+        self.window.mainloop()
 
     def update(self):
         self.update_var[1].set(self.model.current_users)
