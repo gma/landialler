@@ -32,7 +32,7 @@ it may be in your source tree already). If not, copy both xmlrpclib.py
 and xmlrpcserver.py into Python's site-packages directory
 (e.g. /usr/local/lib/python2.1/site-packages).
 
-Then copy the gmalib.py file into the same directory.
+Then install gmalib according to the instructions that come with it.
 
 Now you are ready to install the LANdialler server. Untar the source
 code, change into the directory created, and type simply type (as root):
@@ -49,6 +49,16 @@ similar) directories. For security reasons (it is simply best
 practice) it is recommended that you create a new user account purely
 to run the landiallerd.py server and configure your startup scripts to
 use that account.
+
+I recommend either using syslog, or a normal logfile, to record the
+server's actions. You can turn logging on with the -s and -l options:
+
+    -l file     write log messages to file
+    -s          write log messages to syslog
+
+If you have problems with LANdialler please turn debugging on with the 
+-d option and then send me the contents of the logfile, along with a 
+description of the problem.
 
 
 CONFIGURATION
