@@ -40,6 +40,7 @@ main_win = None  # global variable so the Dialog class can refer to it too
 
 
 class Window:
+
     def __init__(self):
         self.window = None
         self.window_type = WINDOW_TOPLEVEL
@@ -48,7 +49,7 @@ class Window:
     def draw(self):
         self.window.set_border_width(5)
         self.window.set_title(self.title)
-        self.window.set_policy(0, 0, 0)
+        self.window.set_policy(0, 0, 0)  # fixed size window
         self.vbox = GtkVBox()
         self.window.add(self.vbox)
 
@@ -60,18 +61,42 @@ class Window:
         for tup in self.button_bar:
             (name, pos, callback) = tup
             button = GtkButton(name.capitalize())
-            button.connect("clicked", callback)
+            button.connect("clicked", self.callback_wrapper, callback)
             bbox.pack_end(button)
+            key = name.lower()
+            self.button_store[key] = button  # so we can configure it
         self.vbox.pack_start(bbox, expand=1, fill=1, padding=5)
+
+    def callback_wrapper(self, widget, controller_callback):
+        """Integrates the controllers' callback functions with GTK+.
+        
+        In GTK+ a callback function is passed both the widget that raised
+        the signal and optional list of arguments. Normally this is very
+        handy, but in the landiallermvc package we have already implemented
+        our own way of passing arguments into non GUI specific callbacks
+        by using lambda functions that bind to cleanup() methods in the
+        GUI specific view implementation classes. GTK+'s arguments break
+        this system, unless we wrap our own callbacks in a method that knows
+        how to cope with the extra GTK+ arguments.
+        
+        All widgets should be connected to their landialler callbacks through 
+        this method. You don't need to use it for callbacks that aren't
+        defined in the non GTK+ part of landialler.
+        
+        The widget argument is automatically filled in by the connect() 
+        method. Pass the true landiallermvc.controller callback method to be 
+        run as a final parameter to the connect() method, and it will be 
+        mapped to the controller_callback argument automatically.
+        
+        """
+        controller_callback()
 
 
 class Dialog(Window):
+
     def __init__(self):
         Window.__init__(self)
         self.window_type = WINDOW_DIALOG
-
-    def destroy_cb(self, *args):
-        self.window.hide()
 
     def draw(self):
         """Displays the dialog's message and buttons."""
@@ -95,26 +120,31 @@ class Dialog(Window):
 
 
 class ConnectingDialog(Dialog, views.ConnectingDialog):
+
     def __init__(self, model):
         Dialog.__init__(self)
         views.ConnectingDialog.__init__(self, model)
 
-    def cleanup(self, *args):
+    def cleanup(self):
         mainquit()
     
     def update(self):
         if self.model.is_connected:
-            print "hiding window"
-            self.window.hide()
+            self.window.destroy()
 
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
+
     def __init__(self, model):
         Dialog.__init__(self)
         views.DisconnectDialog.__init__(self, model)
+    
+    def cleanup(self):
+        self.window.destroy()
 
 
 class DroppedDialog(Dialog, views.DroppedDialog):
+
     def __init__(self, model):
         Dialog.__init__(self)
         views.DroppedDialog.__init__(self, model)
@@ -124,10 +154,21 @@ class DroppedDialog(Dialog, views.DroppedDialog):
     
     def update(self):
         if self.model.is_connected:
-            self.window.hide()
+            self.window.destroy()
 
+
+class FatalErrorDialog(Dialog, views.FatalErrorDialog):
+
+    def __init__(self, model):
+        Dialog.__init__(self)
+        views.FatalErrorDialog.__init__(self, model)
+    
+    def cleanup(self):
+        mainquit()
+    
 
 class MainWindow(Window, views.MainWindow):
+
     def __init__(self, model):
         Window.__init__(self)
         views.MainWindow.__init__(self, model)
@@ -138,16 +179,22 @@ class MainWindow(Window, views.MainWindow):
         # stored somewhere so that we can get at them.
         self.status_label = {"is_connected": None, "current_users": None}
 
+    def check_status(self):
+        self.model.get_server_status()
+        return 1
+
     def cleanup(self):
         """Destroy the main window."""
         mainquit()
-
+    
     def draw(self):
         """Display the main window."""
         Window.draw(self)
         self.window.connect("destroy", mainquit)
         self.add_status_frame()
         self.add_button_box()
+        self.update()
+        timeout_add(self.model.check_status_period, self.check_status)        
         self.window.show_all()
         mainloop()
 
@@ -179,3 +226,20 @@ class MainWindow(Window, views.MainWindow):
 
         frame.add(table)        
         self.vbox.pack_start(frame, expand=1, fill=1, padding=5)
+    
+    def update(self):
+        users_label = self.status_label["current_users"]
+        status_label = self.status_label["is_connected"]
+        
+        users_label.set_text(str(self.model.current_users))
+        if self.model.is_connected:
+            status_label.set_text("Online")
+            #self.button_store["disconnect"].set_state(STATE_NORMAL)
+        else:
+            status_label.set_text('Offline')
+            #self.button_store["disconnect"].set_state(STATE_INSENSITIVE)
+
+        if (not self.model.is_connected) and self.model.was_connected:
+            self.model.was_connected = 0
+            dialog = DroppedDialog(self.model)
+            dialog.draw()
