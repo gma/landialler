@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# landiallerd.py - the LAN dialler daemon
+# landiallerd.py - the LANdialler daemon
 #
 # Copyright (C) 2001 Graham Ashton
 #
@@ -208,12 +208,20 @@ class API(gmalib.Logger):
         self.conn.rememberClient(client)
         if self.conn.isConnected():
             self.conn.nowConnecting = 0
+            if not self.conn.wasConnected:
+                self.conn.startTimer()
+            self.conn.wasConnected = 1
             numClients = self.conn.countClients()
         else:
+            if self.conn.wasConnected:
+                self.conn.stopTimer()
+            self.conn.wasConnected = 0
             numClients = 0
-        self.log_debug("get_status(%s): clients=%s, connected=%s" %
-                       (client, numClients, self.conn.isConnected()))
-        return (numClients, self.conn.isConnected())
+        self.log_debug("get_status(%s): clients=%s, isCon=%s, wasCon=%s" %
+                       (client, numClients, self.conn.isConnected(),
+                        self.conn.wasConnected))
+        return (numClients, self.conn.isConnected(),
+                self.conn.getTimeConnected())
 
 
 class Connection(gmalib.Logger):
@@ -224,7 +232,7 @@ class Connection(gmalib.Logger):
     connection (e.g. modem/ISDN connection to the Internet). All
     instances of this class share their state (see the Borg design
     pattern in the ASPN Python Cookbook) so that status information is
-    maintained between different client HTTP requests.
+    maintained between seperate client HTTP requests.
 
     """
 
@@ -241,6 +249,8 @@ class Connection(gmalib.Logger):
             self.clientTracker = {}
             self.config = gmalib.SharedConfigParser()
             self.nowConnecting = 0
+            self.wasConnected = 0 # should only be used by API.get_status()
+            self.timer = Timer()
 
     def countClients(self):
         """Return the number of active clients."""
@@ -255,8 +265,9 @@ class Connection(gmalib.Logger):
         """
         cmd = self.config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:
+        if rval == 0:  # connected
             self.nowConnecting = 0
+            self.timer.start()
             return 1
         else:
             return 0
@@ -318,6 +329,18 @@ class Connection(gmalib.Logger):
         else:
             return 0
 
+    def startTimer(self):
+        self.log_debug("starting timer")
+        self.timer.reset()
+        self.timer.start()
+
+    def stopTimer(self):
+        self.log_debug("stopping timer")
+        self.timer.stop()
+
+    def getTimeConnected(self):
+        return self.timer.getElapsedTime()
+
 
 class CleanerThread(threading.Thread, gmalib.Logger):
 
@@ -363,7 +386,7 @@ class CleanerThread(threading.Thread, gmalib.Logger):
             conn.forgetOldClients()
             self.log_debug("cleaner: clients=%s, conn=%s, nowConn=%s" %
                            (conn.countClients(), conn.isConnected(),
-                            conn.nowConnecting))
+                            conn.nowConnecting, conn.timer.isRunning))
             if conn.countClients() < 1:
                 if conn.nowConnecting or conn.isConnected():
                     self.log_info("clients timed out, terminating connection")
@@ -432,13 +455,63 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
             return apply(method, params)
 
     def log_request(self, code="-", size="-"):
-        """Requests are logged if running in debug mode."""
+        """HTTP connections are not logged (overrides super class)."""
         pass
-##         if self.debug:
-##             self.log_debug('%s - - [%s] "%s" %s %s\n' % \
-##                            (self.address_string(),
-##                            self.log_date_time_string(),
-##                            self.requestline, str(code), str(size)))
+
+
+class Timer(gmalib.Logger):
+
+    """Simple timer class to record elapsed times."""
+
+    def __init__(self):
+        """Run the start() method."""
+        global debug, logfile, use_syslog
+        self.debug = debug
+        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+
+        self.startTime = 0  # seconds since epoch when timer started
+        self.isRunning = 0  # set to true when timer is running
+        self.reset()
+
+    def start(self):
+        """Start the timer."""
+        self.isRunning = 1
+
+    def stop(self):
+        """Stop the timer."""
+        self.isRunning = 0
+
+    def reset(self):
+        """Reset the timer to zero.
+
+        Note that reset() neither stops or starts the timer.
+
+        """
+        self.log_debug("Timer: resetting time to zero")
+        self.startTime = int(time.time())
+
+    def getElapsedSeconds(self):
+        """Return seconds since timer started."""
+        return int(time.time()) - int(self.startTime)
+
+    def getElapsedHoursMinsSecs(self):
+        """Return tuple of hours, mins, secs elapsed since started."""
+        secs = self.getElapsedSeconds()
+        hours = int(secs / 3600)
+        secs = secs - (hours * 3600)
+        mins = int(secs / 60)
+        secs = secs - (mins * 60)
+        self.log_debug("Timer: %02d:%02d:%02d elapsed" % (hours, mins, secs))
+        return (hours, mins, secs)
+
+    def getElapsedTime(self):
+        """Return human readable representation of elapsed time.
+
+        The string returned is of the format "HH:MM:SS".
+
+        """
+        hours, mins, secs = self.getElapsedHoursMinsSecs()
+        return "%02d:%02d:%02d" % (hours, mins, secs)
 
 
 class App(gmalib.Daemon, gmalib.Logger):
@@ -507,6 +580,8 @@ class App(gmalib.Daemon, gmalib.Logger):
 
     def main(self):
         """Start the XML-RPC server."""
+        self.checkPlatform()
+        self.preLoadConfig()
         try:
             self.log_info("starting up")
             self.getopt()
@@ -552,6 +627,4 @@ if __name__ == "__main__":
     use_syslog = 0
 
     app = App()
-    app.checkPlatform()
-    app.preLoadConfig()
     app.main()
