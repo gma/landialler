@@ -323,7 +323,7 @@ class MainWindow(Window):
         self.controller = controllers.MainWindowController(model, self)
         self.title = "LANdialler"
         self.status_rows = [("Connection status:", "Offline"),
-                            ("Current users:", 0)]
+                            ("Current users:", "0")]
         # buttons = { name: (position in list, callback) }
         self.buttons = { "Disconnect": (0, self.controller.disconnect_cb) }
 
