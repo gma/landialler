@@ -117,6 +117,19 @@ class Window(View):
         """
         raise NotImplementedError, \
               ("%s has not implemented cleanup()" % self.__class__)
+    
+    def start_event_loop(self):
+        """Start the GUI toolkit's event handling loop.
+        
+        In general all windows should be able to start the event loop,
+        which will only be instantiated ONCE during the lifetime of the 
+        application. Toolkits that do not need the event loop to be
+        instantiated to cause a dialog to be displayed (such as Tk) can 
+        simply override this method with an empty one where appropriate.
+        
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented start_event_loop()" % self.__class__)
 
 
 class Dialog(Window):
@@ -217,6 +230,7 @@ class DisconnectDialog(Dialog):
         raise NotImplementedError, \
               ("%s has not implemented cleanup()" % self.__class__)
 
+
 class DroppedDialog(Dialog):
 
     """Warn user that the connection has been dropped.
@@ -264,10 +278,16 @@ class FatalErrorDialog(Dialog):
     to get feedback. This dialog displays an error message and an OK
     button. When the OK button is clicked the whole application is
     terminated.
+    
+    The title and message arguments can be set to control the dialog's
+    title message, and the main dialog message itself. Newline (\n)
+    characters should be embedded in message to wrap lines where
+    appropriate.
 
     """
 
-    def __init__(self, model, err_msg):
+    def __init__(self, model, title="Error",
+                 message="An unknown error has occurred"):
         """Initialise the dialog.
 
         The err_msg parameter should be a string explaining what went
@@ -277,8 +297,8 @@ class FatalErrorDialog(Dialog):
         Dialog.__init__(self, model)
         self.controller = controllers.FatalErrorController(model, self)
         self.modal = 1
-        self.title = "Fatal Error"
-        self.text = err_msg
+        self.title = title
+        self.text = message
         # we use lambda to pass parameters into the callback method
         callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
         # buttons = { name: (position in list, callback) }
