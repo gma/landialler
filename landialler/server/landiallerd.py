@@ -124,7 +124,7 @@ class MyHandler(xmlrpcserver.RequestHandler):
 
         """
 
-        config = gmalib.SingleConfigParser()
+        config = gmalib.SharedConfigParser()
         cmd = config.get("commands", "connect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
 
@@ -145,7 +145,7 @@ class MyHandler(xmlrpcserver.RequestHandler):
 
         """
 
-        config = gmalib.SingleConfigParser()
+        config = gmalib.SharedConfigParser()
         cmd = config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
 
@@ -163,7 +163,7 @@ class MyHandler(xmlrpcserver.RequestHandler):
 
         """
 
-        config = gmalib.SingleConfigParser()
+        config = gmalib.SharedConfigParser()
         cmd = config.get("commands", "is_connected")
         
         rval = os.system("%s > /dev/null 2>&1" % cmd)
@@ -189,7 +189,7 @@ class App(gmalib.Daemon):
 
         # load configuration files
         try:
-            self.config = gmalib.SingleConfigParser()
+            self.config = gmalib.SharedConfigParser()
             self.config.read(["/usr/local/etc/landiallerd.conf",
                               "/etc/landiallerd.conf", "landiallerd.conf"])
         except Exception, e:
@@ -209,6 +209,7 @@ if __name__ == '__main__':
         print "Sorry, only Unix (and similar) operating systems are supported."
         sys.exit()
     app = App()
-    app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
+    # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
     app.debug = 1
+    app.daemonise()
     app.main()
