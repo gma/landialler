@@ -4,87 +4,29 @@
   Stylesheet for LANdialler web site.
 */
 
-A:active {
-  background: #666666;
-  color: #eeeeee;
-}
-
-A:link {
-  color: #333333;
-}
-
-A:visited {
-  color: #666666;
-}
-
-A:visited.sidebar {
-  color: #336699;
-}
-
-A:link.sidebar {
-  color: #003366;
-}
-
 BODY {
-  color: #ffffff;
-  background: #336699;
   font-family: verdana,arial,lucida,helvetica;
-  font-size: small;
 }
 
-LI {
-  color: #003366;
-  font-family: verdana,arial,lucida,helvetica;
-  font-size: small;  
+H1 {
+  font-size: 13pt;
+}
+
+H2 {
+  font-size: 11pt;
 }
 
 P {
-  color: #003366;
   font-family: verdana,arial,lucida,helvetica;
-  font-size: small;
 }
 
-TABLE {
-  color: #003366;
-}
-
-/*
-
-TD {
-  color: #003366;
-}
-
-*/
-
-UL.side_box {
-  margin-top: 0pc;
-}
-
-.heading {
-  font-weight: bold;
-  font-size: medium;
-}
-
-.small {
-  font-size: x-small;
-}
-
-.side_box {
-  font-size: x-small;
-}
-
-.side_box_title {
-  color: #ffffff;
-  font-size: small;
-  font-weight: bold;
-  background: #336699;
+.pagetitle {
+  text-align: center;
+  font-size: 18pt;
 }
 
 .toolbar {
-  color: #000000;
-  font-family: verdana,arial,lucida,helvetica;
-  font-size: x-small;
-  font-weight: bold;
+  font-size: small;
 }
 
 /* End. */
