@@ -65,13 +65,12 @@ class ConnectingDialogController(Controller):
     def cancel_cb(self, cleanup_view):
         """Called when the Cancel button is pressed.
 
-        The XML-RPC API's server_disconnect() method is called, then
-        the cleanup_view object is called. cleanup_view should be a
-        function object that can be run to close down the toolkit's
-        main window and cleanly exit the application.
+	The XML-RPC API's server_disconnect() method is called, then the
+	cleanup_view object is called. cleanup_view should be a function
+	object that points to the ConnectingDialog.cleanup() method.
 
-        Note that this method is typically called when either the main
-        window's close button or the Disconnect button are clicked.
+	Note that this method is typically called when either the main
+	window's close button or the Disconnect button are clicked.
 
         """
         self.model.server_disconnect()
@@ -88,9 +87,9 @@ class DisconnectDialogController(Controller):
         The model's server_disconnect() method is called with the
         "all" argument set to "yes".
 
-        The cleanup_view argument should be a GUI toolkit specific
-        function object that can be run to close the dialog window, if
-        required by the toolkit.
+        The cleanup_view argument should point to the toolkit's own
+	DisconnectDialog.cleanup() method, which will handle the closing
+	the dialog and window.
 
         """
         self.model.server_disconnect(all='yes')
@@ -102,9 +101,7 @@ class DisconnectDialogController(Controller):
         The model's server_disconnect() method is called with the
         "all" argument set to "yes".
 
-        The cleanup_view argument should be a GUI toolkit specific
-        function object that can be run to close the dialog window, if
-        required by the toolkit.
+        The cleanup_view argument is as specified for yes_cb().
 
         """
         self.model.server_disconnect(all='no')
@@ -116,7 +113,7 @@ class DroppedDialogController(Controller):
         """Called when the OK button is pressed.
 
         Simply calls the cleanup_view function object, which should
-        close the dialog and return control to the main window.
+        point to the toolkit's DroppedDialog.cleanup() method.
 
         """
         cleanup_view()
@@ -126,26 +123,22 @@ class FatalErrorController(Controller):
     def ok_cb(self, cleanup_view):
         """Called when the OK button is pressed.
 
-        Calls the cleanup_view function object, which should close the
-        dialog and the main window.
-
-        Then calls the model's server_disconnect() method to make sure
-        that the connection doesn't hang around after we've gone.
+        Calls the cleanup_view function object, which should
+        point to the toolkit's FatalError.cleanup() method.
 
         """
         cleanup_view()
-        
+
 
 class MainWindowController(Controller):
     def disconnect_cb(self, cleanup_view):
         """Called when the Disconnect button is pressed.
 
         If there are other users a DisconnectDialog class is
-        instantiated. Otherwise the model's server_disconnect() method
-        is called.
-
-        Either way, the cleanup_view function object is called, which
-        should exit the application.
+        instantiated and no further processing is carried out. Otherwise 
+        the model's server_disconnect() method is called, followed by the 
+        cleanup_view function object. cleanup_view should, surprise
+	surprise, point to the toolkit's MainWindow.cleanup() method.
 
         Note that disconnect_cb() is also called when the window
         manager's close button is pressed.
@@ -156,4 +149,4 @@ class MainWindowController(Controller):
             dialog.draw()
         else:
             self.model.server_disconnect()
-        cleanup_view()
+            cleanup_view()
