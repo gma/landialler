@@ -163,7 +163,7 @@ class ConnectingDialog(Dialog):
         # we use lambda to pass parameters into the callback method
         callback = (lambda c=self.cleanup, s=self: s.controller.cancel_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'cancel': (0, callback) }
+        self.buttons = { 'Cancel': (0, callback) }
 
     def cleanup(self):
         """Cleans up after the dialog has closed (abstract).
@@ -206,7 +206,7 @@ class DisconnectDialog(Dialog):
         yes_cb = (lambda c=self.cleanup, s=self: s.controller.yes_cb(c))
         no_cb = (lambda c=self.cleanup, s=self: s.controller.no_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'yes': (0, yes_cb), 'no': (1, no_cb) }
+        self.buttons = { 'Yes': (0, yes_cb), 'No': (1, no_cb) }
 
     def cleanup(self):
         """Cleans up after the Yes or No buttons have been pressed.
@@ -236,7 +236,7 @@ class DroppedDialog(Dialog):
         Dialog.__init__(self, model)
         self.controller = controllers.DroppedDialogController(model, self)
         self.title = "Connection dropped"
-        self.text = "Connection dropped (perhaps somebody hung up)"
+        self.text = "You have been disconnected\n(perhaps somebody hung up)"
         # we use lambda to pass parameters into the callback method
         callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
         # buttons = { name: (position in list, callback) }
@@ -315,7 +315,7 @@ class MainWindow(Window):
         callback = (lambda c=self.cleanup, s=self:
                     s.controller.disconnect_cb(c))
         # buttons = { name: (position in list, callback) }
-        self.buttons = { 'disconnect': (0, callback) }
+        self.buttons = { "Disconnect": (0, callback) }
 
     def cleanup(self):
         """Destroy the main window (abstract)."""
