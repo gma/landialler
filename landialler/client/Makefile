@@ -1,6 +1,6 @@
 # $Id$
 
-VERS = 0.1
+VERS = 0.2pre1
 SRC = AUTHORS COPYING INSTALL MANIFEST README TODO \
       landialler.conf landialler.py
 
