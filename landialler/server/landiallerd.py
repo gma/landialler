@@ -40,8 +40,76 @@ class MyTCPServer(SocketServer.TCPServer):
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
                                         RequestHandlerClass)
-        #print "reuse set to: %d" % self.allow_reuse_address
         
+
+class MyHandler(xmlrpcserver.RequestHandler):
+    """Defines methods that correspond to a procedure in the XML-RPC API."""
+
+    def call(self, method, params):
+        """Call the server side procedure and return the result.
+
+        If the procedure doesn't exist then an AttributeError is
+        raised, returning a fault to the client.
+
+        """
+
+        try:
+            server_method = getattr(self, "api_%s" % method)
+        except:
+            raise AttributeError, \
+                  "Server does not have XML-RPC procedure %s" % method
+
+        return server_method(params)
+
+    ### remaining methods are part of the XML-RPC API.
+
+    def api_connect(self, params):
+        """Connect to the Internet.
+
+        Attempts to connect to the Internet by running an external
+        dial up script.
+
+        """
+
+        cmd = "pon"
+        os.system(cmd)
+
+        return xmlrpclib.True
+
+    def api_disconnect(self, params):
+        """Disconnects from the Internet.
+
+        Drops the Internet connection by running an external dial up
+        termination script.
+
+        """
+
+        cmd = "poff"
+        os.system(cmd)
+
+        return xmlrpclib.True
+
+    def api_is_connected(self, params):
+        """Check if we are connected to the Internet.
+
+        Runs the external command that is defined by the is_connected
+        configuration file directive. The external command should
+        print a single line of output; 1 if we are connected to the
+        Internet, 0 otherwise.
+
+        """
+
+        cmd = "/sbin/ifconfig | perl -e 'undef($/); $_ = <STDIN>; " + \
+              "printf \"%s\", /ppp0/? 1 : 0'"
+        fd = os.popen(cmd)
+        is_conn = int(fd.read(1))
+        fd.close()
+
+        if is_conn == 1:
+            return xmlrpclib.True
+        else:
+            return xmlrpclib.False
+
 
 class App(application.Daemon):
     """Simple wrapper class that runs the server."""
@@ -90,85 +158,10 @@ class App(application.Daemon):
 
         self.read_config()
 
-        print "binding to %s:%d" % (self.server_ip, self.server_port)
         self.server = MyTCPServer((self.server_ip, self.server_port), MyHandler)
         self.server.serve_forever()
 
         syslog.closelog()
-
-
-
-class MyHandler(xmlrpcserver.RequestHandler):
-    """Defines methods that correspond to a procedure in the XML-RPC API."""
-
-    def call(self, method, params):
-        """Call the server side procedure and return the result.
-
-        If the procedure doesn't exist then an AttributeError is
-        raised, returning a fault to the client.
-
-        """
-
-	print "CALL: %s %s" % (method, params)
-
-        try:
-            server_method = getattr(self, "api_%s" % method)
-        except:
-            raise AttributeError, \
-                  "Server does not have XML-RPC procedure %s" % method
-
-        return server_method(params)
-
-    ### remaining methods are part of the XML-RPC API.
-
-    def api_connect(self, params):
-        """Connect to the Internet.
-
-        Attempts to connect to the Internet by running an external
-        dial up script.
-
-        """
-
-        print "connecting..."
-        cmd = "pon"
-        os.system(cmd)
-
-        return xmlrpclib.True
-
-    def api_disconnect(self, params):
-        """Disconnects from the Internet.
-
-        Drops the Internet connection by running an external dial up
-        termination script.
-
-        """
-
-        print "disconnecting..."
-        cmd = "poff"
-        os.system(cmd)
-
-        return xmlrpclib.True
-
-    def api_is_connected(self, params):
-        """Check if we are connected to the Internet.
-
-        Runs the external command that is defined by the is_connected
-        configuration file directive. The command should print a
-        single line of output; 1 if we are connected to the Internet,
-        0 otherwise.
-
-        """
-
-        cmd = "/sbin/ifconfig | perl -e 'undef($/); $_ = <STDIN>; " + \
-              "printf \"%s\", /ppp0/? 1 : 0'"
-        fd = os.popen(cmd)
-        is_conn = int(fd.read(1))
-        fd.close()
-
-        if is_conn == 1:
-            return xmlrpclib.True
-        else:
-            return xmlrpclib.False
 
 
 if __name__ == '__main__':
@@ -177,6 +170,6 @@ if __name__ == '__main__':
         sys.exit()
 
     app = App()
-    app.daemonise = 0
+    app.daemonise = 1
     app.debug = 1
     app.run()
