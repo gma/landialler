@@ -154,10 +154,13 @@ class Modem(object):
         self.timer = Timer()
 
     def dial(self):
+        log.info('Dialling')
         self.timer.reset()
         os.system(self._config_parser.get('commands', 'connect'))
 
     def hang_up(self):
+        log.info('Hanging up, online for %s seconds' %
+                 self.timer.elapsed_seconds)
         self.timer.stop()
         os.system(self._config_parser.get('commands', 'disconnect'))
 
@@ -253,10 +256,9 @@ class API(object):
 
         """
         log.info('%s disconnected' % client_id)
-        if self._modem_proxy.is_connected():
-            self._modem_proxy.remove_client(client_id)
-            if all:
-                self._modem_proxy.hang_up()
+        self._modem_proxy.remove_client(client_id)
+        if all:
+            self._modem_proxy.hang_up()
         return xmlrpclib.True
                 
     def get_status(self, client_id):
@@ -269,7 +271,6 @@ class API(object):
         seconds_connected  -- Number of seconds connected
 
         """
-        log.info('get_status()')
         self._modem_proxy.refresh_client(client_id)
         return (self._modem_proxy.count_clients(),
                 self._modem_proxy.is_connected(),
