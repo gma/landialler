@@ -119,17 +119,17 @@ class RemoteModem(Observable):
 
     client_id = property(_get_client_id)
 
-    def dial(self):
+    def connect(self):
         self._server_proxy.connect(self.client_id)
         self._checking_status = True
 
-    def hang_up(self):
+    def disconnect(self):
         self._checking_status = False
         self.is_connected = False
         self.notify_observers()
         self._server_proxy.disconnect(self.client_id)
 
-    def hang_up_all(self):
+    def disconnect_all(self):
         # TODO: refactor into hang_up()
         self._checking_status = False
         self.is_connected = False
@@ -236,7 +236,7 @@ class MainWindow(Window):
         self._modem.remove_observer(self)
         try:
             if self._modem.is_connected:
-                self._modem.hang_up()
+                self._modem.disconnect()
         except socket.error:
             pass
         gtk.main_quit()
@@ -250,7 +250,7 @@ class MainWindow(Window):
             gtk.timeout_remove(self._status_timeout)
         self._status_timeout = gtk.timeout_add(
             self.CHECK_STATUS_PERIOD, self._check_status)
-        self._modem.dial()
+        self._modem.connect()
         dialog = ConnectingDialog(self._modem)
         dialog.show()
 
@@ -289,7 +289,7 @@ class ConnectingDialog(Window):
             self.destroy()
 
     def on_cancel_button_clicked(self, *args):
-        self._modem.hang_up()
+        self._modem.disconnect()
         self.destroy()
 
     def on_connecting_dialog_delete_event(self, *args):
@@ -304,9 +304,9 @@ class DisconnectDialog(Window):
 
     def on_disconnect_button_clicked(self, *args):
         if self.disconnect_all.get_active():
-            self._modem.hang_up_all()
+            self._modem.disconnect_all()
         else:
-            self._modem.hang_up()
+            self._modem.disconnect()
         self.destroy()
 
     def on_cancel_button_clicked(self, *args):
@@ -398,7 +398,7 @@ class App(object):
             window.show()
             gtk.main()
         except KeyboardInterrupt:
-            modem.hang_up()
+            modem.disconnect()
             gtk.main_quit()
 
 
