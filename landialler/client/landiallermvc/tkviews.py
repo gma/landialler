@@ -36,47 +36,22 @@ from Tkinter import *
 import views
 
 
-root = Tk()  # Instantiated here so that we can access it later, and we
-             # don't get a spare top level window floating around.
+root = Tk()  # Instantiated explicitly so that we can access it later.
+             # Also means that we don't get a spare top level window
+             # floating around if we create a dialog before drawing
+             # the main window.
 
 
-class Window:
-
-    """Contains basic logic for constructing a top level window."""
-    
+class Window(views.Window):
     def __init__(self):
-        """Set button_side attribute to default to RIGHT."""
-        self.button_side = RIGHT
-        self.button_store = {}  # maintain link to buttons so we config them
-        
+        views.Window.__init__(self)
+        self.button_side = RIGHT  # right aline buttons
+
     def draw_buttons(self, parent=None):
-        """Lays out a set of buttons in a button bar.
-
-        Packs the GUI buttons in order, aligned according to the
-        button_side attribute.
-
-        """        
+        self.create_button_store()
         frame = Frame(parent, bd=6)  # padding frame
-
-        # We must sort the buttons into order specified by
-        # self.buttons data structure (that's what the position
-        # element in the tuple is for). Before we can sort them we
-        # need to put them into a list.
-        #
-        # FIXME: There must be a better way of sorting a hash by it's
-        # values than this, perhaps with a sub class of UserDict().
-
-        button_bar = []
-        for name in self.buttons.keys():
-            position = self.buttons[name][0]
-            callback = self.buttons[name][1]
-            button_bar.append((name, position, callback))
-
-        if len(button_bar) > 1:
-            button_bar.sort(lambda a, b: cmp(b[1], a[1]))
-
         count = 0
-        for tuple in button_bar:
+        for tuple in self.button_bar:
             (name, pos, cmd) = tuple
             button = Button(frame, text=name.capitalize(), command=cmd)
             key = name.lower()
@@ -104,7 +79,7 @@ class Dialog(Window):
         """Displays the dialog's message and buttons."""
         self.window = Toplevel()
         self.window.title(self.title)
-        self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close button
+        self.window.protocol('WM_DELETE_WINDOW', lambda: 0)  # ignore close
         frame = Frame(self.window, bd=6)
         max_cols = 15
         max_pixels = 160
@@ -152,6 +127,10 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         """
         self.window.destroy()
 
+    def update(self):
+        """Do nothing."""
+        pass
+
 
 class DroppedDialog(Dialog, views.DroppedDialog):
     def __init__(self, model):
@@ -168,6 +147,10 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         global root
         self.window.destroy()
         root.quit()
+
+    def update(self):
+        """Do nothing."""
+        pass
 
 
 class MainWindow(Window, views.MainWindow):
@@ -239,5 +222,7 @@ class MainWindow(Window, views.MainWindow):
         else:
             self.update_var[0].set('Offline')
             self.button_store['disconnect'].config(state=DISABLED)
+
+        if (not self.model.is_connected) and self.model.was_connected:
             dialog = DroppedDialog(self.model)
             dialog.draw()
