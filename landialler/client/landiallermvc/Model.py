@@ -40,6 +40,7 @@ class Model:
         # server status attributes (retrieved via RPC)
         self.is_connected = 0
         self.current_users = 0
+        self.time_connected = 0
         
         # attributes for maintaining state
         self.was_connected = 0  # set to 1 if we have been online
@@ -91,7 +92,8 @@ class Model:
         observers by calling the notify() method.
         
         """
-        (self.current_users, self.is_connected) = self.server.get_status()
+        (self.current_users, self.is_connected, self.time_connected) \
+	    = self.server.get_status()
         self.notify()
         if self.is_connected == 1 and self.was_connected == 0:
             self.was_connected = 1  # can now determine if connection dropped
