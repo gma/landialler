@@ -15,7 +15,7 @@ import gmalib
 if __name__ == '__main__':
     distutils.core.setup(name="gmalib",
                          version=gmalib.__version__,
-                         description="cused by author's own applications",
+                         description="used by author's own applications",
                          author="Graham Ashton",
                          author_email="ashtong@users.sourceforge.net",
                          url="http://landialler.sourceforge.net/",
