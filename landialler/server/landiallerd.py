@@ -86,296 +86,421 @@ The author can be contacted at ashtong@users.sourceforge.net.
 __version__ = "0.2.1"
 
 
-import ConfigParser
-import getopt
+# import ConfigParser
+# import getopt
 import os
-import SimpleXMLRPCServer
-import SocketServer
-import sys
-import threading
+# import SimpleXMLRPCServer
+# import SocketServer
+# import sys
+# import threading
 import time
-import xmlrpclib
+# import xmlrpclib
 
-try:
-    import syslog
-except ImportError, e:
-    if os.name == "posix":
-        sys.stderr.write("can't import syslog: %s" % e)
+# try:
+#     import syslog
+# except ImportError, e:
+#     if os.name == "posix":
+#         sys.stderr.write("can't import syslog: %s" % e)
 
 
-class Dummy:
+# class Dummy:
 
-    def method(self, *args):
-        pass
+#     def method(self, *args):
+#         pass
     
-    def __getattr__(self, name):
-        return self.method
+#     def __getattr__(self, name):
+#         return self.method
 
-# TODO: replace with proper logging object
-log = Dummy()
+# # TODO: replace with proper logging object
+# log = Dummy()
 
 
-class API:
+# class API:
     
-    """Implements the LANdialler API.
+#     """Implements the LANdialler API.
 
-    All accessible methods in this class form a part of the LANdialler
-    XML-RPC API, and are called directly whenever a client makes an
-    HTTP request to the server.
+#     All accessible methods in this class form a part of the LANdialler
+#     XML-RPC API, and are called directly whenever a client makes an
+#     HTTP request to the server.
 
-    Their return values are passed directly back to the XML-RPC
-    clients.
+#     Their return values are passed directly back to the XML-RPC
+#     clients.
 
-    """
+#     """
 
-    def __init__(self, modem):
-        self._modem = modem
+#     def __init__(self, modem):
+#         self._modem = modem
 
-    def connect(self, client):
-        """Open the connection.
+#     def connect(self, client):
+#         """Open the connection.
 
-        The client parameter should be a hashable that uniquely
-        identifies the client (e.g. the IP address).
+#         The client parameter should be a hashable that uniquely
+#         identifies the client (e.g. the IP address).
 
-        If the server is already connected the XML-RPC True value is
-        returned. If the server is in the process of connecting then
-        an XML-RPC False value is returned.
+#         If the server is already connected the XML-RPC True value is
+#         returned. If the server is in the process of connecting then
+#         an XML-RPC False value is returned.
 
-        Otherwise an attempt is made to make a connection by running
-        an external dial up command (see landiallerd.conf). If the
-        external command runs successfully (and therefore returns 0)
-        then the XML-RPC True value is returned, False otherwise. The
-        external command should return immediately (i.e. not block
-        whilst the connection is made) irrespective of whether or not
-        the actual connection will be successfully set up immediately.
+#         Otherwise an attempt is made to make a connection by running
+#         an external dial up command (see landiallerd.conf). If the
+#         external command runs successfully (and therefore returns 0)
+#         then the XML-RPC True value is returned, False otherwise. The
+#         external command should return immediately (i.e. not block
+#         whilst the connection is made) irrespective of whether or not
+#         the actual connection will be successfully set up immediately.
 
-        """
-        if self._modem.is_connected:
-            return xmlrpclib.True
-        elif self._modem.is_connecting:
-            return xmlrpclib.False
-        else:
-            if self._modem.dial():
-                self._modem.is_connecting = 1
-                return xmlrpclib.True
-            else:
-                return xmlrpclib.False
+#         """
+#         if self._modem.is_connected:
+#             return xmlrpclib.True
+#         elif self._modem.is_connecting:
+#             return xmlrpclib.False
+#         else:
+#             if self._modem.dial():
+#                 self._modem.is_connecting = 1
+#                 return xmlrpclib.True
+#             else:
+#                 return xmlrpclib.False
 
-    def disconnect(self, all="no", client=None):
-        """Close the connection.
+#     def disconnect(self, all="no", client=None):
+#         """Close the connection.
 
-        If there are other users online and the all argument is not
-        set to "yes" then the XML-RPC True value is returned.
+#         If there are other users online and the all argument is not
+#         set to "yes" then the XML-RPC True value is returned.
 
-        Otherwise the connection is dropped by running an external
-        dial up termination script. As with connect(), the return
-        value of the external script is converted into the XML-RPC
-        True or False value, and returned.
+#         Otherwise the connection is dropped by running an external
+#         dial up termination script. As with connect(), the return
+#         value of the external script is converted into the XML-RPC
+#         True or False value, and returned.
 
-        The client argument should uniquely identify the client, and
-        should be usable as a dictionary key.
+#         The client argument should uniquely identify the client, and
+#         should be usable as a dictionary key.
 
-        """
-        if (self._modem.count_clients() > 1) and (all != "yes"):
-            self._modem.forget_client(client)
-            return xmlrpclib.True
-        else:
-            if client:
-                log.info("%s disconnected, terminating connection" % client)
-            self._modem.is_connecting = 0
-            self._modem.forget_all_clients()
-            if self._modem.hangup():
-                return xmlrpclib.True
-            else:
-                return xmlrpclib.False
+#         """
+#         if (self._modem.count_clients() > 1) and (all != "yes"):
+#             self._modem.forget_client(client)
+#             return xmlrpclib.True
+#         else:
+#             if client:
+#                 log.info("%s disconnected, terminating connection" % client)
+#             self._modem.is_connecting = 0
+#             self._modem.forget_all_clients()
+#             if self._modem.hangup():
+#                 return xmlrpclib.True
+#             else:
+#                 return xmlrpclib.False
                 
-    def get_status(self, client):
-        """Returns the number of clients and connection status.
+#     def get_status(self, client):
+#         """Returns the number of clients and connection status.
 
-        The client parameter should uniquely identify the client, and
-        should be usable as a dictionary key. The IP address is
-        usually used.
+#         The client parameter should uniquely identify the client, and
+#         should be usable as a dictionary key. The IP address is
+#         usually used.
 
-        The values returned are:
+#         The values returned are:
 
-        current_clients -- The number of users sharing the connection
-        is_connected    -- 1 if connected, 0 otherwise
-        time_connected  -- Formatted string of time on-line (%H:%M:%S)
+#         current_clients -- The number of users sharing the connection
+#         is_connected    -- 1 if connected, 0 otherwise
+#         time_connected  -- Formatted string of time on-line (%H:%M:%S)
 
-        """
-        self._modem.remember_client(client)
-        if self._modem.is_connected:
-            self._modem.is_connecting = 0
-            if not self._modem.was_connected:
-                self._modem.start_timer()
-            self._modem.was_connected = 1
-            numClients = self._modem.count_clients()
-        else:
-            if self._modem.was_connected:
-                self._modem.stop_timer()
-            self._modem.was_connected = 0
-            numClients = 0
-        return (numClients,
-                self._modem.is_connected,
-                self._modem.get_time_connected())
-
-
-class SharedModem(object):
-
-    def __init__(self, config):
-        self._config = config
-        self.client_tracker = {}
-        self._is_connecting = False
-        self.was_connected = False
-        self.timer = Timer()
-
-    def _get_is_connecting(self):
-        return self._get_is_connecting
-
-    is_connecting = property(_get_is_connecting)
-
-    def _is_connected(self):
-        cmd = self._config.get("commands", "is_connected")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:
-            self._is_connecting = False
-            self.timer.start()
-            return True
-        else:
-            return False
-
-    is_connected = property(_is_connected)
-
-    def count_clients(self):
-        """Return the number of active clients."""
-        return len(self.list_clients())
-
-    def remember_client(self, client):
-        self.client_tracker[client] = time.time()
-
-    def forget_client(self, client):
-        try:
-            log.debug("forget_client: forgetting %s" % client)
-            del self.client_tracker[client]
-            log.info("%s timed out, %s client(s) remaining" %
-                          (client, self.count_clients()))
-        except KeyError:
-            pass
-
-    def forget_all_clients(self):
-        log.debug("forget_all_clients: clearing client list")
-        self.client_tracker.clear()
-
-    def forget_old_clients(self):
-        timeout = 30
-        for client in self.list_clients():
-            if (time.time() - self.client_tracker[client]) > timeout:
-                self.forget_client(client)
-
-    def list_clients(self):
-        return self.client_tracker.keys()
-
-    def dial(self):
-        cmd = self._config.get("commands", "connect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        log.debug("connect command returned: %s" % rval)
-        if rval == 0:
-            return 1
-        else:
-            return 0
-
-    def hangup(self):
-        cmd = self._config.get("commands", "disconnect")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        log.debug("disconnect command returned: %s" % rval)
-        if rval == 0:
-            return 1
-        else:
-            return 0
-
-    def start_timer(self):
-        self.timer.reset()
-        self.timer.start()
-
-    def stop_timer(self):
-        self.timer.stop()
-
-    def get_time_connected(self):
-        return self.timer.get_elapsed_time()
+#         """
+#         self._modem.remember_client(client)
+#         if self._modem.is_connected:
+#             self._modem.is_connecting = 0
+#             if not self._modem.was_connected:
+#                 self._modem.start_timer()
+#             self._modem.was_connected = 1
+#             numClients = self._modem.count_clients()
+#         else:
+#             if self._modem.was_connected:
+#                 self._modem.stop_timer()
+#             self._modem.was_connected = 0
+#             numClients = 0
+#         return (numClients,
+#                 self._modem.is_connected,
+#                 self._modem.get_time_connected())
 
 
-class CleanerThread(threading.Thread):
+# class SharedModem(object):
 
-    """Ensures that the connection does not remain live with no clients."""
+#     def __init__(self, config):
+#         self._config = config
+#         self.client_tracker = {}
+#         self._is_connecting = False
+#         self.was_connected = False
+#         self.timer = Timer()
 
-    def __init__(self, modem, interval=10):
-        """Setup the thread object."""
-        threading.Thread.__init__(self, name=CleanerThread)
-        self._modem = modem
-        self._pause_interval = interval
-        self._pauser = threading.Event()
-        self.setDaemon(True)
+#     def _get_is_connecting(self):
+#         return self._get_is_connecting
 
-    def run(self):
-        # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
-        # for a full example of the while loop's timer code.
-        while 1:
-            self._modem.forget_old_clients()
-            if self._modem.count_clients() < 1:
-                if self._modem.is_connecting or self._modem.is_connected:
-                    log.info("clients timed out, terminating connection")
-                    api = API(self._modem)
-                    api.disconnect(all="yes")
+#     is_connecting = property(_get_is_connecting)
 
-            self._pauser.wait(self._pause_interval)
+#     def _is_connected(self):
+#         cmd = self._config.get("commands", "is_connected")
+#         rval = os.system("%s > /dev/null 2>&1" % cmd)
+#         if rval == 0:
+#             self._is_connecting = False
+#             self.timer.start()
+#             return True
+#         else:
+#             return False
+
+#     is_connected = property(_is_connected)
+
+#     def count_clients(self):
+#         """Return the number of active clients."""
+#         return len(self.list_clients())
+
+#     def remember_client(self, client):
+#         self.client_tracker[client] = time.time()
+
+#     def forget_client(self, client):
+#         try:
+#             log.debug("forget_client: forgetting %s" % client)
+#             del self.client_tracker[client]
+#             log.info("%s timed out, %s client(s) remaining" %
+#                           (client, self.count_clients()))
+#         except KeyError:
+#             pass
+
+#     def forget_all_clients(self):
+#         log.debug("forget_all_clients: clearing client list")
+#         self.client_tracker.clear()
+
+#     def forget_old_clients(self):
+#         timeout = 30
+#         for client in self.list_clients():
+#             if (time.time() - self.client_tracker[client]) > timeout:
+#                 self.forget_client(client)
+
+#     def list_clients(self):
+#         return self.client_tracker.keys()
+
+#     def dial(self):
+#         cmd = self._config.get("commands", "connect")
+#         rval = os.system("%s > /dev/null 2>&1" % cmd)
+#         log.debug("connect command returned: %s" % rval)
+#         if rval == 0:
+#             return 1
+#         else:
+#             return 0
+
+#     def hangup(self):
+#         cmd = self._config.get("commands", "disconnect")
+#         rval = os.system("%s > /dev/null 2>&1" % cmd)
+#         log.debug("disconnect command returned: %s" % rval)
+#         if rval == 0:
+#             return 1
+#         else:
+#             return 0
+
+#     def start_timer(self):
+#         self.timer.reset()
+#         self.timer.start()
+
+#     def stop_timer(self):
+#         self.timer.stop()
+
+#     def get_time_connected(self):
+#         return self.timer.get_elapsed_time()
 
 
-class ReusableTCPServer(SocketServer.TCPServer):
+# class CleanerThread(threading.Thread):
 
-    """We override TCPServer so that we can set the allow_reuse_socket
-    attribute to true (so we can restart immediately and the TCP
-    socket doesn't sit in the CLOSE_WAIT state instead).
+#     """Ensures that the connection does not remain live with no clients."""
 
-    """
+#     def __init__(self, modem, interval=10):
+#         """Setup the thread object."""
+#         threading.Thread.__init__(self, name=CleanerThread)
+#         self._modem = modem
+#         self._pause_interval = interval
+#         self._pauser = threading.Event()
+#         self.setDaemon(True)
+
+#     def run(self):
+#         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
+#         # for a full example of the while loop's timer code.
+#         while 1:
+#             self._modem.forget_old_clients()
+#             if self._modem.count_clients() < 1:
+#                 if self._modem.is_connecting or self._modem.is_connected:
+#                     log.info("clients timed out, terminating connection")
+#                     api = API(self._modem)
+#                     api.disconnect(all="yes")
+
+#             self._pauser.wait(self._pause_interval)
+
+
+# class ReusableTCPServer(SocketServer.TCPServer):
+
+#     """We override TCPServer so that we can set the allow_reuse_socket
+#     attribute to true (so we can restart immediately and the TCP
+#     socket doesn't sit in the CLOSE_WAIT state instead).
+
+#     """
     
-    def __init__(self, server_address, request_handler_class):
-        self.allow_reuse_address = 1
-        SocketServer.TCPServer.__init__(self, server_address,
-                                        request_handler_class)
+#     def __init__(self, server_address, request_handler_class):
+#         self.allow_reuse_address = 1
+#         SocketServer.TCPServer.__init__(self, server_address,
+#                                         request_handler_class)
 
 
-class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
+# class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
 
-    """Handles XML-RPC requests."""
+#     """Handles XML-RPC requests."""
 
-    def __init__(self, modem):
-        SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self)
-        self._modem = modem
+#     def __init__(self, modem):
+#         SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self)
+#         self._modem = modem
 
-    def call(self, procedure, params):
-        """Call an API procedure, return it's result.
+#     def call(self, procedure, params):
+#         """Call an API procedure, return it's result.
 
-        Calls one of the API's methods on an instance of the API
-        class. If the procedure isn't supported then an AttributeError
-        is raised, returning a XML-RPC fault to the client.
+#         Calls one of the API's methods on an instance of the API
+#         class. If the procedure isn't supported then an AttributeError
+#         is raised, returning a XML-RPC fault to the client.
 
-        """
-        if not procedure in ["connect", "disconnect", "get_status"]:
-            log.err("Unknown procedure name: %s" % procedure)
-            raise xmlrpclib.Fault, "Unknown procedure name: %s" % procedure
-        else:
-            api = API(self._modem)
-            method = getattr(api, procedure)
-            if procedure in ["connect", "get_status"]:
-                (host, port) = self.client_address
-                params = (host,)
-            elif procedure == "disconnect":
-                (host, port) = self.client_address
-                disconnect_all_users = params[0]
-                params = (disconnect_all_users, host)
-            log.debug("RequestHandler.call(): called %s(%s)" % \
-                      (procedure, ", ".join(map(repr, params))))
-            return apply(method, params)
+#         """
+#         if not procedure in ["connect", "disconnect", "get_status"]:
+#             log.err("Unknown procedure name: %s" % procedure)
+#             raise xmlrpclib.Fault, "Unknown procedure name: %s" % procedure
+#         else:
+#             api = API(self._modem)
+#             method = getattr(api, procedure)
+#             if procedure in ["connect", "get_status"]:
+#                 (host, port) = self.client_address
+#                 params = (host,)
+#             elif procedure == "disconnect":
+#                 (host, port) = self.client_address
+#                 disconnect_all_users = params[0]
+#                 params = (disconnect_all_users, host)
+#             log.debug("RequestHandler.call(): called %s(%s)" % \
+#                       (procedure, ", ".join(map(repr, params))))
+#             return apply(method, params)
+
+
+# class App:
+
+#     """A simple wrapper class that initialises and runs the server."""
+
+#     def __init__(self):
+#         self._become_daemon = True
+#         self._config = self._load_config_file()
+#         self._modem = SharedModem(self._config)
+
+#     def _load_config_file(self):
+#         try:
+#             config = ConfigParser.ConfigParser()
+#             config.read(["/usr/local/etc/landiallerd.conf",
+#                          "/etc/landiallerd.conf", "landiallerd.conf"])
+#         except Exception, e:
+#             print "Terminating - error reading config file: %s" % e
+#             sys.exit()
+
+#     def check_platform(self):
+#         if os.name != "posix":
+#             print "Sorry, only POSIX compliant systems are supported."
+#             sys.exit()
+
+#     def daemonise(self):
+#         """Become a daemon process (POSIX only)."""
+#         if not self._become_daemon:
+#             return
+#         if os.name != "posix":
+#             print "unable to run as a daemon (POSIX only)"
+#             return None
+
+#         # See "Python Standard Library", pg. 29, O'Reilly, for more
+#         # info on the following.
+#         pid = os.fork()
+#         if pid:  # we're the parent if pid is set
+#             os._exit(0)
+
+#         os.setpgrp()
+#         os.umask(0)
+
+#         class DevNull:
+
+#             def write(self, message):
+#                 pass
+            
+#         sys.stdin.close()
+#         sys.stdout = DevNull()
+#         sys.stderr = DevNull()
+
+#     def getopt(self):
+#         """Parse command line arguments.
+
+#         Reads the command line arguments, looking for the following:
+
+#         -d          enable debugging for extra output
+#         -f          run in the foreground (not as a daemon)
+#         -h          print usage message to stderr
+#         -l file     log events to file
+#         -s          log events to syslog
+
+#         """
+#         opts, args = getopt.getopt(sys.argv[1:], "dfhl:s")
+
+#         for o, v in opts:
+#             if o == "-d":
+#                 # TODO: set debug level on the logging object
+#                 pass
+#             elif o == "-f":
+#                 self._become_daemon = False
+#             elif o == "-h":
+#                 self.usage_message()
+#             elif o == "-l":
+#                 global log_file
+#                 log_file = v
+#                 if not os.path.exists(log_file):
+#                     raise IOError, ("File not found: %s" % log_file)
+#             elif o == "-s":
+#                 global use_syslog
+#                 use_syslog = 1
+
+#     def main(self):
+#         """Start the XML-RPC server."""
+#         self.check_platform()
+#         self.pre_load_config()
+#         try:
+#             log.info("starting up")
+#             self.getopt()
+#             self.daemonise()
+#             cleaner = CleanerThread(self._modem)
+#             cleaner.start()
+#         except IOError, e:
+#             sys.stderr.write("%s\n" % e)
+#         except getopt.GetoptError, e:
+#             sys.stderr.write("%s\n" % e)
+#             self.usage_message()
+        
+#         # start the server and start taking requests
+#         server_port = int(self.config.get("general", "port"))
+
+#         def handler_factory():
+#             return RequestHandler(self._modem)
+
+#         server = ReusableTCPServer(("", server_port), handler_factory, False)
+#         try:
+#             server.serve_forever()
+#         except KeyboardInterrupt:
+#             print "Caught Ctrl-C, shutting down."
+
+#     def usage_message(self):
+#         """Print usage message to sys.stderr and exit."""
+#         message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
+
+# Options:
+
+#     -d          enable debug messages
+#     -f          run in foreground instead of as a daemon
+#     -h		display this message on stderr
+#     -l file     write log messages to file
+#     -s          write log messages to syslog
+
+# """ % os.path.basename(sys.argv[0])
+#         sys.stderr.write(message)
+#         sys.exit(1)
 
 
 class Timer:
@@ -386,18 +511,18 @@ class Timer:
         """Run the start() method."""
         self._start_time = 0  # seconds since epoch
         self._stop_time = 0
-        self.is_running = 0
+        self.is_running = True
         self.reset()
 
     def start(self):
         """Start the timer."""
         self._start_time = time.time()
-        self.is_running = 1
+        self.is_running = True
 
     def stop(self):
         """Stop the timer."""
         self._stop_time = time.time()
-        self.is_running = 0
+        self.is_running = False
 
     def reset(self):
         """Reset the timer to zero.
@@ -405,158 +530,40 @@ class Timer:
         Note that reset() neither stops or starts the timer.
 
         """
-        log.debug("Timer: resetting time to zero")
         self._start_time = time.time()
+        self._stop_time = time.time()
 
     def _get_elapsed_seconds(self):
         """Return seconds since timer started."""
         if self.is_running:
-            return time.time() - self._start_time
+            return int('%.0f' % (time.time() - self._start_time))
         else:
-            return self._stop_time - self._start_time
+            return int('%.0f' % (self._stop_time - self._start_time))
 
-    def _get_elapsed_hours_mins_secs(self):
-        """Return tuple of hours, mins, secs elapsed since started."""
-        secs = self._get_elapsed_seconds()
-        hours = int(secs / 3600)
-        secs = secs - (hours * 3600)
-        mins = int(secs / 60)
-        secs = secs - (mins * 60)
-        return (hours, mins, secs)
-
-    def get_elapsed_time(self):
-        """Return human readable representation of elapsed time.
-
-        The string returned is of the format "HH:MM:SS".
-
-        """
-        hours, mins, secs = self._get_elapsed_hours_mins_secs()
-        return "%02d:%02d:%02d" % (hours, mins, secs)
+    elapsed_seconds = property(_get_elapsed_seconds)
 
 
-class App:
+class Modem:
 
-    """A simple wrapper class that initialises and runs the server."""
+    def __init__(self, config_parser):
+        self._config_parser = config_parser
+        self.timer = Timer()
 
-    def __init__(self):
-        self._become_daemon = True
-        self._config = self._load_config_file()
-        self._modem = SharedModem(self._config)
+    def dial(self):
+        self.timer.reset()
+        command = self._config_parser.get('commands', 'connect')
+        return os.system(command) == 0
 
-    def _load_config_file(self):
-        try:
-            config = ConfigParser.ConfigParser()
-            config.read(["/usr/local/etc/landiallerd.conf",
-                         "/etc/landiallerd.conf", "landiallerd.conf"])
-        except Exception, e:
-            print "Terminating - error reading config file: %s" % e
-            sys.exit()
+    def hang_up(self):
+        self.timer.stop()
+        command = self._config_parser.get('commands', 'disconnect')
+        return os.system(command) == 0
 
-    def check_platform(self):
-        if os.name != "posix":
-            print "Sorry, only POSIX compliant systems are supported."
-            sys.exit()
-
-    def daemonise(self):
-        """Become a daemon process (POSIX only)."""
-        if not self._become_daemon:
-            return
-        if os.name != "posix":
-            print "unable to run as a daemon (POSIX only)"
-            return None
-
-        # See "Python Standard Library", pg. 29, O'Reilly, for more
-        # info on the following.
-        pid = os.fork()
-        if pid:  # we're the parent if pid is set
-            os._exit(0)
-
-        os.setpgrp()
-        os.umask(0)
-
-        class DevNull:
-
-            def write(self, message):
-                pass
-            
-        sys.stdin.close()
-        sys.stdout = DevNull()
-        sys.stderr = DevNull()
-
-    def getopt(self):
-        """Parse command line arguments.
-
-        Reads the command line arguments, looking for the following:
-
-        -d          enable debugging for extra output
-        -f          run in the foreground (not as a daemon)
-        -h          print usage message to stderr
-        -l file     log events to file
-        -s          log events to syslog
-
-        """
-        opts, args = getopt.getopt(sys.argv[1:], "dfhl:s")
-
-        for o, v in opts:
-            if o == "-d":
-                # TODO: set debug level on the logging object
-                pass
-            elif o == "-f":
-                self._become_daemon = False
-            elif o == "-h":
-                self.usage_message()
-            elif o == "-l":
-                global log_file
-                log_file = v
-                if not os.path.exists(log_file):
-                    raise IOError, ("File not found: %s" % log_file)
-            elif o == "-s":
-                global use_syslog
-                use_syslog = 1
-
-    def main(self):
-        """Start the XML-RPC server."""
-        self.check_platform()
-        self.pre_load_config()
-        try:
-            log.info("starting up")
-            self.getopt()
-            self.daemonise()
-            cleaner = CleanerThread(self._modem)
-            cleaner.start()
-        except IOError, e:
-            sys.stderr.write("%s\n" % e)
-        except getopt.GetoptError, e:
-            sys.stderr.write("%s\n" % e)
-            self.usage_message()
-        
-        # start the server and start taking requests
-        server_port = int(self.config.get("general", "port"))
-
-        def handler_factory():
-            return RequestHandler(self._modem)
-
-        server = ReusableTCPServer(("", server_port), handler_factory, False)
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            print "Caught Ctrl-C, shutting down."
-
-    def usage_message(self):
-        """Print usage message to sys.stderr and exit."""
-        message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
-
-Options:
-
-    -d          enable debug messages
-    -f          run in foreground instead of as a daemon
-    -h		display this message on stderr
-    -l file     write log messages to file
-    -s          write log messages to syslog
-
-""" % os.path.basename(sys.argv[0])
-        sys.stderr.write(message)
-        sys.exit(1)
+    def is_connected(self):
+        if not self.timer.is_running:
+            self.timer.start()
+        command = self._config_parser.get('commands', 'is_connected')
+        return os.system(command) == 0
 
 
 if __name__ == "__main__":
