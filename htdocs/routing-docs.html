@@ -3,20 +3,15 @@
 <html>
   <head>
     <title>LANdialler: Routing Docs</title>
-    <link rel="stylesheet" href="landialler.css" type="text/css">
+    <link rel="stylesheet" href="default.css" type="text/css">
   </head>
 
-  <body bgcolor="#ffffff">
-    <blockquote>
+  <body>
 
-      <p align="center" class="toolbar">
-	[&nbsp;<a
-	href="./">home</a>&nbsp;|&nbsp;<a
-	href="#routing">routing docs</a>&nbsp;|&nbsp;<a
-	href="#scripts">debian scripts</a>&nbsp;]
-      </p>
+    <!--#include virtual="ssi/navbar.html" -->
+    <!--#include virtual="ssi/sidebar.html" -->
 
-      <a name="routing">
+    <div id="body">
       <h1>Routing Documentation</h1>
 
       <p>
@@ -25,7 +20,7 @@
 	(NAT) or <a
 	href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO-2.html#ss2.1">IP
 	Masquerading</a>. You can use any modern Unix system, so long
-	as it can run Python 2.1 software. I use <a
+	as it can run Python software. I use <a
 	href="http://www.linux.com/">Linux</a>, so I've included
 	information on that here. You could use any of the BSD
 	variants (e.g. <a href="http://www.freebsd.org/">FreeBSD</a>,
@@ -34,6 +29,8 @@
 	href="http://www.sun.com/software/solaris/">Solaris</a>,
 	etc. instead if you prefer.
       </p>
+
+      <h2>Linux Documentation</h2>
 
       <p>
 	If it wasn't for the excellent documentation then setting it
@@ -70,25 +67,21 @@
 		Really Quick Guide to Packet Filtering</a>
 	    </li>
 	  </ul>
-	  <p>
-	    I use kernel 2.4 on Debian Linux version 2.2 (yeah,
-	    confusing isn't it). My scripts are shown below.
-	  </p>
 	</li>
       </ul>
 
-      <a name="scripts"></a>
-      <h1>Debian Scripts</h1>
+      <h2>Example Scripts</h2>
 
       <p>
 	These are the scripts that I use to run iptables on a Linux
-	2.4 kernel. They provide both NAT and a firewall. I prefer the
-	Debian distribution, which very cleverly lets you drop scripts
-	in the <kbd>/etc/ppp/ip-up.d</kbd> directory to have them
-	automatically run when dialling up.
+	2.4 kernel. They provide both NAT and a firewall. If you want
+	to re-use these scripts just drop them in the
+	<kbd>/etc/ppp/ip-up.d</kbd> directory to have them
+	automatically run when dialling up. Once you've dialled up you
+	can check that they've run by running <code>iptables -L</code>.
       </p>
 
-      <h2>packet-filter-up</h2>
+      <h3>packet-filter-up</h3>
 
       These commands are copied almost verbatim out of the HOWTOs
       mentioned above. If you have configured your kernel so that all
@@ -134,7 +127,7 @@ iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
 echo 1 > /proc/sys/net/ipv4/ip_forward
       </pre>
 
-      <h2>packet-filter-down</h2>
+      <h3>packet-filter-down</h3>
 
       This script cleans up when the dial up connection is closed
       down. I really ought to make it unload the kernel modules loaded
@@ -154,37 +147,8 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 echo 0 > /proc/sys/net/ipv4/ip_forward
       </pre>
 
-      <p align="center" class="toolbar">
-	[&nbsp;<a
-	href="./">home</a>&nbsp;|&nbsp;<a
-	href="#routing">routing docs</a>&nbsp;|&nbsp;<a
-	href="#scripts">debian scripts</a>&nbsp;]
-      </p>
+      <!--#include virtual="ssi/copyright.html" -->
 
-      <hr>
-
-      <table border="0" cellpadding="0" cellspacing="0">
-	<tbody>
-	  <tr>
-	    <td align="left">
-	      <a href="http://sourceforge.net/"><img
-	      src="http://sourceforge.net/sflogo.php?group_id=34228"
-	      width="88" height="31" border="0" alt="SourceForge
-	      logo"></a>
-	    </td>
-	    <td>
-	      &nbsp;&nbsp;
-	    </td>
-	    <td align="left" valign="top">
-	      <font size="-1">
-		Copyright &copy; 2001,
-		Graham Ashton &lt;ashtong@users.sourceforge.net&gt;
-	      </font>
-	    </td>
-	  </tr>
-	</tbody>
-      </table>
-
-    </blockquote>
+    </div>
   </body>
 </html>

@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>About LANdialler</title>
+    <link rel="stylesheet" type="text/css" href="default.css">
+    <meta name="keywords" content="landialler, landialer, lan dialler,
+          lan dialer, lan, dial, dialer, dialler, modem, local area network,
+          modem sharing, dial up, local area network, internet, online, linux,
+          windows, lan, home network, soho">
+    <meta name="description" content="landialler enables several
+	  computers on a LAN share (and control) the modem on a single
+	  computer. It runs on any operating system that supports Python.">
+  </head>
+
+  <body bgcolor="#ffffff">
+
+    <!--#include virtual="ssi/navbar.html" -->
+    <!--#include virtual="ssi/sidebar.html" -->
+
+    <div id="body">
+
+      <h1>About LANdialler</h1>
+
+      <p>
+	LANdialler enables several computers on a LAN (Local Area
+	Network) to share control of a dial up connection to the
+	Internet.
+      </p>
+      
+      <p>
+	If you have a small home or office network (a LAN) that
+	connects to the Internet via a dial up link on a Linux
+	computer, then LANdialler could be of real use to you. If you
+	haven't got a Linux router yet find out how to <a
+	href="routing-docs.html">set one up</a>. The LANdialler client
+	software should run on most operating systems, including
+	Windows and Linux.
+      </p>
+
+      <p>
+	LANdialler is released under the terms of the <a
+	href="http://www.gnu.org/licenses/gpl.txt">GNU General Public
+	License</a>.
+      </p>
+
+      <h2>How does it work?</h2>
+            
+      <p>
+	LANdialler consists of two programs:
+      </p>
+
+      <ul>
+	<li>
+	  <strong>The client</strong> is run on all desktop computers
+	  that require Internet access. It talks to the server,
+	  requesting Internet connectivity for as long as the user
+	  requires it. The interface is very simple, which is
+	  officially a "good thing".
+	  <p>
+	</li>
+	<li>
+	  <strong>The server</strong> runs on the router and manages
+	  the state of the dial up connection. It keeps track of the
+	  number of people who have asked to go online and keeps the
+	  Internet connection up until the last user disconnects.
+	</li>
+      </ul>
+  
+      <p>
+	Because the dial up connection is handled by your Linux router
+	your desktop computers can remain safely protected from prying
+	eyes by your router's firewall (assuming you have configured
+	it&nbsp;-&nbsp;if not why not?).
+      </p>
+            
+      <p>
+	The client and server communicate with one another over the
+	local network through the <a
+	href="http://www.xmlrpc.com/">XML-RPC</a> protocol.
+      </p>
+
+      <!--#include virtual="ssi/copyright.html" -->
+
+    </div>
+  </body>
+</html>
