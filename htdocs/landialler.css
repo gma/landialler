@@ -16,8 +16,19 @@ H2 {
   font-size: 11pt;
 }
 
+LI {
+  font-family: verdana,arial,lucida,helvetica;
+  font-size: 10pt;
+}
+
 P {
   font-family: verdana,arial,lucida,helvetica;
+  font-size: 10pt;
+}
+
+TD {
+  font-family: verdana,arial,lucida,helvetica;
+  font-size: 10pt;
 }
 
 .pagetitle {
