@@ -329,7 +329,7 @@ class CleanerThread(threading.Thread, gmalib.Logger):
     to an expensive telephone bill.
 
     This thread periodically makes sure that the connection is not
-    alive when tere are no users. If it is, the Connection.disconnect()
+    alive when there are no users. If it is, the Connection.disconnect()
     method is called.
 
     """
