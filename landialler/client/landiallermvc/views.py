@@ -201,8 +201,8 @@ class DroppedDialog(View):
     either a) the connection has dropped out for some reason, or b)
     somebody else has hung up the connection.
 
-    This dialog simply points that out to the user and then quits the
-    application when the user clicks OK.
+    This dialog simply points that out to the user and closes when the
+    user clicks OK. Note that it is a modal dialog.
 
     """
 
