@@ -88,12 +88,12 @@ __version__ = "0.2.1"
 
 import getopt
 import os
+import SimpleXMLRPCServer
 import SocketServer
 import sys
 import threading
 import time
 import xmlrpclib
-import SimpleXMLRPCServer
 
 try:
     import syslog
@@ -404,7 +404,7 @@ class CleanerThread(threading.Thread, gmalib.Logger):
             self.pauser.wait(self.interval)
 
 
-class MyTCPServer(SocketServer.TCPServer):
+class ReusableTCPServer(SocketServer.TCPServer):
 
     """We override TCPServer so that we can set the allow_reuse_socket
     attribute to true (so we can restart immediately and the TCP
@@ -412,13 +412,14 @@ class MyTCPServer(SocketServer.TCPServer):
 
     """
     
-    def __init__(self, server_address, RequestHandlerClass):
+    def __init__(self, server_address, request_handler_class):
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
-                                        RequestHandlerClass)
+                                        request_handler_class)
     
 
-class MyHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler, gmalib.Logger):
+class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler,
+                     gmalib.Logger):
 
     """Handles XML-RPC requests."""
 
@@ -426,9 +427,6 @@ class MyHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler, gmalib.Logger):
         global debug, log_file, use_syslog
         self.debug = debug
         gmalib.Logger.__init__(self, log_file, use_syslog)
-
-        # FIXME: iterate through all base class' __init__ methods so that
-        #        class hierarchy can change without us worrying about it.
         SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self,
                                                                *args, **kwargs)
 
@@ -453,7 +451,7 @@ class MyHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler, gmalib.Logger):
                 (host, port) = self.client_address
                 disconnectAllUsers = params[0]
                 params = (disconnectAllUsers, host)
-            self.log_debug("MyHandler.call(): called %s(%s)" % \
+            self.log_debug("RequestHandler.call(): called %s(%s)" % \
                            (procedure, ", ".join(map(repr, params))))
             return apply(method, params)
 
@@ -522,12 +520,11 @@ class Timer(gmalib.Logger):
         return "%02d:%02d:%02d" % (hours, mins, secs)
 
 
-class App(gmalib.Daemon, gmalib.Logger):
+class App(gmalib.Logger):
 
     """A simple wrapper class that initialises and runs the server."""
     
     def __init__(self):
-        gmalib.Daemon.__init__(self)
         global debug, use_syslog, log_file
         self.debug = debug
         gmalib.Logger.__init__(self, log_file, use_syslog)
@@ -540,9 +537,36 @@ class App(gmalib.Daemon, gmalib.Logger):
             sys.exit()
 
     def daemonise(self):
-        """Run parent's daemonise() if become_daemon attribute is set."""
-        if self.become_daemon:
-            gmalib.Daemon.daemonise(self)
+        """Become a daemon process (POSIX only).
+
+        Forks a child process, exits the parent, makes the child a
+        session leader and sets the umask to 0 (so programs run from
+        within can set their own file permissions correctly).
+
+        """
+        if not self.become_daemon:
+            return
+        if os.name != "posix":
+            print "unable to run as a daemon (POSIX only)"
+            return None
+
+        # See "Python Standard Library", pg. 29, O'Reilly, for more
+        # info on the following.
+        pid = os.fork()
+        if pid:  # we're the parent if pid is set
+            os._exit(0)
+
+        os.setpgrp()
+        os.umask(0)
+
+        class DevNull:
+
+            def write(self, message):
+                pass
+            
+        sys.stdin.close()
+        sys.stdout = DevNull()
+        sys.stderr = DevNull()
 
     def getopt(self):
         """Parse command line arguments.
@@ -577,7 +601,6 @@ class App(gmalib.Daemon, gmalib.Logger):
 
     def pre_load_config(self):
         """Load configuration files into SharedConfigParser object."""
-        # pre-load configuration files, cached by SharedConfigParser
         try:
             config = gmalib.SharedConfigParser()
             config.read(["/usr/local/etc/landiallerd.conf",
@@ -606,7 +629,7 @@ class App(gmalib.Daemon, gmalib.Logger):
 
         # start the server and start taking requests
         server_port = int(self.config.get("general", "port"))
-        server = MyTCPServer(("", server_port), MyHandler)
+        server = ReusableTCPServer(("", server_port), RequestHandler)
         try:
             server.serve_forever()
         except KeyboardInterrupt:
