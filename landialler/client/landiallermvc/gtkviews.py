@@ -21,13 +21,24 @@
 # $Id$
 
 
-"""implements the GTK+ landialler user interface"""
+"""implements the GTK+ landialler user interface
+
+Most classes in this file are Tk specific sub classes of those in
+views.py that define the MVC views. Where this is not the case they
+are present simply to aid the Tk implementation. Please see views.py
+for more documentation, especially for many of the methods, whose
+purpose is only documented in views.py.
+
+"""
 
 
-##from _gtk import *
-##from GTK import *
 from gtk import *
 import views
+
+
+class Window:
+    def __init__(self):
+        self.window = None
 
 
 class Dialog:
@@ -55,6 +66,11 @@ class Dialog:
         button.show()
 
 
+class ButtonBar:
+    def __init__(self):
+        self.buttons = []
+
+
 class ConnectingDialog(Dialog, views.ConnectingDialog):
     def __init__(self, model):
         Dialog.__init__(self)
@@ -62,6 +78,11 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
 
     def button_cb(self, *args):
         print "button_cb ..."
+
+
+class ConnectingButtonBar(ButtonBar):
+    def __init__(self, model):
+        pass
 
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
