@@ -19,25 +19,23 @@ class MockConfigParser:
         return self.value
     
 
-class MockModem(landiallerd.SharedModem):
+class Mock:
 
-    # TODO: Call base class' init method, remove our count_clients()?
+    def __init__(self, methods=None, attributes=None):
+        if methods is None:
+            methods = {}
+        self._methods = methods
+        if attributes is None:
+            attributes = {}
+        self._attributes = attributes
 
-    def __init__(self, is_connected=False, is_connecting=False,
-                 connect_command=True):
-        self.num_clients = 0
-        self._is_connected = is_connected
-        self.is_connecting = is_connecting
-        self._command_rval = connect_command
-
-    def is_connected(self):
-        return self._is_connected
-
-    def run_connect_command(self):
-        return self._command_rval
-
-    def count_client(self):
-        return self.num_clients
+    def __getattr__(self, name):
+        if name in self._methods.keys():
+            def callable(*args):
+                return self._methods[name]
+            return callable
+        elif name in self._attributes.keys():
+            return self._attributes[name]
 
 
 class MockOsModule:
@@ -111,11 +109,11 @@ class SharedModemTest(unittest.TestCase):
         real_os, landiallerd.os = landiallerd.os, mock_os
         try:
             mock_os.rval = 0
-            rval = modem.run_connect_command()
+            rval = modem.dial()
             self.assertEqual(rval, True)
 
             mock_os.rval = 1
-            rval = modem.run_connect_command()
+            rval = modem.dial()
             self.assertEqual(rval, False)
         finally:
             landiallerd.os = real_os
@@ -125,31 +123,38 @@ class APITest(unittest.TestCase):
 
     def test_connect_when_connected(self):
         """Check the API's connect procedure when connected"""
-        modem = MockModem(is_connected=True)
+        modem = Mock({'is_connected': True})
         api = landiallerd.API(modem)
         self.assertEqual(api.connect('127.0.0.1'), xmlrpclib.True)
 
     def test_connect_when_connecting(self):
         """Check the API's connect procedure when connecting"""
-        modem = MockModem(is_connecting=True)
+        modem = Mock(None,
+                     {'is_connected': False,
+                      'is_connecting': True})
         api = landiallerd.API(modem)
         self.assertEqual(api.connect('127.0.0.1'), xmlrpclib.False)
         
     def test_connect_when_disconnected(self):
         """Check the API's connect procedure when not connected"""
-        modem = MockModem(connect_command=True)
+        modem = Mock({'dial': True},
+                     {'is_connected': False})
         api = landiallerd.API(modem)
         self.assertEqual(api.connect('127.0.0.1'), xmlrpclib.True)
 
-        modem = MockModem(connect_command=False)
+        modem = Mock({'dial': False},
+                     {'is_connected': False})
         api = landiallerd.API(modem)
         self.assertEqual(api.connect('127.0.0.1'), xmlrpclib.False)
 
     def test_disconnect_not_connected(self):
         """Check the API's disconnect procedure when not connected"""
-        modem = MockModem()
-        modem.num_clients = 0
-        raise NotImplementedError, 'carry on here'
+        modem = Mock({'hangup': True},
+                     {'is_connected': False})
+        api = landiallerd.API(modem)
+        self.assertEqual(api.disconnect('127.0.0.1'), xmlrpclib.True)
+        # TODO: write client tracker (test first) and split it out of
+        # modem
 
 
 class TimerTest(unittest.TestCase):
