@@ -19,6 +19,27 @@ class MockConfigParser:
         return self.value
     
 
+class MockModem(landiallerd.SharedModem):
+
+    # TODO: Call base class' init method, remove our count_clients()?
+
+    def __init__(self, is_connected=False, is_connecting=False,
+                 connect_command=True):
+        self.num_clients = 0
+        self._is_connected = is_connected
+        self.is_connecting = is_connecting
+        self._command_rval = connect_command
+
+    def is_connected(self):
+        return self._is_connected
+
+    def run_connect_command(self):
+        return self._command_rval
+
+    def count_client(self):
+        return self.num_clients
+
+
 class MockOsModule:
 
     rval = None
@@ -38,90 +59,66 @@ class MockTime:
 
 class SharedModemTest(unittest.TestCase):
 
-    def setUp(self):
-        self._real_config_parser = landiallerd.gmalib.SharedConfigParser
-        landiallerd.gmalib.SharedConfigParser = MockConfigParser
-
-        landiallerd.SharedModem._shared_state = {}
-        self.modem = landiallerd.SharedModem()
-
-    def tearDown(self):
-        landiallerd.gmalib.SharedConfigParser = self._real_config_parser
-        
     def test_remember_client(self):
         """Check we can remember a client"""
-        self.modem.remember_client('127.0.0.1')
-        self.assertEqual(self.modem.count_clients(), 1)
-        self.modem.remember_client('127.0.0.1')
-        self.assertEqual(self.modem.count_clients(), 1)
-        self.modem.remember_client('127.0.0.2')
-        self.assertEqual(self.modem.count_clients(), 2)
+        modem = landiallerd.SharedModem(MockConfigParser())
+        modem.remember_client('127.0.0.1')
+        self.assertEqual(modem.count_clients(), 1)
+        modem.remember_client('127.0.0.1')
+        self.assertEqual(modem.count_clients(), 1)
+        modem.remember_client('127.0.0.2')
+        self.assertEqual(modem.count_clients(), 2)
 
     def test_forget_client(self):
         """Check we can forget clients"""
-        self.modem.remember_client('127.0.0.1')
-        self.modem.remember_client('127.0.0.2')
-        self.modem.remember_client('127.0.0.3')
-        self.assertEqual(self.modem.count_clients(), 3)
-        self.modem.forget_client('127.0.0.2')
-        self.assertEqual(self.modem.count_clients(), 2)
-        self.modem.forget_all_clients()
-        self.assertEqual(self.modem.count_clients(), 0)
+        modem = landiallerd.SharedModem(MockConfigParser())
+        modem.remember_client('127.0.0.1')
+        modem.remember_client('127.0.0.2')
+        modem.remember_client('127.0.0.3')
+        self.assertEqual(modem.count_clients(), 3)
+        modem.forget_client('127.0.0.2')
+        self.assertEqual(modem.count_clients(), 2)
+        modem.forget_all_clients()
+        self.assertEqual(modem.count_clients(), 0)
 
     def test_list_clients(self):
         """Check we can list all clients"""
+        modem = landiallerd.SharedModem(MockConfigParser())
         ip1 = '127.0.0.1'
         ip2 = '127.0.0.2'
-        self.modem.remember_client(ip1)
-        self.modem.remember_client(ip2)
-        clients = self.modem.list_clients()
+        modem.remember_client(ip1)
+        modem.remember_client(ip2)
+        clients = modem.list_clients()
         clients.sort()
         self.assertEqual(clients, [ip1, ip2])
 
     def test_forget_old_clients(self):
         """Check that old clients are forgotten about automatically"""
-        self.modem.remember_client('127.0.0.1')
+        modem = landiallerd.SharedModem(MockConfigParser())
+        modem.remember_client('127.0.0.1')
         real_time, landiallerd.time = landiallerd.time, MockTime(3600)
         try:
-            self.assertEqual(self.modem.count_clients(), 1)
-            self.modem.forget_old_clients()
-            self.assertEqual(self.modem.count_clients(), 0)
+            self.assertEqual(modem.count_clients(), 1)
+            modem.forget_old_clients()
+            self.assertEqual(modem.count_clients(), 0)
         finally:
             landiallerd.time = real_time        
 
     def test_connect_command(self):
         """Check that we test the return value of the connect command"""
+        modem = landiallerd.SharedModem(MockConfigParser())
         mock_os = MockOsModule()
         real_os, landiallerd.os = landiallerd.os, mock_os
         try:
             mock_os.rval = 0
-            rval = self.modem.run_connect_command()
+            rval = modem.run_connect_command()
             self.assertEqual(rval, True)
 
             mock_os.rval = 1
-            rval = self.modem.run_connect_command()
+            rval = modem.run_connect_command()
             self.assertEqual(rval, False)
         finally:
             landiallerd.os = real_os
-
-
-class MockModem(landiallerd.SharedModem):
-
-    def __init__(self, is_connected=False, is_connecting=False,
-                 connect_command=True):
-        self.num_clients = 0
-        self._is_connected = is_connected
-        self.is_connecting = is_connecting
-        self._command_rval = connect_command
-
-    def is_connected(self):
-        return self._is_connected
-
-    def run_connect_command(self):
-        return self._command_rval
-
-    def count_client(self):
-        return self.num_clients
 
 
 class APITest(unittest.TestCase):
