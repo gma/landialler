@@ -14,4 +14,5 @@ setup(name="landialler",
       author="Graham Ashton",
       author_email="ashtong@users.sourceforge.net",
       url="http://landialler.sourceforge.net/",
-      packages=['landialler'])
+      packages=['landialler'],
+      scripts=['landialler.py'])
