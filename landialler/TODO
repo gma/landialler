@@ -11,6 +11,14 @@ release 0.2 proper:
   - Handle two client's trying to start the connection at the same
     more gracefully.
 
+  - Add views.Dialog and get tkviews.Dialog to inherit from it, making
+    cleanup() an abstract method of views.Dialog. Move all occurrences
+    of the modal attribute into views.py.
+
+  - Add an Observer class and make View and Controller inherit from it.
+
+  - Create a distutils setup.py file to make installation a breeze.
+
 These changes will come along later, probably for the 1.0 release.
 
   - Add retry/cancel dialog if the connection drops out.
