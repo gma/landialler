@@ -1,6 +1,7 @@
 # $Id$
 
 
+import mock
 import time
 import unittest
 # import xmlrpclib
@@ -258,6 +259,35 @@ class ModemTest(unittest.TestCase):
             self.assertEqual(modem.timer.elapsed_seconds, 0)
         finally:
             landiallerd.time = real_time
+
+
+class ProxyTest(unittest.TestCase):
+
+    def test_dial_called_once(self):
+        """Check the modem's dial() method is only called once"""
+        modem = mock.Mock()
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.dial('client-id-1')
+        proxy.dial('client-id-2')
+        self.assertEqual(len(modem.getNamedCalls('dial')), 1)
+        self.assertEqual(len(modem.getAllCalls()), 1)
+
+    def test_dial_return_code(self):
+        """Check the proxied return code of modem's dial() method"""
+        modem = mock.Mock({'dial': False})
+        proxy = landiallerd.ModemProxy(modem)
+        self.assertEqual(proxy.dial('client-id-1'), False)
+
+        modem = mock.Mock({'dial': True})
+        proxy = landiallerd.ModemProxy(modem)
+        self.assertEqual(proxy.dial('client-id-1'), True)
+
+    def test_client_counting(self):
+        modem = mock.Mock()
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.dial('client-id-1')
+        proxy.dial('client-id-2')
+        self.assertEqual(proxy.count_clients(), 2)
 
 
 if __name__ == '__main__':
