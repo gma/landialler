@@ -9,25 +9,6 @@ import unittest
 import landiallerd
 
 
-# class Mock:
-
-#     def __init__(self, methods=None, attributes=None):
-#         if methods is None:
-#             methods = {}
-#         self._methods = methods
-#         if attributes is None:
-#             attributes = {}
-#         self._attributes = attributes
-
-#     def __getattr__(self, name):
-#         if name in self._methods.keys():
-#             def callable(*args):
-#                 return self._methods[name]
-#             return callable
-#         elif name in self._attributes.keys():
-#             return self._attributes[name]
-
-
 # class SharedModemTest:
 
 #     def test_remember_client(self):
@@ -202,13 +183,16 @@ class MockConfigParser:
         return self.value
     
 
-class ModemTest(unittest.TestCase):
+class MockConfigTest(unittest.TestCase):
 
     SUCCESSFUL_COMMAND = 'ls / > /dev/null'
     FAILING_COMMAND = 'ls /missing.file.234324324 2> /dev/null'
 
     def setUp(self):
         self.config = MockConfigParser()
+
+
+class ModemTest(MockConfigTest):
 
     def test_dial(self):
         """Check we can dial the modem and receive the return code"""
@@ -261,7 +245,7 @@ class ModemTest(unittest.TestCase):
             landiallerd.time = real_time
 
 
-class ProxyTest(unittest.TestCase):
+class ModemProxyTest(unittest.TestCase):
 
     def test_dial_called_once(self):
         """Check the modem's dial() method is only called once"""
@@ -282,12 +266,68 @@ class ProxyTest(unittest.TestCase):
         proxy = landiallerd.ModemProxy(modem)
         self.assertEqual(proxy.dial('client-id-1'), True)
 
+    def test_is_connected(self):
+        """Check proxy knows when we're connected"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+        self.assert_(proxy.is_connected())
+
+        modem = mock.Mock({'is_connected': False})
+        proxy = landiallerd.ModemProxy(modem)
+        self.failIf(proxy.is_connected())
+
     def test_client_counting(self):
-        modem = mock.Mock()
+        """Check proxy keeps track of number of connected clients"""
+        modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
         proxy.dial('client-id-1')
         proxy.dial('client-id-2')
         self.assertEqual(proxy.count_clients(), 2)
+
+        proxy.hang_up('client-id-1')
+        self.assertEqual(proxy.count_clients(), 1)
+        proxy.hang_up('client-id-2')
+        self.assertEqual(proxy.count_clients(), 0)
+
+        proxy.hang_up('bad-client-id')  # mustn't raise
+
+    def test_automatic_hang_up(self):
+        """Check modem hung up when no clients remain"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+
+        proxy.dial('client-id-1')
+        proxy.hang_up('client-id-1')
+
+        connected_calls = modem.getNamedCalls('is_connected')
+        self.assertEqual(len(connected_calls), 1)
+        hang_up_calls = modem.getNamedCalls('hang_up')
+        self.assertEqual(len(hang_up_calls), 1)
+
+    def test_force_hangup(self):
+        """Check the proxy can hang up all clients"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+
+        proxy.dial('client-id-1')
+        proxy.dial('client-id-2')
+        proxy.hang_up('client-id-1', all=True)
+
+        connected_calls = modem.getNamedCalls('is_connected')
+        self.assertEqual(len(connected_calls), 1)
+        hang_up_calls = modem.getNamedCalls('hang_up')
+        self.assertEqual(len(hang_up_calls), 1)
+
+    def test_timer(self):
+        """Check the proxy can return time spent online"""
+        class Timer:
+            pass
+        timer = Timer()
+        timer.elapsed_seconds = 14
+        modem = landiallerd.Modem(MockConfigParser())
+        modem.timer = timer
+        proxy = landiallerd.ModemProxy(modem)
+        self.assertEqual(proxy.get_time_online(), 14)
 
 
 if __name__ == '__main__':
