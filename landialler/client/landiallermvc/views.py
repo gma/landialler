@@ -210,7 +210,7 @@ class MainWindow(View):
         self.buttons = { 'disconnect': (0, callback) }
 
     def status_check(self):
-        """Call the model.get_server_status() periodically.
+        """Call the model.get_server_status() periodically (abstract method).
 
         The toolkit specific sub class should override this method to
         enable periodic status updates.
