@@ -530,9 +530,11 @@ You have been disconnected.</property>
 	  <child>
 	    <widget class="GtkLabel" id="label8">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">&lt;span weight=&quot;bold&quot; size=&quot;larger&quot;&gt;Error&lt;/span&gt;
+	      <property name="label" translatable="yes">&lt;span weight=&quot;bold&quot; size=&quot;larger&quot;&gt;An error has occurred&lt;/span&gt;
 
-An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more information. Please include the details when sending bug reports.</property>
+An unrecoverrable error has occurred. LANdialler will now exit.
+
+If you are able to submit a bug report, please include as much information as possible about what you were doing when the error occurred, and the details of the error (click below).</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -613,7 +615,7 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
 	    <widget class="GtkTextView" id="textview1">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
-	      <property name="editable">True</property>
+	      <property name="editable">False</property>
 	      <property name="overwrite">False</property>
 	      <property name="accepts_tab">True</property>
 	      <property name="justification">GTK_JUSTIFY_LEFT</property>

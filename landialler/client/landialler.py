@@ -176,6 +176,12 @@ class Window(WidgetWrapper):
         self.root_widget.destroy()
 
 
+class Dialog(Window):
+
+    def run(self):
+        self.root_widget.run()
+
+
 class MainWindow(Window):
 
     CHECK_STATUS_PERIOD = 1000 * 2
@@ -311,10 +317,10 @@ class DisconnectDialog(Window):
         self.on_cancel_button_clicked()
 
 
-class ErrorDialog(Window):
+class ErrorDialog(Dialog):
 
     def __init__(self, primary_text, secondary_text):
-        Window.__init__(self, 'error_dialog')
+        Dialog.__init__(self, 'error_dialog')
         self._primary_text = primary_text
         self._secondary_text = secondary_text
 
@@ -324,11 +330,11 @@ class ErrorDialog(Window):
     def on_error_dialog_delete_event(self, *args):
         self.on_close_button_clicked()
 
-    def show(self):
+    def run(self):
         label = self.label.get_label()
         self.label.set_label(label %
                              (self._primary_text, self._secondary_text))
-        Window.show(self)
+        Dialog.run(self)
 
 
 class ExceptionDialog(Window):
@@ -349,12 +355,13 @@ class ExceptionDialog(Window):
 
     def on_close_button_clicked(self, *args):
         self.destroy()
+        gtk.main_quit()
 
     def on_exception_dialog_delete_event(self, *args):
         self.on_close_button_clicked()
 
 
-class ExceptionHandler:
+class ExceptionHandler(object):
 
     def __init__(self):
         sys.excepthook = self.handler
@@ -366,15 +373,18 @@ class ExceptionHandler:
                 "The LANdialler server is not available. Please check "
                 "that it is running, and that the server address is "
                 "set correctly in the client configuration file.")
-            dialog.show()
+            dialog.run()
+            gtk.main_quit()
         else:
             lines = traceback.format_exception(exc_type, exc_value, exc_tb)
             exc_text = ''.join(lines)
             print exc_text,
             dialog = ExceptionDialog(exc_text)
             dialog.show()
+        if gtk.main_level() < 1:
+            gtk.main()
 
-    
+
 class App(object):
 
     def __init__(self):
@@ -388,11 +398,11 @@ class App(object):
         
     def main(self):
         try:
+            ExceptionHandler()
             server = self._connect_to_server()
             modem = RemoteModem(server)
             window = MainWindow(modem)
             window.show()
-            ExceptionHandler()
             gtk.main()
         except KeyboardInterrupt:
             modem.disconnect()
