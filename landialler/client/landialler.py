@@ -74,7 +74,9 @@ The author can be contacted at ashtong@users.sourceforge.net.
 import ConfigParser
 import os
 import socket
+import sys
 import time
+import traceback
 import xmlrpclib
 
 import pygtk; pygtk.require('2.0')
@@ -118,8 +120,8 @@ class RemoteModem(Observable):
     client_id = property(_get_client_id)
 
     def dial(self):
-        self._checking_status = True
         self._server_proxy.connect(self.client_id)
+        self._checking_status = True
 
     def hang_up(self):
         self._checking_status = False
@@ -232,7 +234,10 @@ class MainWindow(Window):
 
     def on_main_window_delete_event(self, *args):
         self._modem.remove_observer(self)
-        self._modem.hang_up()
+        try:
+            self._modem.hang_up()
+        except socket.error:
+            pass
         gtk.main_quit()
 
     def on_connect_button_clicked(self, *args):
@@ -299,6 +304,68 @@ class DisconnectDialog(Window):
         self.on_cancel_button_clicked()
 
 
+class ErrorDialog(Window):
+
+    def __init__(self, primary_text, secondary_text):
+        Window.__init__(self, 'error_dialog')
+        self._primary_text = primary_text
+        self._secondary_text = secondary_text
+
+    def on_close_button_clicked(self, *args):
+        self.destroy()
+
+    def on_error_dialog_delete_event(self, *args):
+        self.on_close_button_clicked()
+
+    def show(self):
+        label = self.label.get_label()
+        self.label.set_label(label %
+                             (self._primary_text, self._secondary_text))
+        Window.show(self)
+
+
+class ExceptionDialog(Window):
+
+    def __init__(self, exc_text):
+        Window.__init__(self, 'exception_dialog')
+        buffer = self.textview1.get_buffer()
+        buffer.set_text(exc_text)
+
+    def on_details_button_clicked(self, *args):
+        if self.scrolledwindow1.get_property('visible'):
+            self.details_button.set_label('Details >>')
+            self.scrolledwindow1.set_property('visible', gtk.FALSE)
+        else:
+            self.details_button.set_label('Details <<')
+            self.scrolledwindow1.set_property('visible', gtk.TRUE)
+        self.root_widget.queue_resize()
+
+    def on_close_button_clicked(self, *args):
+        self.destroy()
+
+    def on_exception_dialog_delete_event(self, *args):
+        self.on_close_button_clicked()
+
+
+class ExceptionHandler:
+
+    def __init__(self):
+        sys.excepthook = self.handler
+
+    def handler(self, exc_type, exc_value, exc_traceback):
+        if isinstance(exc_value, socket.error):
+            dialog = ErrorDialog(
+                "Can't Contact Server",
+                "The LANdialler server is not available. Please check "
+                "that it is running, and that the server address is "
+                "set correctly in the client configuration file.")
+            dialog.show()
+        else:
+            exc_text = ''.join(traceback.format_tb(exc_traceback))
+            dialog = ExceptionDialog(exc_text)
+            dialog.show()
+
+    
 class App(object):
 
     def __init__(self):
@@ -312,6 +379,7 @@ class App(object):
         
     def main(self):
         try:
+            ExceptionHandler()
             server = self._connect_to_server()
             modem = RemoteModem(server)
             window = MainWindow(modem)
