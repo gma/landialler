@@ -14,6 +14,7 @@ import posixpath
 import socket
 import sys
 import syslog
+import time
 import Tkinter
 import tkMessageBox as dialog
 import xmlrpclib
@@ -22,30 +23,6 @@ import xmlrpclib
 class App(application.Application):
     def __init__(self):
         self.debug = 1
-
-    def connect(self):
-        """Ask the server to connect to dial up.
-
-        Calls the XML-RPC connect() procedure, asking the server to
-        configure it's Internet link.
-
-        """
-
-        response = self.client.connect()
-
-    def is_connected(self):
-        """Checks to see if we're online or not.
-
-        Returns 1 if we are online, 0 if not.
-
-        """
-
-        response = self.client.is_connected()
-        if response.value == 1:
-            return 1
-        else:
-            return 0
-
 
     def read_config(self):
         """Map config file settings to instance attributes.
@@ -89,12 +66,38 @@ class App(application.Application):
             self.log_debug("connected to %s:%s" % (self.server_host,
                                                    self.server_port))
 
-            if self.is_connected():
-                dialog.showinfo("Already Online", "You are already online!")
+            response = self.client.is_connected()
+            if response.value == 1:
+                dialog.showinfo("Already online", "You are already online")
                 sys.exit()
             else:
-                dial_up = dialog.askyesno("Go online?",
-                                          "Would you like to go online?")
+                go_online = dialog.askyesno("Go online?",
+                                            "Would you like to go online?")
+                if not go_online:
+                    sys.exit()
+
+                self.client.connect()
+
+                online = 0
+                paused = 0
+                max_paused = 120  # seconds to wait before giving up
+
+                response = self.client.is_connected()
+                while (response.value != 1) and (paused < max_paused):
+                    print "checking connection (%d secs)" % paused
+                    response = self.client.is_connected()
+                    if response.value == 1:
+                        dialog.showinfo("Connected!", "You are now online")
+                        break
+                    else:
+                        time.sleep(5)
+                        paused += 5
+
+                # The next dialog should be minimised until the user is
+                # ready to disconnect from the Internet.
+                dialog.showinfo("Disconnect?", "Click OK to disconnect")
+                self.client.disconnect()
+                sys.exit()
 
         except socket.error, e:
             self.log_err("Error %d: %s" % (e.args[0], e.args[1]))
