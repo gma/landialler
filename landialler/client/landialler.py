@@ -7,8 +7,8 @@
 #
 # $Id$
 
-import application
 import ConfigParser
+import gmalib
 import os
 import posixpath
 import socket
@@ -19,7 +19,7 @@ import tkMessageBox as dialog
 import xmlrpclib
 
 
-class App(application.Application):
+class App(gmalib.Application):
     def __init__(self):
         self.debug = 1
 
