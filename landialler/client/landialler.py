@@ -83,6 +83,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 # see http://www.ootips.org/mvc-pattern.html
 
 
+import exceptions
 import ConfigParser
 import gmalib
 import os
@@ -93,16 +94,28 @@ import xmlrpclib
 __version__ = "0.2pre2"
 
 
-class ConnectError(Exception):
-    pass
+class ConnectError(exceptions.Exception):
+
+    """Raised if the remote connect procedure fails."""
+    
+    def __init__(self, args=None):
+        self.args = args
 
 
-class DisconnectError(Exception):
-    pass
+class DisconnectError(exceptions.Exception):
+
+    """Raised if the remote disconnect procedure fails."""
+
+    def __init__(self, args=None):
+        self.args = args
 
 
-class StatusError(Exception):
-    pass
+class StatusError(exceptions.Exception):
+
+    """Raised if the remote get_status procedure fails."""
+
+    def __init__(self, args=None):
+        self.args = args
 
 
 class Model:
