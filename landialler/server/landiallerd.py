@@ -20,7 +20,7 @@
 #
 # $Id$
 
-import application
+import gmalib
 import os
 import posixpath
 import SocketServer
@@ -32,11 +32,19 @@ import xmlrpcserver
 
 class MyTCPServer(SocketServer.TCPServer):
     """We override TCPServer so that we can set the allow_reuse_socket
-    attribute to true (so we can restart immediately).
+    attribute to true (so we can restart immediately and the TCP
+    socket doesn't sit in the CLOSE_WAIT state instead).
 
     """
     
     def __init__(self, server_address, RequestHandlerClass):
+        """Initialise the server instance.
+
+        Sets the allow_reuse_address attribute to true and then calls
+        the base class's initialisor.
+
+        """
+        
         self.allow_reuse_address = 1
         SocketServer.TCPServer.__init__(self, server_address,
                                         RequestHandlerClass)
@@ -46,10 +54,13 @@ class MyHandler(xmlrpcserver.RequestHandler):
     """Defines methods that correspond to a procedure in the XML-RPC API."""
 
     def call(self, method, params):
-        """Call the server side procedure and return the result.
+        """Call the XML-RPC procedure and return it's result.
 
-        If the procedure doesn't exist then an AttributeError is
-        raised, returning a fault to the client.
+        Calls one of the other methods in this class (which in
+        themselves define the server's API) and returns the other
+        method's return value. If the procedure doesn't exist then an
+        AttributeError is raised, returning a XML-RPC fault to the
+        client.
 
         """
 
@@ -67,7 +78,11 @@ class MyHandler(xmlrpcserver.RequestHandler):
         """Connect to the Internet.
 
         Attempts to connect to the Internet by running an external
-        dial up script.
+        dial up script. This method currently blindly returns the
+        XML-RPC True value, as it does not check the return value of
+        the external script (the standard interface between
+        landiallerd.py and external scripts is yet to be defined).
+        This will be fixed in a future release.
 
         """
 
@@ -82,6 +97,10 @@ class MyHandler(xmlrpcserver.RequestHandler):
         Drops the Internet connection by running an external dial up
         termination script.
 
+        As with api_connect(), the return value of the external script
+        is not checked and the XML-RPC True value is always returned,
+        irrespective of success.
+
         """
 
         cmd = "poff"
@@ -92,10 +111,12 @@ class MyHandler(xmlrpcserver.RequestHandler):
     def api_is_connected(self, params):
         """Check if we are connected to the Internet.
 
-        Runs the external command that is defined by the is_connected
-        configuration file directive. The external command should
-        print a single line of output; 1 if we are connected to the
-        Internet, 0 otherwise.
+        Runs an external command to determine whether or not the
+        server is currently dialled up. Currently, the external
+        command prints a 1 to it's stdout if the server is connected,
+        0 otherwise. This behaviour may be changed in a future
+        release, and the command itself will be moved into the
+        configuration file.
 
         """
 
@@ -111,18 +132,20 @@ class MyHandler(xmlrpcserver.RequestHandler):
             return xmlrpclib.False
 
 
-class App(application.Daemon):
-    """Simple wrapper class that runs the server."""
+class App(gmalib.Daemon):
+    """A simple wrapper class that initialises and runs the server."""
     
     def __init__(self):
-        application.Daemon.__init__(self)
+        """Calls the base class's initialisor."""
+        gmalib.Daemon.__init__(self)
 
     def read_config(self):
         """Map config file settings to instance attributes.
 
-        This really ought to be sorted out so that load_sys_config()
-        can do everything for us. Making a mental note to fix the
-        library...
+        This really ought to be sorted out so that the
+        load_sys_config() library method can do everything for us - it
+        is currently quite horrible. Making a mental note to fix the
+        library in a future release.
 
         """
 
@@ -148,9 +171,7 @@ class App(application.Daemon):
             sys.exit()
         
     def run(self):
-        """Start the landiallerd server.
-
-        """
+        """Start the landiallerd server."""
 
         syslog.openlog(posixpath.basename(sys.argv[0]),
                        syslog.LOG_PID | syslog.LOG_CONS)
