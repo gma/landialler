@@ -18,6 +18,9 @@ class Mock:
         
     def __getattr__( self, name ):
         return MockCaller( name, self )
+
+    def __hash__(self):
+        return id(self)
     
     def getAllCalls(self):
         '''return a list of MockCall objects,
