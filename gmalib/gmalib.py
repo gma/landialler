@@ -25,6 +25,7 @@ the average application or daemon is included.
 """
 
 import ConfigParser
+import fcntl
 import os
 import posixpath
 import stat
@@ -89,11 +90,12 @@ class Logger:
         return s
 
     def _to_file(self, priority, message):
-        f = open(self.logfile, "a")
         date_time = self._log_date_time_string()
         fmt = "%s %s[%d]: (%s) %s"
         if message[-1:] != "\n":
             fmt += "\n"
+        f = open(self.logfile, "a")
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         f.write(fmt % (date_time, posixpath.basename(sys.argv[0]),
                        os.getpid(), priority.upper(), message))
         f.close()
