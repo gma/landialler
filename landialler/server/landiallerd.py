@@ -86,6 +86,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 __version__ = "0.2.1"
 
 
+import ConfigParser
 import getopt
 import os
 import SimpleXMLRPCServer
@@ -100,8 +101,6 @@ try:
 except ImportError, e:
     if os.name == "posix":
         sys.stderr.write("can't import syslog: %s" % e)
-
-import gmalib
 
 
 class Dummy:
@@ -223,9 +222,9 @@ class API:
 
 class SharedModem:
 
-    def __init__(self):
+    def __init__(self, config):
+        self._config = config
         self.client_tracker = {}
-        self.config = gmalib.SharedConfigParser()
         self.is_connecting = False
         self.was_connected = False  # should only be used by API.get_status()
         self.timer = Timer()
@@ -235,7 +234,7 @@ class SharedModem:
         return len(self.list_clients())
 
     def is_connected(self):
-        cmd = self.config.get("commands", "is_connected")
+        cmd = self._config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         if rval == 0:
             self.is_connecting = 0
@@ -270,7 +269,7 @@ class SharedModem:
         return self.client_tracker.keys()
 
     def run_connect_command(self):
-        cmd = self.config.get("commands", "connect")
+        cmd = self._config.get("commands", "connect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         log.debug("connect command returned: %s" % rval)
         if rval == 0:
@@ -279,7 +278,7 @@ class SharedModem:
             return 0
 
     def run_disconnect_command(self):
-        cmd = self.config.get("commands", "disconnect")
+        cmd = self._config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         log.debug("disconnect command returned: %s" % rval)
         if rval == 0:
@@ -435,8 +434,18 @@ class App:
     """A simple wrapper class that initialises and runs the server."""
 
     def __init__(self):
-        self._modem = SharedModem()
         self._become_daemon = True
+        self._config = self._load_config_file()
+        self._modem = SharedModem(self._config)
+
+    def _load_config_file(self):
+        try:
+            config = ConfigParser.ConfigParser()
+            config.read(["/usr/local/etc/landiallerd.conf",
+                         "/etc/landiallerd.conf", "landiallerd.conf"])
+        except Exception, e:
+            print "Terminating - error reading config file: %s" % e
+            sys.exit()
 
     def check_platform(self):
         if os.name != "posix":
@@ -500,16 +509,6 @@ class App:
                 global use_syslog
                 use_syslog = 1
 
-    def pre_load_config(self):
-        """Load configuration files into SharedConfigParser object."""
-        try:
-            config = gmalib.SharedConfigParser()
-            config.read(["/usr/local/etc/landiallerd.conf",
-                         "/etc/landiallerd.conf", "landiallerd.conf"])
-        except Exception, e:
-            print "Terminating - error reading config file: %s" % e
-            sys.exit()
-
     def main(self):
         """Start the XML-RPC server."""
         self.check_platform()
@@ -526,8 +525,6 @@ class App:
             sys.stderr.write("%s\n" % e)
             self.usage_message()
         
-        self.config = gmalib.SharedConfigParser()
-
         # start the server and start taking requests
         server_port = int(self.config.get("general", "port"))
 
