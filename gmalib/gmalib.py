@@ -18,11 +18,13 @@
 #
 # $Id$
 
+
 """Provides classes used by, and developed solely for, the author's
 own applications. Currently only very basic functionality required by
 the average application or daemon is included.
 
 """
+
 
 import ConfigParser
 import os
@@ -39,7 +41,7 @@ except ImportError, e:
     pass
 
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 
 class Logger:
@@ -100,7 +102,7 @@ class Logger:
         
         """
         date_time = self._log_date_time_string()
-        fmt = "%s %s[%d]: (%s) %s"
+        fmt = "%s %s[%d] %5s: %s"
         if message[-1:] != "\n":
             fmt += "\n"
         f = open(self.logfile, "a")
@@ -112,7 +114,6 @@ class Logger:
 
     def log_debug(self, message):
         """Log a debug message."""
-
         if self.debug:
             if self.use_syslog:
                 syslog.syslog(syslog.LOG_DEBUG, message)
@@ -210,15 +211,17 @@ class Daemon:
 
 class SharedConfigParser(ConfigParser.ConfigParser):
 
-    """Useful when several classes need access to the configuration
-    data in a configuration file but you only want to read it
-    once. You can instantiate several SharedConfigParser objects (one
-    per class) and the configuration file will only be read the first
-    time an instance is created. Subsequent instances will share the
-    data of the first instance.
+    """A ConfigParser that is only ever loaded once.
+
+    Useful when several classes need access to the configuration data
+    in a configuration file but you only want to read it once. You can
+    instantiate several SharedConfigParser objects and the configuration
+    file will only be read the first time an instance is created.
+    Subsequent instances will share the data of the first instance.
 
     Use it in exactly the same way as you would use ConfigParser
-    itself.
+    itself, but note that only the first call to read() will actually
+    do anything.
 
     """
 
