@@ -87,20 +87,27 @@ __version__ = "0.2.1"
 
 
 import getopt
-import gmalib
 import os
 import SocketServer
 import sys
 import threading
 import time
 import xmlrpclib
-import xmlrpcserver
+import SimpleXMLRPCServer
 
 try:
     import syslog
 except ImportError, e:
     if os.name == "posix":
         sys.stderr.write("can't import syslog: %s" % e)
+
+import gmalib
+
+
+# Global variables
+debug = 0
+log_file = None
+use_syslog = 0
 
 
 class API(gmalib.Logger):
@@ -117,9 +124,9 @@ class API(gmalib.Logger):
     """
 
     def __init__(self):
-        global debug, use_syslog, logfile
+        global debug, use_syslog, log_file
         self.debug = debug
-        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        gmalib.Logger.__init__(self, log_file, use_syslog)
         self.conn = Connection()
 
     def connect(self, client):
@@ -237,15 +244,15 @@ class Connection(gmalib.Logger):
 
     """
 
-    __shared_state = {}
+    _shared_state = {}
 
     def __init__(self):
-        self.__dict__ = Connection.__shared_state
+        self.__dict__ = Connection._shared_state
         if not hasattr(self, "client_tracker"):
-            global debug, use_syslog, logfile
+            global debug, use_syslog, log_file
             self.debug = debug
             gmalib.Logger.__init__(self,
-                                   logfile=logfile, use_syslog=use_syslog)
+                                   log_file, use_syslog)
             self.log_debug("creating new Connection object")
             self.client_tracker = {}
             self.config = gmalib.SharedConfigParser()
@@ -266,7 +273,7 @@ class Connection(gmalib.Logger):
         """
         cmd = self.config.get("commands", "is_connected")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:  # connected
+        if rval == 0:
             self.currently_connecting = 0
             self.timer.start()
             return 1
@@ -374,9 +381,9 @@ class CleanerThread(threading.Thread, gmalib.Logger):
         self.setDaemon(1)  # we're a daemon thread (see __init__ docs)
         self.pauser = threading.Event()
 
-        global debug, logfile, use_syslog
+        global debug, log_file, use_syslog
         self.debug = debug
-        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        gmalib.Logger.__init__(self, log_file, use_syslog)
 
     def run(self):
         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
@@ -411,18 +418,19 @@ class MyTCPServer(SocketServer.TCPServer):
                                         RequestHandlerClass)
     
 
-class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
+class MyHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler, gmalib.Logger):
 
     """Handles XML-RPC requests."""
 
     def __init__(self, *args, **kwargs):
-        global debug, logfile, use_syslog
+        global debug, log_file, use_syslog
         self.debug = debug
-        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        gmalib.Logger.__init__(self, log_file, use_syslog)
 
         # FIXME: iterate through all base class' __init__ methods so that
         #        class hierarchy can change without us worrying about it.
-        SocketServer.BaseRequestHandler.__init__(self, *args, **kwargs)
+        SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self,
+                                                               *args, **kwargs)
 
     def call(self, procedure, params):
         """Call an API procedure, return it's result.
@@ -460,9 +468,9 @@ class Timer(gmalib.Logger):
 
     def __init__(self):
         """Run the start() method."""
-        global debug, logfile, use_syslog
+        global debug, log_file, use_syslog
         self.debug = debug
-        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        gmalib.Logger.__init__(self, log_file, use_syslog)
 
         self.start_time = 0  # seconds since epoch when timer started
         self.is_running = 0  # set to true when timer is running
@@ -515,9 +523,9 @@ class App(gmalib.Daemon, gmalib.Logger):
     
     def __init__(self):
         gmalib.Daemon.__init__(self)
-        global debug, use_syslog, logfile
+        global debug, use_syslog, log_file
         self.debug = debug
-        gmalib.Logger.__init__(self, logfile=logfile, use_syslog=use_syslog)
+        gmalib.Logger.__init__(self, log_file, use_syslog)
         self.become_daemon = 1
 
     def check_platform(self):
@@ -554,10 +562,10 @@ class App(gmalib.Daemon, gmalib.Logger):
             elif o == "-h":
                 self.usage_message()
             elif o == "-l":
-                global logfile
-                logfile = v
-                if not os.path.exists(logfile):
-                    raise IOError, ("File not found: %s" % logfile)
+                global log_file
+                log_file = v
+                if not os.path.exists(log_file):
+                    raise IOError, ("File not found: %s" % log_file)
             elif o == "-s":
                 global use_syslog
                 use_syslog = 1
@@ -617,9 +625,5 @@ Options:
 
 
 if __name__ == "__main__":
-    debug = 0       # global vars used for consistent logging
-    logfile = None
-    use_syslog = 0
-
     app = App()
     app.main()
