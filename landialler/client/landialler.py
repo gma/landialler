@@ -270,20 +270,16 @@ class App(gmalib.Logger):
 
     def handle_connect_error(self):
         self.log_err("Error: ConnectError")
-        title = "Connect error"
         msg = "There was a problem\nconnecting to the network."
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title,
-                                                message=msg)
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
     def handle_disconnect_error(self):
         self.log_err("Error: DisconnectError")
-        title = "Disconnect error"
         msg = "There was a problem disconnecting\nfrom the network. " + \
             "You may not have\nbeen disconnected properly!"
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title, 
-                                                message=msg)
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
@@ -297,21 +293,17 @@ class App(gmalib.Logger):
 
     def handle_status_error(self):
         self.log_err("Error: StatusError")
-        title = "Error"
         msg = "LANdialler is unable to determine the\nstatus of your " + \
             "network connection.\n\nPlease check the connection and\n" + \
             "the server and try again."
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title, 
-                                                message=msg)
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
     def handle_error(self, e):
         self.log_err("Error: %s" % e)
-        title = "Error"
         msg = "Error: %s" % e
-        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title, 
-                                                message=msg)
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
         dialog.draw()
         dialog.start_event_loop()
 
