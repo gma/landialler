@@ -90,7 +90,7 @@ import socket
 import xmlrpclib
 
 
-__version__ = "0.2pre1"
+__version__ = '0.2pre1'
 
 
 class Model:
@@ -137,14 +137,14 @@ class Model:
         # FIXME: Improve behaviour when no toolkit entry in config file
         # so that gtk can be the default on Unix. :)
         try:
-            toolkit = self.config.get("interface", "toolkit")
+            toolkit = self.config.get('interface', 'toolkit')
         except ConfigParser.NoSectionError:
             toolkit = 'tk'
         except ConfigParser.NoOptionError:
             toolkit = 'tk'
-            
-        exec("from landialler import %sviews" % toolkit)
-        exec("self.toolkit = %sviews" % toolkit)
+
+        exec('from landiallermvc import %sviews' % toolkit)
+        exec('self.toolkit = %sviews' % toolkit)
 
     def notify(self):
         """Calls each observer's update() method."""
@@ -207,13 +207,12 @@ class App(gmalib.Application):
         Initialises and launches the user interface.
 
         """
-
         # load config file
         config = ConfigParser.ConfigParser()
         files = []
-        if os.name == "posix":
-            files.append("/usr/local/etc/landialler.conf")
-        files.append("landialler.conf")
+        if os.name == 'posix':
+            files.append('/usr/local/etc/landialler.conf')
+        files.append('landialler.conf')
         config.read(files)
 
         # connect to XML-RPC server
@@ -221,19 +220,19 @@ class App(gmalib.Application):
         # dialog's with error messages in, rather than print
         # statements?)
 
-        hostname = config.get("xmlrpcserver", "hostname")
-        port = config.get("xmlrpcserver", "port")
+        hostname = config.get('xmlrpcserver', 'hostname')
+        port = config.get('xmlrpcserver', 'port')
         
         try:
-            server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
-            self.log_info("connected to %s:%s" % (hostname, port))
+            server = xmlrpclib.Server('http://%s:%s/' % (hostname, port))
+            self.log_info('connected to %s:%s' % (hostname, port))
         except socket.error, e:
-            self.log_err("Error %d: %s" % (e.args[0], e.args[1]))
+            self.log_err('Error %d: %s' % (e.args[0], e.args[1]))
             if e.args[0] == 111:  # connection refused
                 print "Sorry, I couldn't connect to the " + \
                       "landialler server. Is it turned on?"
             else:
-                print "%d: %s" % (e.args[0], e.args[1])
+                print '%d: %s' % (e.args[0], e.args[1])
 
         # start the GUI
         model = Model(config, server)
