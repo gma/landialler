@@ -280,9 +280,9 @@ class FatalErrorDialog(Dialog):
     terminated.
     
     The title and message arguments can be set to control the dialog's
-    title message, and the main dialog message itself. Newline (\n)
-    characters should be embedded in message to wrap lines where
-    appropriate.
+    title message, and the main dialog message itself. Newline
+    characters should be embedded in the message argument to wrap 
+    lines where appropriate.
 
     """
 
@@ -290,7 +290,7 @@ class FatalErrorDialog(Dialog):
                  message="An unknown error has occurred"):
         """Initialise the dialog.
 
-        The err_msg parameter should be a string explaining what went
+        The message parameter should be a string explaining what went
         wrong.
 
         """
