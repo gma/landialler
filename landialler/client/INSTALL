@@ -33,20 +33,26 @@ To install the client itself, follow the instructions for your
 platform:
 
   Windows
-    - Create a landialler directory (e.g. C:\Program Files\landialler).
-    - Copy landialler.py and landialler.conf into the new directory.
+    - Download the latest landialler ZIP file, and unzip into a temporary
+      directory.
+    - From within the landialler directory, run "python setup.py install"
+      to install the landiallermvc package.
+    - Create a landialler directory (e.g. C:\Program Files\landialler)
+      and copy landialler.py and landialler.conf into the new directory.
     - Right click the desktop to create a new shortcut and point
       it towards landialler.py. Make sure that the shortcut runs
       landialler in it's own directory.
 
       Note: If you'd like to avoid the console window that always pops
             up when you run landialler.py then rename landialler.py to
-            landialler.pyw and run that instead.
+            landialler.pyw and use that instead.
 
   Unix (or Linux)
-    - Copy landialler.py to somewhere in your path (e.g. /usr/local/bin).
-    - Copy the landialler.conf file to /usr/local/etc, or run landialler.py
-      from the same directory as the configuration file.
+    - Simply type "python setup.py install" to have everything done for
+      you.
+
+      Note: landialler.py will be copied into /usr/local/bin
+            landialler.conf will be copied into /usr/local/etc
 
   MacOS
     - I'm afraid I don't have access to a Mac and so have no idea how
