@@ -3,22 +3,21 @@ TODO
 
 Prioritised list of things to do:
 
-  - Unit test coverage (in progress).
+  - Drop gmalib (done).
+
+  - Re-write server with unit test coverage (in progress).
 
   - Port XML-RPC code to later versions of Python (in progress).
 
-  - Port GTK support from version 1 to version 2.
+  - Re-implement the current client in GTK2 only, drop Tk (in progress).
 
-  - Merge useful parts of gmalib into landialler, use Python's new
-    logging API (in progress).
+  - Replace Tk support with alternative Windows capable client (maybe GTK2?).
+
+  - Add logging support to server via Python's logging API.
 
   - Replace server's Makefile with distutils. Maybe.
 
-  - Display how long the server has been online (in progress).
-
-  - Write a client in another language, maybe Java.
-
-  - Put retry/cancel buttons on the dropped connection dialog.
+  - Display how long the server has been online (done).
 
   - Add support to the client for detecting time outs, allowing the
     client to retry the connection from scratch, with a retry/cancel
