@@ -461,4 +461,8 @@ if __name__ == "__main__":
     try:
         app.main()
     except IOError, e:
-        print e
+        sys.stderr.write("%s\n" % e)
+    except getopt.GetoptError, e:
+        sys.stderr.write("%s\n" % e)
+        sys.stderr.write("usage: %s [-d] [-f] [-l file] [-s]\n" % \
+                         posixpath.basename(sys.argv[0]))
