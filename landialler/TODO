@@ -4,6 +4,10 @@ TODO
 This file documents upcoming fixes/things on my mind/stuff I'd like to
 do, in no particular order.
 
+  - Add a thread to the server to keep better track of the number of
+    current users, so that the server can close the connection itself
+    when there are no clients left.
+
   - Add support for monitoring how long the server has been online.
 
   - A GTK+ port, and an anygui port; Tk is not that attractive on
