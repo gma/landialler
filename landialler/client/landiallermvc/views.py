@@ -137,6 +137,10 @@ class Dialog(Window):
         Window.__init__(self, model)
         self.modal = 0
 
+    def update(self):
+        """Does nothing (override it if you want alternative behaviour)."""
+        pass
+
 
 class ConnectingDialog(Dialog):
 
@@ -198,21 +202,33 @@ class DroppedDialog(Dialog):
     somebody else has hung up the connection.
 
     This dialog simply points that out to the user and closes when the
-    user clicks OK. Note that it is a modal dialog.
+    user clicks OK.
 
     """
 
     def __init__(self, model):
         Dialog.__init__(self, model)
         self.controller = controllers.DroppedDialogController(model, self)
-        self.modal = 1
-        self.title = "Dropped"
+        self.title = "Connection dropped"
         self.text = "Connection dropped (perhaps somebody hung up)"
         # we use lambda to pass parameters into the callback method
         callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
         # buttons = { name: (position in list, callback) }
         self.buttons = { 'OK': (0, callback) }
 
+
+class FatalErrorDialog(Dialog):
+    def __init__(self, model, err_msg):
+        Dialog.__init__(self, model)
+        self.controller = controllers.FatalErrorController(model, self)
+        self.modal = 1
+        self.title = "Fatal Error"
+        self.text = err_msg
+        # we use lambda to pass parameters into the callback method
+        callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
+        # buttons = { name: (position in list, callback) }
+        self.buttons = { 'OK': (0, callback) }
+        
 
 class MainWindow(Window):
 
