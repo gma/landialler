@@ -38,7 +38,7 @@ except ImportError, e:
     pass
 
 
-__version__ = "0.3"
+__version__ = "0.2.1"
 
 
 class Logger:
