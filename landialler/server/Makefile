@@ -15,7 +15,7 @@ install:
 	$(INSTALL) -d $(BIN)
 	$(INSTALL) -m755 ./landiallerd.py $(BIN)
 	$(INSTALL) -d $(ETC)
-	$(INSTALL) -m644 ./landiallerd.conf $(ETC)
+	$(INSTALL) -b -m644 ./landiallerd.conf $(ETC)
 
 tardist:
 	@echo "### Building landiallerd-$(VERS).tar.gz"
