@@ -1,0 +1,65 @@
+INSTALL
+-------
+
+This file contains the installation instructions for landialler.py.
+In the future they will be streamlined so that you will be able to
+type something as simple as "python setup.py", but unfortunately we're
+not quite there yet.
+
+
+REQUIREMENTS
+
+  - Any operating system that supports Python 2.1 and Tk
+  - Python 2.1 with Tk support (may work with Python 2.0)
+  - xmlrpclib, from http://www.pythonware.com/products/xmlrpc/
+  - gmalib, available from http://sourceforge.net/projects/landialler/
+
+
+INSTALLATION
+
+I will ignore the first two requirements and assume that if you have
+got this far that you are there already. If not you might want to get
+hold of a copy of Python from http://www.python.org/.
+
+Next, download xmlrpclib from the URL above (xmlrpclib should be
+included with the main Python source tree from Python 2.2 onwards, so
+you may have it already). If not you will need to copy the
+xmlrpclib.py file into your Python system directory (on Windows) or
+into Python's site-packages directory (Unix).
+
+Then copy the gmalib.py file into the same directory.
+
+To install the client itself, follow the instructions for your
+platform:
+
+  Windows
+    - Create a landialler directory (e.g. C:\Program Files\landialler).
+    - Copy landialler.py and landialler.conf into the new directory.
+    - Right click the desktop to create a new shortcut and point
+      it towards landialler.py. Make sure that the shortcut runs
+      landialler in it's own directory.
+
+  Unix (or Linux)
+    - Copy landialler.py to somewhere in your path (e.g. /usr/local/bin).
+    - Copy the landialler.conf file to /usr/local/etc, or run landialler.py
+      from the same directory as the configuration file.
+
+  MacOS
+    - I'm afraid I don't have access to a Mac and so have no idea how
+      to install landialler. If you let me know I'll gratefully include
+      the information here though.
+
+
+CONFIGURATION
+
+You will probably need to edit the [xmlrpcserver] section of the config
+file. Set the IP address of your landialler server in the file.
+
+If you have problems installing either the client or the server then I
+will try and help you if I can. Please make sure that you send me as
+much information as you can, including the operating system (and
+version number) that you are using, the version of Python and any
+output that you see when you launch the software (either on the
+command line or in syslog).
+
+$Id$
