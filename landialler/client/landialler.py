@@ -231,7 +231,8 @@ class MainWindow(Window):
     def on_main_window_delete_event(self, *args):
         self._modem.remove_observer(self)
         try:
-            self._modem.hang_up()
+            if self._modem.is_connected:
+                self._modem.hang_up()
         except socket.error:
             pass
         gtk.main_quit()
