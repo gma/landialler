@@ -3,27 +3,15 @@ TODO
 
 Prioritised list of things to do:
 
-  - Drop gmalib (done).
-
   - Re-write server with unit test coverage (in progress).
-
-  - Port XML-RPC code to later versions of Python (in progress).
-
-  - Re-implement the current client in GTK2 only, drop Tk (in progress).
-
-  - Replace Tk support with alternative Windows capable client (maybe GTK2?).
 
   - Add logging support to server via Python's logging API.
 
-  - Replace server's Makefile with distutils. Maybe.
-
-  - Display how long the server has been online (done).
-
-  - Add support to the client for detecting time outs, allowing the
-    client to retry the connection from scratch, with a retry/cancel
-    dialog. Should this really go in the server and API?
+  - Replace server's Makefile with distutils.
 
   - Improve support for trapping common errors (e.g. missing
     config files aren't trapped properly yet).
+
+  - Build gentoo packages.
 
 $Id$
