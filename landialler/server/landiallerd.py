@@ -157,12 +157,12 @@ class ModemProxy(object):
     def __init__(self, modem):
         self._modem = modem
         self._clients = {}
-        self._is_dialling = False  # TODO: remove/sort this attribute out
+        self._is_dialling = False
 
     def add_client(self, client_id):
         if client_id not in self._clients:
             self._clients[client_id] = time.time()
-        if not (self.is_connected() or self._is_dialling):
+        if not (self._is_dialling or self.is_connected()):
             self._is_dialling = True
             self._modem.dial()
 
@@ -172,8 +172,9 @@ class ModemProxy(object):
     def remove_client(self, client_id):
         if client_id in self._clients:
             del self._clients[client_id]
-        if self.is_connected() and not self._clients:
-            self.hang_up()
+        if not self._clients:
+            if self.is_connected() or self._is_dialling:
+                self.hang_up()
 
     def remove_old_clients(self):
         for client_id, time_last_seen in self._clients.items():
@@ -184,12 +185,17 @@ class ModemProxy(object):
         return len(self._clients.keys())
 
     def is_connected(self):
-        return self._modem.is_connected()
+        if self._modem.is_connected():
+            self._is_dialling = False
+            return True
+        else:
+            return False
 
     def get_time_connected(self):
         return self._modem.timer.elapsed_seconds
 
     def hang_up(self):
+        self._is_dialling = False
         self._modem.hang_up()
 
 
