@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # views.py - abstract View class (see the MVC pattern)
 #
 # Copyright (C) 2001 Graham Ashton
@@ -68,21 +70,6 @@ class View(Observer.Observer):
               ("%s has not implemented draw()" % self.__class__)
 
 
-class ButtonBar(View):
-
-    """The beginnings of a button handler to simplify the creation and
-    layout of groups of buttons. Incomplete and unused.
-
-    """
-    
-    def __init__(self, model):
-        View.__init__(self, model)
-        self.buttons = []
-
-    def add_button(self, text='Button', callback=None):
-        self.buttons.append((text, callback))
-
-
 class Window(View):
     """Contains basic logic for constructing a top level window.
 
@@ -140,6 +127,21 @@ class Dialog(Window):
     def update(self):
         """Does nothing (override it if you want alternative behaviour)."""
         pass
+
+
+class ButtonBar(View):
+
+    """The beginnings of a button handler to simplify the creation and
+    layout of groups of buttons. Incomplete and unused.
+
+    """
+    
+    def __init__(self, model):
+        View.__init__(self, model)
+        self.buttons = []
+
+    def add_button(self, text='Button', callback=None):
+        self.buttons.append((text, callback))
 
 
 class ConnectingDialog(Dialog):
