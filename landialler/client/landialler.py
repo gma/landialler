@@ -94,7 +94,7 @@ import Tkinter
 import tkMessageBox as tkMBox
 import xmlrpclib
 
-__version__ = "0.1"
+__version__ = "0.2pre1"
 
 
 class UserInterface(gmalib.Logger):
@@ -114,22 +114,28 @@ class UserInterface(gmalib.Logger):
     def showerror(self, text):
         """Display an error dialog with an OK button.
 
-        The caption is set to "LANdialler: Error". The body of the
-        error message is specified by text. An error message is also
-        written with Logger.log_err().
+        The dialog's title is set to "Error". The body of the error
+        message is specified by text. An error message is also written
+        with Logger.log_err().
 
         """
         self.log_err(text)
         tkMBox.showerror("Error", text)
 
     def showinfo(self, caption, text):
-        """Display an info dialog with an OK button."""
+        """Display an info dialog with an OK button.
+
+        The dialog's title is set by the caption parameter. The text
+        contained in the text parameter is displayed in the dialog.
+
+        """
         tkMBox.showinfo(caption, text)
 
     def askretrycancel(self, text):
         """Display a dialog with a question and retry/cancel buttons.
 
-        Return 1 if retry is clicked, 0 if cancel is clicked.
+        The dialog's title is "Retry?". Returns 1 if retry is clicked,
+        0 if cancel is clicked.
 
         """
         return tkMBox.askretrycancel("Retry?", text)
@@ -138,7 +144,8 @@ class UserInterface(gmalib.Logger):
         """Ask if an operation should proceed.
 
         Displays a dialog with Yes and No buttons. The question is
-        specified by text. The dialog's caption is "Landialler: caption".
+        specified by text. The dialog's title is set by the caption
+        parameter.
 
         Returns 1 if the user presses the Yes button, 0 otherwise.
 
