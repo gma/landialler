@@ -1,11 +1,17 @@
 TODO
 ----
 
-The following updates should make it into release 0.2 proper:
+Things to be done, in no particular order:
+
+  - Modify landialler to make sure that exceptions are trapped
+    properly and a dialog is displayed to the user.
 
   - Stop xmlrpcserver from writing to syslog all the time.
 
-These changes will come along later, probably for the 1.0 release.
+  - Rename classes in views.py by placing "Abstract" on the front of each.
+
+  - Refactor the window/dialog classes so that they inherit from the
+    toolkit's windows, instead of having self.window attributes.
 
   - Add support to the client for detecting time outs, allowing the
     client to retry the connection from scratch, with a retry/cancel
@@ -21,7 +27,12 @@ These changes will come along later, probably for the 1.0 release.
   - A GTK+ port, and an anygui port; Tk is not that attractive on
     Linux.
 
-  - Improve support for trapping exceptions (e.g. missing config files
-    aren't trapped properly yet).
+  - Improve support for trapping common exceptions (e.g. missing
+    config files aren't trapped properly yet).
+
+  - Add a destroy_cb attribute to a Window that can be called when the
+    window is destroyed? Might be a good idea, but need to think about
+    how it would get set and how it would be run (e.g. where it would
+    be run from).
 
 $Id$
