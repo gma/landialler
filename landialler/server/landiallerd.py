@@ -83,15 +83,12 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
-__version__ = "0.2.1"
-
-
-# import ConfigParser
-# import getopt
+import ConfigParser
+import getopt
 import os
-# import SimpleXMLRPCServer
-# import SocketServer
-# import sys
+import SimpleXMLRPCServer
+import SocketServer
+import sys
 import threading
 import time
 import xmlrpclib
@@ -154,11 +151,14 @@ class Modem:
         return os.system(command) == 0
 
     def is_connected(self):
-        if not self.timer.is_running:
-            self.timer.start()
         command = self._config_parser.get('commands', 'is_connected')
-        return os.system(command) == 0
-
+        rval = os.system(command)
+        if rval == 0:
+            if not self.timer.is_running:
+                self.timer.start()
+            return True
+        else:
+            return False
 
 class ModemProxy:
 
@@ -172,8 +172,10 @@ class ModemProxy:
     def add_client(self, client_id):
         if client_id not in self._clients:
             self._clients[client_id] = time.time()
-        if self.is_connected() or self._is_dialling:
+        if self.is_connected():
             return True
+        elif self._is_dialling:
+            return False
         else:
             self._is_dialling = True
             return self._modem.dial()
@@ -299,208 +301,87 @@ class AutoDisconnectThread(threading.Thread):
     def run(self):
         proxy = self._modem_proxy
         while not self.finished.isSet():
-            if proxy.is_connected() and not proxy.count_clients():
+            proxy.remove_old_clients()
+            if proxy.count_clients() == 0 and proxy.is_connected():
                 self._modem_proxy.hang_up()
             self.finished.wait(self.INTER_CHECK_PERIOD)
 
 
-# class CleanerThread(threading.Thread):
+class App:
 
-#     """Ensures that the connection does not remain live with no clients."""
+    def __init__(self):
+        self._become_daemon = True
+        self._config = self._load_config_file()
+        modem = Modem(self._config)
+        self._modem_proxy = ModemProxy(modem)
+        thread = AutoDisconnectThread(self._modem_proxy)
+        thread.start()
 
-#     def __init__(self, modem, interval=10):
-#         """Setup the thread object."""
-#         threading.Thread.__init__(self, name=CleanerThread)
-#         self._modem = modem
-#         self._pause_interval = interval
-#         self._pauser = threading.Event()
-#         self.setDaemon(True)
+    def _load_config_file(self):
+        try:
+            config = ConfigParser.ConfigParser()
+            config.read(['/usr/local/etc/landiallerd.conf',
+                         '/etc/landiallerd.conf',
+                         'landiallerd.conf'])
+            return config
+        except Exception, e:
+            print 'Terminating - error reading config file: %s' % e
+            sys.exit()
 
-#     def run(self):
-#         # See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222
-#         # for a full example of the while loop's timer code.
-#         while 1:
-#             self._modem.forget_old_clients()
-#             if self._modem.count_clients() < 1:
-#                 if self._modem.is_connecting or self._modem.is_connected:
-#                     log.info("clients timed out, terminating connection")
-#                     api = API(self._modem)
-#                     api.disconnect(all="yes")
+    def check_platform(self):
+        if os.name != "posix":
+            print "Sorry, only POSIX compliant systems are supported."
+            sys.exit()
 
-#             self._pauser.wait(self._pause_interval)
+    def daemonise(self):
+        """Become a daemon process (POSIX only)."""
+        if not self._become_daemon:
+            return
+        if os.name != "posix":
+            print "unable to run as a daemon (POSIX only)"
+            return None
 
+        # See "Python Standard Library", pg. 29, O'Reilly, for more
+        # info on the following.
+        pid = os.fork()
+        if pid:  # we're the parent if pid is set
+            os._exit(0)
 
-# class ReusableTCPServer(SocketServer.TCPServer):
+        os.setpgrp()
+        os.umask(0)
 
-#     """We override TCPServer so that we can set the allow_reuse_socket
-#     attribute to true (so we can restart immediately and the TCP
-#     socket doesn't sit in the CLOSE_WAIT state instead).
+        class DevNull:
 
-#     """
-    
-#     def __init__(self, server_address, request_handler_class):
-#         self.allow_reuse_address = 1
-#         SocketServer.TCPServer.__init__(self, server_address,
-#                                         request_handler_class)
-
-
-# class RequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
-
-#     """Handles XML-RPC requests."""
-
-#     def __init__(self, modem):
-#         SimpleXMLRPCServer.SimpleXMLRPCRequestHandler.__init__(self)
-#         self._modem = modem
-
-#     def call(self, procedure, params):
-#         """Call an API procedure, return it's result.
-
-#         Calls one of the API's methods on an instance of the API
-#         class. If the procedure isn't supported then an AttributeError
-#         is raised, returning a XML-RPC fault to the client.
-
-#         """
-#         if not procedure in ["connect", "disconnect", "get_status"]:
-#             log.err("Unknown procedure name: %s" % procedure)
-#             raise xmlrpclib.Fault, "Unknown procedure name: %s" % procedure
-#         else:
-#             api = API(self._modem)
-#             method = getattr(api, procedure)
-#             if procedure in ["connect", "get_status"]:
-#                 (host, port) = self.client_address
-#                 params = (host,)
-#             elif procedure == "disconnect":
-#                 (host, port) = self.client_address
-#                 disconnect_all_users = params[0]
-#                 params = (disconnect_all_users, host)
-#             log.debug("RequestHandler.call(): called %s(%s)" % \
-#                       (procedure, ", ".join(map(repr, params))))
-#             return apply(method, params)
-
-
-# class App:
-
-#     """A simple wrapper class that initialises and runs the server."""
-
-#     def __init__(self):
-#         self._become_daemon = True
-#         self._config = self._load_config_file()
-#         self._modem = SharedModem(self._config)
-
-#     def _load_config_file(self):
-#         try:
-#             config = ConfigParser.ConfigParser()
-#             config.read(["/usr/local/etc/landiallerd.conf",
-#                          "/etc/landiallerd.conf", "landiallerd.conf"])
-#         except Exception, e:
-#             print "Terminating - error reading config file: %s" % e
-#             sys.exit()
-
-#     def check_platform(self):
-#         if os.name != "posix":
-#             print "Sorry, only POSIX compliant systems are supported."
-#             sys.exit()
-
-#     def daemonise(self):
-#         """Become a daemon process (POSIX only)."""
-#         if not self._become_daemon:
-#             return
-#         if os.name != "posix":
-#             print "unable to run as a daemon (POSIX only)"
-#             return None
-
-#         # See "Python Standard Library", pg. 29, O'Reilly, for more
-#         # info on the following.
-#         pid = os.fork()
-#         if pid:  # we're the parent if pid is set
-#             os._exit(0)
-
-#         os.setpgrp()
-#         os.umask(0)
-
-#         class DevNull:
-
-#             def write(self, message):
-#                 pass
+            def write(self, message):
+                pass
             
-#         sys.stdin.close()
-#         sys.stdout = DevNull()
-#         sys.stderr = DevNull()
+        sys.stdin.close()
+        sys.stdout = DevNull()
+        sys.stderr = DevNull()
 
-#     def getopt(self):
-#         """Parse command line arguments.
+    def getopt(self):
+        opts, args = getopt.getopt(sys.argv[1:], "dfhl:s")
 
-#         Reads the command line arguments, looking for the following:
+        for o, v in opts:
+            if o == "-f":
+                self._become_daemon = False
 
-#         -d          enable debugging for extra output
-#         -f          run in the foreground (not as a daemon)
-#         -h          print usage message to stderr
-#         -l file     log events to file
-#         -s          log events to syslog
-
-#         """
-#         opts, args = getopt.getopt(sys.argv[1:], "dfhl:s")
-
-#         for o, v in opts:
-#             if o == "-d":
-#                 # TODO: set debug level on the logging object
-#                 pass
-#             elif o == "-f":
-#                 self._become_daemon = False
-#             elif o == "-h":
-#                 self.usage_message()
-#             elif o == "-l":
-#                 global log_file
-#                 log_file = v
-#                 if not os.path.exists(log_file):
-#                     raise IOError, ("File not found: %s" % log_file)
-#             elif o == "-s":
-#                 global use_syslog
-#                 use_syslog = 1
-
-#     def main(self):
-#         """Start the XML-RPC server."""
-#         self.check_platform()
-#         self.pre_load_config()
-#         try:
-#             log.info("starting up")
-#             self.getopt()
+    def main(self):
+        self.check_platform()
+        try:
+            self.getopt()
 #             self.daemonise()
-#             cleaner = CleanerThread(self._modem)
-#             cleaner.start()
-#         except IOError, e:
-#             sys.stderr.write("%s\n" % e)
-#         except getopt.GetoptError, e:
-#             sys.stderr.write("%s\n" % e)
-#             self.usage_message()
+        except getopt.GetoptError, e:
+            sys.stderr.write("%s\n" % e)
         
-#         # start the server and start taking requests
-#         server_port = int(self.config.get("general", "port"))
+        addr = ('', self._config.getint('general', 'port'))
+        server = SimpleXMLRPCServer.SimpleXMLRPCServer(addr, logRequests=False)
+        server.register_instance(API(self._modem_proxy))
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print "Caught Ctrl-C, shutting down."
 
-#         def handler_factory():
-#             return RequestHandler(self._modem)
-
-#         server = ReusableTCPServer(("", server_port), handler_factory, False)
-#         try:
-#             server.serve_forever()
-#         except KeyboardInterrupt:
-#             print "Caught Ctrl-C, shutting down."
-
-#     def usage_message(self):
-#         """Print usage message to sys.stderr and exit."""
-#         message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
-
-# Options:
-
-#     -d          enable debug messages
-#     -f          run in foreground instead of as a daemon
-#     -h		display this message on stderr
-#     -l file     write log messages to file
-#     -s          write log messages to syslog
-
-# """ % os.path.basename(sys.argv[0])
-#         sys.stderr.write(message)
-#         sys.exit(1)
     
 
 if __name__ == "__main__":
