@@ -98,8 +98,8 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
         self.window.quit()
     
     def update(self):
-        if self.model.is_connected and not self.model.was_connected:
-            self.window.destroy()
+        if self.model.is_connected:
+            self.window.withdraw()
     
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
@@ -120,12 +120,12 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         views.DroppedDialog.__init__(self, model)
 
     def cleanup(self):
-        self.window.destroy()
         self.window.quit()
 
     def update(self):
         if self.model.is_connected:
             self.window.destroy()
+            self.model.detach(self)
 
 
 class FatalErrorDialog(Dialog, views.FatalErrorDialog):
