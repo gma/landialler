@@ -142,17 +142,14 @@ class Modem:
 
     def dial(self):
         self.timer.reset()
-        command = self._config_parser.get('commands', 'connect')
-        return os.system(command) == 0
+        os.system(self._config_parser.get('commands', 'connect'))
 
     def hang_up(self):
         self.timer.stop()
-        command = self._config_parser.get('commands', 'disconnect')
-        return os.system(command) == 0
+        os.system(self._config_parser.get('commands', 'disconnect'))
 
     def is_connected(self):
-        command = self._config_parser.get('commands', 'is_connected')
-        rval = os.system(command)
+        rval = os.system(self._config_parser.get('commands', 'is_connected'))
         if rval == 0:
             if not self.timer.is_running:
                 self.timer.start()
@@ -173,13 +170,9 @@ class ModemProxy:
     def add_client(self, client_id):
         if client_id not in self._clients:
             self._clients[client_id] = time.time()
-        if self.is_connected():
-            return True
-        elif self._is_dialling:
-            return False
-        else:
+        if not (self.is_connected() or self._is_dialling):
             self._is_dialling = True
-            return self._modem.dial()
+            self._modem.dial()
 
     def refresh_client(self, client_id):
         self._clients[client_id] = time.time()
@@ -188,9 +181,7 @@ class ModemProxy:
         if client_id in self._clients:
             del self._clients[client_id]
         if self.is_connected() and not self._clients:
-            return self.hang_up()
-        else:
-            return True
+            self.hang_up()
 
     def remove_old_clients(self):
         for client_id, time_last_seen in self._clients.items():
@@ -207,7 +198,7 @@ class ModemProxy:
         return self._modem.timer.elapsed_seconds
 
     def hang_up(self):
-        return self._modem.hang_up()
+        self._modem.hang_up()
 
 
 class API:
@@ -224,62 +215,37 @@ class API:
         self._modem_proxy = modem_proxy
 
     def connect(self, client_id):
-        """Open the connection.
+        """Register this client and open the connection if necessary.
 
-        The client parameter should be a hashable (e.g. string) that
-        uniquely identifies the client (e.g. the IP address).
-
-        If the server is already connected the XML-RPC True value is
-        returned. If the server is in the process of connecting then
-        an XML-RPC False value is returned.
-
-        Otherwise an attempt is made to make a connection by running
-        an external dial up command (see landiallerd.conf). If the
-        external command runs successfully (and therefore returns 0)
-        then the XML-RPC True value is returned, False otherwise. The
-        external command should return immediately (i.e. not block
-        whilst the connection is made) irrespective of whether or not
-        the actual connection will be successfully set up immediately.
+        Always returns True.
 
         """
-        return self._modem_proxy.add_client(client_id)
+        self._modem_proxy.add_client(client_id)
+        return xmlrpclib.True
 
     def disconnect(self, client_id, all=xmlrpclib.False):
-        """Close the connection.
+        """Disconnect this client and/or close the connection.
 
-        If there are other users online and the all argument is not
-        set to "yes" then the XML-RPC True value is returned.
-
-        Otherwise the connection is dropped by running an external
-        dial up termination script. As with connect(), the return
-        value of the external script is converted into the XML-RPC
-        True or False value, and returned.
+        Always returns True.
 
         The client argument should uniquely identify the client, and
         should be usable as a dictionary key.
 
         """
         if self._modem_proxy.is_connected():
+            self._modem_proxy.remove_client(client_id)
             if all:
-                self._modem_proxy.remove_client(client_id)
-                return self._modem_proxy.hang_up()
-            else:
-                return self._modem_proxy.remove_client(client_id)
-        else:
-            return True
+                self._modem_proxy.hang_up()
+        return xmlrpclib.True
                 
     def get_status(self, client_id):
         """Returns the number of clients and connection status.
 
-        The client parameter should uniquely identify the client, and
-        should be usable as a dictionary key. The IP address is
-        usually used.
-
         The values returned are:
 
-        current_clients -- The number of users sharing the connection
-        is_connected    -- 1 if connected, 0 otherwise
-        time_connected  -- Number of seconds connected
+        current_clients    -- The number of users sharing the connection
+        is_connected       -- True if connected, False otherwise
+        seconds_connected  -- Number of seconds connected
 
         """
         self._modem_proxy.refresh_client(client_id)
@@ -387,7 +353,6 @@ class App:
             print "Caught Ctrl-C, shutting down."
 
     
-
 if __name__ == "__main__":
     app = App()
     app.main()
