@@ -120,6 +120,21 @@ class DroppedDialogController(Controller):
 
         """
         cleanup_view()
+
+
+class FatalErrorController(Controller):
+    def ok_cb(self, cleanup_view):
+        """Called when the OK button is pressed.
+
+        Calls the cleanup_view function object, which should close the
+        dialog and the main window.
+
+        Then calls the model's server_disconnect() method to make sure
+        that the connection doesn't hang around after we've gone. -
+
+        """
+        self.model.server_disconnect()
+        cleanup_view()
         
 
 class MainWindowController(Controller):
