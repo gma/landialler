@@ -3,10 +3,6 @@ TODO
 
 Prioritised list of things to do:
 
-  - Re-write server with unit test coverage (in progress).
-
-  - Add logging support to server via Python's logging API.
-
   - Replace server's Makefile with distutils.
 
   - Improve support for trapping common errors (e.g. missing
