@@ -23,9 +23,9 @@
 
 """implements the GTK+ landialler user interface
 
-Most classes in this file are Tk specific sub classes of those in
+Most classes in this file are GTK+ specific sub classes of those in
 views.py that define the MVC views. Where this is not the case they
-are present simply to aid the Tk implementation. Please see views.py
+are present simply to aid the GTK+ implementation. Please see views.py
 for more documentation, especially for many of the methods, whose
 purpose is only documented in views.py.
 
@@ -36,39 +36,62 @@ from gtk import *
 import views
 
 
+main_win = None  # global variable so the Dialog class can refer to it too
+
+
 class Window:
     def __init__(self):
         self.window = None
+        self.window_type = WINDOW_TOPLEVEL
+        self.window = GtkWindow(self.window_type)
+
+    def draw(self):
+        self.window.set_border_width(5)
+        self.window.set_title(self.title)
+        self.window.set_policy(0, 0, 0)
+        self.vbox = GtkVBox()
+        self.window.add(self.vbox)
+
+    def add_button_box(self):
+        """Lays out a set of buttons in a button bar."""
+        bbox = GtkHButtonBox()
+        bbox.set_layout(BUTTONBOX_END)
+        self.create_button_store()
+        for tup in self.button_bar:
+            (name, pos, callback) = tup
+            button = GtkButton(name.capitalize())
+            button.connect("clicked", callback)
+            bbox.pack_end(button)
+        self.vbox.pack_start(bbox, expand=1, fill=1, padding=5)
 
 
-class Dialog:
+class Dialog(Window):
     def __init__(self):
-        self.window = None
+        Window.__init__(self)
+        self.window_type = WINDOW_DIALOG
 
     def destroy_cb(self, *args):
         self.window.hide()
-        mainquit()
 
     def draw(self):
         """Displays the dialog's message and buttons."""
-        self.window = win = GtkWindow(WINDOW_DIALOG)
-        win.connect('destroy', self.destroy_cb)
-        win.set_border_width(8)
-        win.set_title(self.title)
-        self.draw_buttons()
-        win.show()
-        mainloop()
-
-    def draw_buttons(self):
-        button = GtkButton("Disconnect")
-        button.connect("clicked", self.button_cb)
-        self.window.add(button)
-        button.show()
-
-
-class ButtonBar:
-    def __init__(self):
-        self.buttons = []
+        Window.draw(self)
+        global main_win
+        self.window.set_transient_for(main_win)
+        self.window.set_modal(1)
+        self.add_label()
+        self.add_separator()
+        self.add_button_box()
+        self.window.show_all()
+    
+    def add_label(self):
+        label = GtkLabel(self.text)
+        label.set_padding(6, 0)
+        self.vbox.pack_start(label, expand=1, fill=1, padding=5)
+    
+    def add_separator(self):
+        seperator = GtkHSeparator()
+        self.vbox.pack_start(seperator, expand=1, fill=1, padding=5)
 
 
 class ConnectingDialog(Dialog, views.ConnectingDialog):
@@ -76,13 +99,13 @@ class ConnectingDialog(Dialog, views.ConnectingDialog):
         Dialog.__init__(self)
         views.ConnectingDialog.__init__(self, model)
 
-    def button_cb(self, *args):
-        print "button_cb ..."
-
-
-class ConnectingButtonBar(ButtonBar):
-    def __init__(self, model):
-        pass
+    def cleanup(self, *args):
+        mainquit()
+    
+    def update(self):
+        if self.model.is_connected:
+            print "hiding window"
+            self.window.hide()
 
 
 class DisconnectDialog(Dialog, views.DisconnectDialog):
@@ -91,22 +114,68 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         views.DisconnectDialog.__init__(self, model)
 
 
-class MainWindow(views.MainWindow):
+class DroppedDialog(Dialog, views.DroppedDialog):
     def __init__(self, model):
+        Dialog.__init__(self)
+        views.DroppedDialog.__init__(self, model)
+    
+    def cleanup(self):
+        mainquit()
+    
+    def update(self):
+        if self.model.is_connected:
+            self.window.hide()
+
+
+class MainWindow(Window, views.MainWindow):
+    def __init__(self, model):
+        Window.__init__(self)
         views.MainWindow.__init__(self, model)
+        global main_win
+        main_win = self.window
+        
+        # GtkLabels that need updating from the update() method must be
+        # stored somewhere so that we can get at them.
+        self.status_label = {"is_connected": None, "current_users": None}
 
     def cleanup(self):
         """Destroy the main window."""
-        print "FIXME: call server_disonnect from cleanup()"
+        mainquit()
 
     def draw(self):
         """Display the main window."""
-        pass
+        Window.draw(self)
+        self.window.connect("destroy", mainquit)
+        self.add_status_frame()
+        self.add_button_box()
+        self.window.show_all()
+        mainloop()
 
-    def draw_labels(self):
+    def add_status_frame(self):
         """Draws frame containing status display."""
-        pass
+        frame = GtkFrame()
+        frame.set_shadow_type(SHADOW_ETCHED_IN)
+        table = GtkTable(rows=2, cols=2, homogeneous=0)
+        table.set_row_spacings(4)
+        table.set_col_spacings(10)
+        table.set_border_width(5)
+        
+        i = 0
+        for row in self.status_rows:
+            (col1, col2) = row
+            label1 = GtkLabel(str(col1))
+            label1.set_alignment(0, 0.5)
+            table.attach(label1, 0, 1, i, i+1)
+            label2 = GtkLabel(str(col2))
+            label2.set_alignment(1, 0.5)
+            if i == 0:
+                self.status_label["is_connected"] = label2
+            elif i == 1:
+                self.status_label["current_users"] = label2
+            else:
+                raise NotImplementedError, "too many status rows"
+            table.attach(label2, 1, 2, i, i+1)
+            i += 1
 
-    def draw_buttons(self):
-        """Lays out a set of buttons in a button bar."""
-        pass
+        frame.add(table)        
+        self.vbox.pack_start(frame, expand=1, fill=1, padding=5)
