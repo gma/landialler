@@ -38,11 +38,6 @@ class View:
         self.model = model
         self.model.attach(self)  # observe the model
 
-    def register_callbacks(self):
-        """Register the buttons with the callbacks (abstract method)."""
-        raise NotImplementedError, \
-              ("%s has not implemented register_callbacks()" % self.__class__)
-
     def show(self):
         """Create and display the user interface (abstract method)."""
         raise NotImplementedError, \
@@ -55,27 +50,7 @@ class View:
         automatically by the model's publish-subscribe system.
 
         """
-        pass
-
-
-class GoOnlineDialog(View):
-
-    """Ask the user if they wish to go online.
-
-    A short text message is displayed, with two buttons; Yes and
-    No. If Yes is clicked then the client asks the server to
-    connect. This dialog is only displayed if the server is not
-    already connected.
-
-    """
-    
-    def __init__(self, model):
-        View.__init__(self, model)
-        self.controller = controllers.GoOnlineDialogController(model, self)
-        self.title = "Go online?"
-        self.text = "The server is not currently online. Connect now?"
-        self.buttons = [("Yes", self.controller.yes_cb),
-                        ("No", self.controller.no_cb)]
+        print "%s.update()" % self.__class__
 
 
 class ConnectingDialog(View):
@@ -93,6 +68,16 @@ class ConnectingDialog(View):
         self.title = "Connecting..."
         self.text = "Please wait, connecting..."
         self.buttons = [("Cancel", self.controller.cancel_cb)]
+
+    def cleanup(self):
+        """Run by the controller when the Cancel button is pressed.
+
+        Should contain GUI toolkit specific code for closing the
+        dialog box.
+
+        """
+        pass
+        
 
 ##    def update(self):
 ##        """Check to see if the server is connected."""
@@ -122,6 +107,15 @@ class DisconnectDialog(View):
         self.buttons = [("Yes", self.controller.yes_cb),
                         ("No", self.controller.no_cb)]
 
+    def cleanup(self):
+        """Run by the controller when the Cancel button is pressed.
+
+        Should contain GUI toolkit specific code for closing the
+        dialog box.
+
+        """
+        pass
+
 
 class MainWindow(View):
 
@@ -137,16 +131,11 @@ class MainWindow(View):
     def __init__(self, model):
         View.__init__(self, model)
         self.controller = controllers.MainWindowController(model, self)
-        self.title = "LANdialler: connected"
-        self.label1 = "Connection status:"
-        self.label2 = "Current users:"
+        self.title = "LANdialler"
+        self.status_rows = [("Connection status:", "Offline"),
+                            ("Current users:", 0)]
         self.buttons = [("Disconnect", self.controller.disconnect_cb)]
 
     def format_time(self, seconds):
         """Returns formatted string for displaying time spent online."""
         return "(0:00:00)"
-
-    def update(self):
-        """Updates the status display."""
-        # make it update the time in the title bar too!
-        pass
