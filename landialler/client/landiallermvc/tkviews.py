@@ -124,10 +124,6 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         """
         self.window.destroy()
 
-    def update(self):
-        """Do nothing."""
-        pass
-
 
 class DroppedDialog(Dialog, views.DroppedDialog):
 
@@ -143,11 +139,29 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         """
         global root
         self.window.destroy()
+        #print "modal: %s" % self.modal
         root.quit()
 
     def update(self):
-        """Do nothing."""
-        pass
+        if self.model.is_connected:
+            self.window.destroy()
+        
+
+class FatalErrorDialog(Dialog, views.FatalErrorDialog):
+
+    def __init__(self, model, err_msg):
+        Dialog.__init__(self)
+        views.FatalErrorDialog.__init__(self, model, err_msg)
+
+    def cleanup(self):
+        """Cleans up after the OK button has been pressed.
+
+        Exits the application.
+
+        """
+        global root
+        self.window.destroy()
+        root.quit()
 
 
 class MainWindow(Window, views.MainWindow):
@@ -220,5 +234,6 @@ class MainWindow(Window, views.MainWindow):
             self.button_store['disconnect'].config(state=DISABLED)
 
         if (not self.model.is_connected) and self.model.was_connected:
+            self.model.was_connected = 0
             dialog = DroppedDialog(self.model)
             dialog.draw()
