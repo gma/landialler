@@ -444,11 +444,17 @@ class AutoDisconnecThreadTest(unittest.TestCase):
         """Check connection automatically dropped when there are no users"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
-        thread = landiallerd.AutoDisconnectThread(proxy)
-        thread.start()
-        self.let_thread_work()
-        thread.finished.set()
-        self.assert_(len(modem.getNamedCalls('hang_up')) > 0)
+        proxy.add_client('client-id')
+        try:
+            real_time = landiallerd.time
+            landiallerd.time = MockTime(proxy.CLIENT_TIMEOUT + 1)
+            thread = landiallerd.AutoDisconnectThread(proxy)
+            thread.start()
+            self.let_thread_work()
+            thread.finished.set()
+            self.assert_(len(modem.getNamedCalls('hang_up')) > 0)
+        finally:
+            landiallerd.time = real_time
 
     def test_connection_not_dropped_with_users(self):
         """Check connection not dropped when there are active users"""
