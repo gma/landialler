@@ -92,7 +92,7 @@ import os
 # import SimpleXMLRPCServer
 # import SocketServer
 # import sys
-# import threading
+import threading
 import time
 import xmlrpclib
 
@@ -169,42 +169,42 @@ class ModemProxy:
         self._clients = {}
         self._is_dialling = False  # TODO: remove/sort this attribute out
 
-    def _add_client(self, client_id):
+    def add_client(self, client_id):
         if client_id not in self._clients:
             self._clients[client_id] = time.time()
-
-    def refresh_client(self, client_id):
-        self._clients[client_id] = time.time()
-
-    def remove_old_clients(self):
-        for client_id, time_last_seen in self._clients.items():
-            if (time.time() - time_last_seen) > self.CLIENT_TIMEOUT:
-                self.hang_up(client_id)
-
-    def count_clients(self):
-        return len(self._clients.keys())
-
-    def dial(self, client_id):
-        self._add_client(client_id)
         if self.is_connected() or self._is_dialling:
             return True
         else:
             self._is_dialling = True
             return self._modem.dial()
 
-    def hang_up(self, client_id, all=False):
+    def refresh_client(self, client_id):
+        self._clients[client_id] = time.time()
+
+    def remove_client(self, client_id):
         if client_id in self._clients:
             del self._clients[client_id]
-        if self.is_connected() and (all or not self._clients):
-            return self._modem.hang_up()
+        if self.is_connected() and not self._clients:
+            return self.hang_up()
         else:
             return True
+
+    def remove_old_clients(self):
+        for client_id, time_last_seen in self._clients.items():
+            if (time.time() - time_last_seen) > self.CLIENT_TIMEOUT:
+                self.remove_client(client_id)
+
+    def count_clients(self):
+        return len(self._clients.keys())
 
     def is_connected(self):
         return self._modem.is_connected()
 
     def get_time_connected(self):
         return self._modem.timer.elapsed_seconds
+
+    def hang_up(self):
+        return self._modem.hang_up()
 
 
 class API:
@@ -239,7 +239,7 @@ class API:
         the actual connection will be successfully set up immediately.
 
         """
-        return self._modem_proxy.dial(client_id)
+        return self._modem_proxy.add_client(client_id)
 
     def disconnect(self, client_id, all=xmlrpclib.False):
         """Close the connection.
@@ -257,7 +257,11 @@ class API:
 
         """
         if self._modem_proxy.is_connected():
-            return self._modem_proxy.hang_up(client_id, bool(all))
+            if all:
+                self._modem_proxy.remove_client(client_id)
+                return self._modem_proxy.hang_up()
+            else:
+                return self._modem_proxy.remove_client(client_id)
         else:
             return True
                 
@@ -280,6 +284,25 @@ class API:
                 self._modem_proxy.is_connected(),
                 self._modem_proxy.get_time_connected())
     
+
+class AutoDisconnectThread(threading.Thread):
+
+    INTER_CHECK_PERIOD = 5  # seconds
+
+    def __init__(self, modem_proxy):
+        threading.Thread.__init__(self)
+        self._modem_proxy = modem_proxy
+        self.finished = threading.Event()
+        self.setDaemon(True)
+        self.setName('AutoDisconnect')
+
+    def run(self):
+        proxy = self._modem_proxy
+        while not self.finished.isSet():
+            if proxy.is_connected() and not proxy.count_clients():
+                self._modem_proxy.hang_up()
+            self.finished.wait(self.INTER_CHECK_PERIOD)
+
 
 # class CleanerThread(threading.Thread):
 

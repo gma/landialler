@@ -4,6 +4,7 @@
 import mock
 import time
 import unittest
+import threading
 import xmlrpclib
 
 import landiallerd
@@ -157,31 +158,31 @@ class ModemProxyTest(unittest.TestCase):
         """Check the modem's dial() method is only called once"""
         modem = mock.Mock()
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
-        proxy.dial('client-id-2')
+        proxy.add_client('client-id-1')
+        proxy.add_client('client-id-2')
         self.assertEqual(len(modem.getNamedCalls('dial')), 1)
 
     def test_dont_dial_if_connected(self):
         """Check proxy doesn't dial up if modem connected"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
+        proxy.add_client('client-id-1')
         self.assertEqual(len(modem.getNamedCalls('dial')), 0)
 
     def test_dial_return_code(self):
         """Check the proxied return code of modem's dial() method"""
         modem = mock.Mock({'dial': False})
         proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.dial('client-id-1'), False)
+        self.assertEqual(proxy.add_client('client-id-1'), False)
 
         modem = mock.Mock({'dial': True})
         proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.dial('client-id-1'), True)
+        self.assertEqual(proxy.add_client('client-id-1'), True)
 
         modem = mock.Mock({'dial': True, 'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.dial('client-id-1'), True)
-        self.assertEqual(proxy.dial('client-id-2'), True)
+        self.assertEqual(proxy.add_client('client-id-1'), True)
+        self.assertEqual(proxy.add_client('client-id-2'), True)
 
     def test_is_connected(self):
         """Check proxy knows when we're connected"""
@@ -197,72 +198,51 @@ class ModemProxyTest(unittest.TestCase):
         """Check proxy keeps track of number of connected clients"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
-        proxy.dial('client-id-2')
-        proxy.dial('client-id-2')
+        proxy.add_client('client-id-1')
+        proxy.add_client('client-id-2')
+        proxy.add_client('client-id-2')
         self.assertEqual(proxy.count_clients(), 2)
 
-        proxy.hang_up('client-id-1')
+        proxy.remove_client('client-id-1')
         self.assertEqual(proxy.count_clients(), 1)
-        proxy.hang_up('client-id-2')
+        proxy.remove_client('client-id-2')
         self.assertEqual(proxy.count_clients(), 0)
 
-        proxy.hang_up('bad-client-id')  # mustn't raise
+        proxy.remove_client('bad-client-id')  # mustn't raise
 
     def test_automatic_hang_up(self):
         """Check modem hung up when no clients remain"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
 
-        proxy.dial('client-id-1')
-        connected_calls = modem.getNamedCalls('is_connected')
-        self.assertEqual(len(connected_calls), 1)
+        proxy.add_client('client-id-1')
+        self.assertEqual(len(modem.getNamedCalls('is_connected')), 1)
 
-        proxy.hang_up('client-id-1')
-        connected_calls = modem.getNamedCalls('is_connected')
-        self.assertEqual(len(connected_calls), 2)
-        hang_up_calls = modem.getNamedCalls('hang_up')
-        self.assertEqual(len(hang_up_calls), 1)
+        proxy.remove_client('client-id-1')
+        self.assertEqual(len(modem.getNamedCalls('is_connected')), 2)
+        self.assertEqual(len(modem.getNamedCalls('hang_up')), 1)
 
     def test_force_hangup(self):
-        """Check the proxy can hang up all clients"""
+        """Check the proxy can forcefully drop modem connection"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
 
-        proxy.dial('client-id-1')
-        proxy.dial('client-id-2')
+        proxy.add_client('client-id-1')
+        proxy.add_client('client-id-2')
 
-        proxy.hang_up('client-id-1', all=True)
+        proxy.remove_client('client-id-1')
+        proxy.hang_up()
         self.assertEqual(len(modem.getNamedCalls('hang_up')), 1)
-        proxy.hang_up('bad-client-id', all=True)
-        self.assertEqual(len(modem.getNamedCalls('hang_up')), 2)
-
-    def test_only_hang_up_if_connected(self):
-        """Check proxy only hangs up modem when connected"""
-        modem = mock.Mock({'is_connected': False})
-        proxy = landiallerd.ModemProxy(modem)
-        proxy.hang_up('client-id-1', all=True)
-        self.assertEqual(len(modem.getNamedCalls('hang_up')), 0)
 
     def test_hang_up_return_code(self):
         """Check the proxied return code of the modem's hang_up() method"""
-        modem = mock.Mock({'is_connected': False})
+        modem = mock.Mock({'is_connected': True, 'hang_up': True})
         proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.hang_up('client-id-1'), True)
+        self.assertEqual(proxy.hang_up(), True)
 
         modem = mock.Mock({'is_connected': True, 'hang_up': False})
         proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.hang_up('client-id-1'), False)
-
-        modem = mock.Mock({'is_connected': True, 'hang_up': True})
-        proxy = landiallerd.ModemProxy(modem)
-        self.assertEqual(proxy.hang_up('client-id-1'), True)
-
-        modem = mock.Mock({'is_connected': True, 'hang_up': True})
-        proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
-        proxy.dial('client-id-2')
-        self.assertEqual(proxy.hang_up('client-id-1'), True)
+        self.assertEqual(proxy.hang_up(), False)
 
     def test_timer(self):
         """Check the proxy can return time spent online"""
@@ -276,7 +256,7 @@ class ModemProxyTest(unittest.TestCase):
         """Check the proxy forgets about old clients"""
         modem = mock.Mock()
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
+        proxy.add_client('client-id-1')
         self.assertEqual(proxy.count_clients(), 1)
         try:
             real_time = landiallerd.time
@@ -291,7 +271,7 @@ class ModemProxyTest(unittest.TestCase):
         """Check forgetting the last client drops the connection"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
+        proxy.add_client('client-id-1')
         try:
             real_time = landiallerd.time
             offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
@@ -307,7 +287,7 @@ class ModemProxyTest(unittest.TestCase):
         """Check refreshing a client updates time client was last seen"""
         modem = mock.Mock()
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
+        proxy.add_client('client-id-1')
         try:
             real_time = landiallerd.time
             offset = landiallerd.ModemProxy.CLIENT_TIMEOUT
@@ -403,9 +383,9 @@ class APITest(unittest.TestCase):
         modem = mock.Mock({'is_connected': True})
         modem.timer = MockTimer()
         proxy = landiallerd.ModemProxy(modem)
-        proxy.dial('client-id-1')
-        proxy.dial('client-id-2')
-        proxy.dial('client-id-3')
+        proxy.add_client('client-id-1')
+        proxy.add_client('client-id-2')
+        proxy.add_client('client-id-3')
         api = landiallerd.API(proxy)
         self.assertEqual(api.get_status('client-id-1')[0], 3)
 
@@ -435,15 +415,54 @@ class APITest(unittest.TestCase):
 
 class AutoDisconnecThreadTest(unittest.TestCase):
 
+    def tearDown(self):
+        for thread in threading.enumerate():
+            if 'AutoDisconnect' in thread.getName():
+                thread.join()
+
+    def let_thread_work(self):
+        time.sleep(0.01)
+
     def test_connection_dropped_no_users(self):
         """Check connection automatically dropped when there are no users"""
         modem = mock.Mock({'is_connected': True})
         proxy = landiallerd.ModemProxy(modem)
+        thread = landiallerd.AutoDisconnectThread(proxy)
+        thread.start()
+        self.let_thread_work()
+        thread.finished.set()
+        self.assert_(len(modem.getNamedCalls('hang_up')) > 0)
+
+    def test_connection_not_dropped_with_users(self):
+        """Check connection not dropped when there are active users"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.add_client('client-id')
+        thread = landiallerd.AutoDisconnectThread(proxy)
+        thread.start()
+        self.let_thread_work()
+        thread.finished.set()
+        self.assertEqual(len(modem.getNamedCalls('hang_up')), 0)
+
+    def test_thread_runs_continually(self):
+        """Check the auto disconnect thread runs continually"""
+        modem = mock.Mock({'is_connected': True})
+        proxy = landiallerd.ModemProxy(modem)
+        proxy.add_client('client-id')
+        thread = landiallerd.AutoDisconnectThread(proxy)
+        thread.start()
+        self.let_thread_work()
+        thread.finished.set()
+        self.assert_(len(modem.getNamedCalls('is_connected')) > 0)
+
+    def test_daemon_thread(self):
+        """Check the auto disconnect thread is a daemon thread"""
+        modem = mock.Mock()
+        proxy = landiallerd.ModemProxy(modem)
+        thread = landiallerd.AutoDisconnectThread(proxy)
+        self.assert_(thread.isDaemon())
+        thread.finished.set()
         
-
-#     def test_connection_not_dropped_with_users(self):
-#         """Check connection not dropped when there are active users"""
-
 
 if __name__ == '__main__':
     unittest.main()
