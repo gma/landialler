@@ -53,6 +53,9 @@ class Model:
         self.is_connected = 0
         self.current_users = 0
 
+        # attributes for maintaining state
+        self.was_connected = 0  # set to 1 if we have been online
+
     def attach(self, observer):
         """Attachs an observer to the publish-subscribe mechanism."""
         self._observers.append(observer)
@@ -96,6 +99,8 @@ class Model:
         
         """
         (self.current_users, self.is_connected) = self.server.get_status()
+        if self.is_connected == 1 and self.was_connected == 0:
+            self.was_connected = 1  # can now determine if connection dropped
         self.notify()
     
     def server_connect(self):
