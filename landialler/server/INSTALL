@@ -25,12 +25,12 @@ Next, download xmlrpclib from the URL above (xmlrpclib should be
 included with the main Python source tree from Python 2.2 onwards, so
 it may be in your source tree already). If not, copy both xmlrpclib.py
 and xmlrpcserver.py into Python's site-packages directory
-(e.g. c:\python21\lib\site-packages).
+(e.g. /usr/local/lib/python2.1/site-packages).
 
-Then copy the gmalib.py file into the same directory.
-
-To install the client itself and it's configuration file just copy
-them into a separate directory on your hard drive. Then create a new icon on your desktop 
+Then copy the gmalib.py file into the same directory and the
+landiallerd.py file into the standard directory for locally installed
+server software (e.g. /usr/local/sbin or similar). Copy the sample
+landiallerd.conf file into /usr/local/etc or /etc.
 
 In order to start the daemon every time your operating system is
 booted you may wish to edit the files in your /etc/init.id (or
@@ -57,7 +57,7 @@ software is successful in attempting to connect to the Internet.
 
 The default commands work on Debian GNU/Linux (the author's preferred
 environment) especially if the pppconfig package is used to set up the
-PPP parameters.
+PPP parameters (which makes life very easy for connecting to many ISPs).
 
 In future it may make sense to collect scripts that work well on
 different Operating Systems. If there is demand for this then they can
