@@ -150,9 +150,11 @@ class Model:
 
     def detach(self, observer):
         """Detachs an observer from the publish-subscribe mechanism."""
-        for observer in self._observers:
-            if observer is observer:
-                self._observers.remove[observer]
+        i = 0
+        for obs in self._observers:
+            if obs is observer:
+                del self._observers[i]
+            i += 1
 
     def choose_gui_toolkit(self):
         """Work out which GUI toolkit the View components should use.
