@@ -158,13 +158,9 @@ class Model:
         self.toolkit an alias to the module.
 
         """
-        # determine which GUI toolkit to use
-        # FIXME: Improve behaviour when no toolkit entry in config file
-        # so that gtk can be the default on Unix. :)
         try:
             toolkit = self.config.get("interface", "toolkit")
         except ConfigParser.Error:
-            print "bummer"
             if os.name == "posix":
                 toolkit = "gtk"
             else:
@@ -190,9 +186,9 @@ class Model:
         
         """
         (self.current_users, self.is_connected) = self.server.get_status()
+        self.notify()
         if self.is_connected == 1 and self.was_connected == 0:
             self.was_connected = 1  # can now determine if connection dropped
-        self.notify()
     
     def server_connect(self):
         """Instructs the server to start the dial up connection.
@@ -243,48 +239,81 @@ class App(gmalib.Logger):
         files.append("landialler.conf")
         config.read(files)
 
-        # connect to XML-RPC server
-        # (should this be in the model if we want to be able to pop up
-        # dialog's with error messages in, rather than print
-        # statements?)
-
+        # run the core of the application
         hostname = config.get("xmlrpcserver", "hostname")
         port = config.get("xmlrpcserver", "port")
         
+        server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
+        self.log_debug("connected to %s:%s" % (hostname, port))
+        self.model = Model(config, server)
+        window = self.model.toolkit.MainWindow(self.model)
+        window.draw()
+
         try:
-            server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
-            self.log_debug("connected to %s:%s" % (hostname, port))
-
-            # start the GUI
-            model = Model(config, server)
-            model.get_server_status()
-            window = model.toolkit.MainWindow(model)
-            if not model.is_connected:
-                dialog = model.toolkit.ConnectingDialog(model)
+            self.model.get_server_status()
+            if not self.model.is_connected:
+                dialog = self.model.toolkit.ConnectingDialog(self.model)
                 dialog.draw()
-                model.server_connect()
-            window.draw()  # starts event handling loop
+                self.model.server_connect()
+            window.start_event_loop()
 
-        except ConnectError, e:
-            print e
-
+        except ConnectError:
+            self.handle_connect_error()
+        except DisconnectError:
+            self.handle_disconnect_error()
+        except StatusError:
+            self.handle_status_error()
         except socket.error, e:
-            self.log_err("Error %d: %s" % (e.args[0], e.args[1]))
-            if e.args[0] == 111:  # connection refused
-                err_msg = "Sorry, I couldn't connect to the " + \
-                          "landialler server. Is it turned on?"
-                print err_msg
-                dialog = model.toolkit.FatalErrorDialog(model, err_msg)
-                dialog.draw()
-            else:
-                err_msg = "Socket error: %s (%d)" % (e.args[0], e.args[1])
-                dialog = model.toolkit.FatalErrorDialog(model, err_msg)
-                dialog.draw()
+            self.handle_socket_error(e)
+        except Exception, e:
+            self.handle_error(e)
 
-##        except Exception, e:
-##            print e
-##            dialog = model.toolkit.FatalErrorDialog(model, "Error: %s" % e)
-##            dialog.draw()
+    def handle_connect_error(self):
+        self.log_err("Error: ConnectError")
+        title = "Connect error"
+        msg = "There was a problem\nconnecting to the network."
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title,
+                                                message=msg)
+        dialog.draw()
+        dialog.start_event_loop()
+
+    def handle_disconnect_error(self):
+        self.log_err("Error: DisconnectError")
+        title = "Disconnect error"
+        msg = "There was a problem disconnecting\nfrom the network. " + \
+            "You may not have\nbeen disconnected properly!"
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title, 
+                                                message=msg)
+        dialog.draw()
+        dialog.start_event_loop()
+
+    def handle_socket_error(self, e):
+        self.log_err("Error: socket error")
+        msg = "Socket error: %s (%d)" % (e.args[1], int(e.args[0]))
+        self.log_err(msg)
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, message=msg)
+        dialog.draw()
+        dialog.start_event_loop()
+
+    def handle_status_error(self):
+        self.log_err("Error: StatusError")
+        title = "Error"
+        msg = "LANdialler is unable to determine the\nstatus of your " + \
+            "network connection.\n\nPlease check the connection and\n" + \
+            "the server and try again."
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title, 
+                                                message=msg)
+        dialog.draw()
+        dialog.start_event_loop()
+
+    def handle_error(self, e):
+        self.log_err("Error: %s" % e)
+        title = "Error"
+        msg = "Error: %s" % e
+        dialog = self.model.toolkit.FatalErrorDialog(self.model, title=title, 
+                                                message=msg)
+        dialog.draw()
+        dialog.start_event_loop()
 
 
 if __name__ == "__main__":
