@@ -1,4 +1,4 @@
-# views.py - abstract View class (see the MVC pattern)
+# Observer.py - a base class for the observer design pattern
 #
 # Copyright (C) 2001 Graham Ashton
 #

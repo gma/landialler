@@ -18,4 +18,32 @@
 #
 # $Id$
 
-__all__ = ["controllers", "views", "gtkviews", "tkviews"]
+
+import exceptions
+
+
+__all__ = ["Model", "controllers", "views", "gtkviews", "tkviews"]
+
+
+class ConnectError(exceptions.Exception):
+
+    """Raised if the remote connect procedure fails."""
+    
+    def __init__(self, args=None):
+        self.args = args
+
+
+class DisconnectError(exceptions.Exception):
+
+    """Raised if the remote disconnect procedure fails."""
+
+    def __init__(self, args=None):
+        self.args = args
+
+
+class StatusError(exceptions.Exception):
+
+    """Raised if the remote get_status procedure fails."""
+
+    def __init__(self, args=None):
+        self.args = args
