@@ -191,13 +191,9 @@ class MainWindow(Window):
         self._set_status_disconnected()
         self._seconds_online = 0
         self._last_check_time = None
-        gtk.timeout_add(self.CHECK_STATUS_PERIOD, self._check_status)
+        self._status_timeout = None
         gtk.timeout_add(self.UPDATE_TIMER_PERIOD, self._update_timer)
 
-    def _check_status(self):
-        self._modem.get_status()
-        return gtk.TRUE
-        
     def update(self):
         self._last_check_time = time.time()
         if self._modem.is_connected:
@@ -240,7 +236,15 @@ class MainWindow(Window):
             pass
         gtk.main_quit()
 
+    def _check_status(self):
+        self._modem.get_status()
+        return gtk.TRUE
+        
     def on_connect_button_clicked(self, *args):
+        if self._status_timeout:
+            gtk.timeout_remove(self._status_timeout)
+        self._status_timeout = gtk.timeout_add(
+            self.CHECK_STATUS_PERIOD, self._check_status)
         self._modem.dial()
         dialog = ConnectingDialog(self._modem)
         dialog.show()
