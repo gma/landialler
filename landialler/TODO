@@ -1,8 +1,19 @@
 TODO
 ----
 
-This file documents upcoming fixes/things on my mind/stuff I'd like to
-do, in no particular order.
+This is release 0.2pre1. The following updates should make it into
+release 0.2 proper:
+
+  - Add timeout support to the client during connections.
+
+  - Add retry/cancel dialog if the timeout is reached.
+
+  - Handle two client's trying to start the connection at the same
+    more gracefully.
+
+These changes will come along later, probably for the 1.0 release.
+
+  - Add retry/cancel dialog if the connection drops out.
 
   - Add a thread to the server to keep better track of the number of
     current users, so that the server can close the connection itself
