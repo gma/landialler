@@ -160,6 +160,7 @@ class Modem:
         else:
             return False
 
+
 class ModemProxy:
 
     CLIENT_TIMEOUT = 30
@@ -307,6 +308,11 @@ class AutoDisconnectThread(threading.Thread):
             self.finished.wait(self.INTER_CHECK_PERIOD)
 
 
+class ReusableSimpleXMLRPCServer(SimpleXMLRPCServer.SimpleXMLRPCServer):
+
+     allow_reuse_address = True
+
+ 
 class App:
 
     def __init__(self):
@@ -337,9 +343,6 @@ class App:
         """Become a daemon process (POSIX only)."""
         if not self._become_daemon:
             return
-        if os.name != "posix":
-            print "unable to run as a daemon (POSIX only)"
-            return None
 
         # See "Python Standard Library", pg. 29, O'Reilly, for more
         # info on the following.
@@ -370,12 +373,13 @@ class App:
         self.check_platform()
         try:
             self.getopt()
-#             self.daemonise()
+            self.daemonise()
         except getopt.GetoptError, e:
             sys.stderr.write("%s\n" % e)
         
         addr = ('', self._config.getint('general', 'port'))
-        server = SimpleXMLRPCServer.SimpleXMLRPCServer(addr, logRequests=False)
+        server = ReusableSimpleXMLRPCServer(addr, logRequests=False)
+        server.allow_reuse_address = True
         server.register_instance(API(self._modem_proxy))
         try:
             server.serve_forever()
