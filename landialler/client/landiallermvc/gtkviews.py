@@ -47,11 +47,13 @@ class Window:
         self.window = GtkWindow(self.window_type)
 
     def draw(self):
-        self.window.set_border_width(5)
+        self.window.set_border_width(2)
         self.window.set_title(self.title)
         self.window.set_policy(0, 0, 0)  # fixed size window
+        hbox = GtkHBox()
         self.vbox = GtkVBox()
-        self.window.add(self.vbox)
+        hbox.pack_start(self.vbox, expand=1, fill=1, padding=6)
+        self.window.add(hbox)
 
     def add_button_box(self):
         """Lays out a set of buttons in a button bar."""
@@ -60,12 +62,12 @@ class Window:
         self.create_button_store()
         for tup in self.button_bar:
             (name, pos, callback) = tup
-            button = GtkButton(name.capitalize())
+            button = GtkButton(name)
             button.connect("clicked", self.callback_wrapper, callback)
             bbox.pack_end(button)
-            key = name.lower()
+            key = name
             self.button_store[key] = button  # so we can configure it
-        self.vbox.pack_start(bbox, expand=1, fill=1, padding=5)
+        self.vbox.pack_start(bbox, expand=1, fill=1, padding=6)
 
     def callback_wrapper(self, widget, controller_callback):
         """Integrates the controllers' callback functions with GTK+.
@@ -112,11 +114,11 @@ class Dialog(Window):
     def add_label(self):
         label = GtkLabel(self.text)
         label.set_padding(6, 0)
-        self.vbox.pack_start(label, expand=1, fill=1, padding=5)
+        self.vbox.pack_start(label, expand=1, fill=1, padding=8)
     
     def add_separator(self):
         seperator = GtkHSeparator()
-        self.vbox.pack_start(seperator, expand=1, fill=1, padding=5)
+        self.vbox.pack_start(seperator, expand=1, fill=1, padding=6)
 
 
 class ConnectingDialog(Dialog, views.ConnectingDialog):
@@ -225,7 +227,7 @@ class MainWindow(Window, views.MainWindow):
             i += 1
 
         frame.add(table)        
-        self.vbox.pack_start(frame, expand=1, fill=1, padding=5)
+        self.vbox.pack_start(frame, expand=1, fill=1, padding=6)
     
     def update(self):
         users_label = self.status_label["current_users"]
@@ -234,10 +236,10 @@ class MainWindow(Window, views.MainWindow):
         users_label.set_text(str(self.model.current_users))
         if self.model.is_connected:
             status_label.set_text("Online")
-            #self.button_store["disconnect"].set_state(STATE_NORMAL)
+            #self.button_store["Disconnect"].set_state(STATE_NORMAL)
         else:
             status_label.set_text('Offline')
-            #self.button_store["disconnect"].set_state(STATE_INSENSITIVE)
+            #self.button_store["Disconnect"].set_state(STATE_INSENSITIVE)
 
         if (not self.model.is_connected) and self.model.was_connected:
             self.model.was_connected = 0
