@@ -7,7 +7,7 @@ INSTALL = /usr/bin/install -c
 
 # variables for the tardist target
 VERS = 0.1
-SRC = AUTHORS COPYING INSTALL Makefile README TODO \
+SRC = AUTHORS COPYING INSTALL Makefile MANIFEST README TODO \
       landiallerd.conf landiallerd.py
 
 install:
