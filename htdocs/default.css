@@ -7,7 +7,7 @@ body {
 }
 
 #body {
-	margin: 90px 230px 0px 10px;
+	margin: 90px 210px 0px 10px;
 	padding: 0px;
 }
 
@@ -91,7 +91,7 @@ a:active {
 	text-align: left;
 
 	background: url("img/hdr/hills01.jpg") no-repeat;
-	background-color: #99ccff;
+	background-color: #eeeeee;
 	border-bottom: 1px solid #666666;
 }
 
@@ -130,9 +130,10 @@ a:active {
 }
 
 #hdrTitle {
-	height: 48px;
-	padding: 10px 10px 0px 0px;
+	padding: 8px 10px 10px 10px;
 	font-weight: bold;
+	font-size: 28px;
+	color: #999999;
 }
 
 
