@@ -4,9 +4,16 @@ TODO
 This file documents upcoming fixes/things on my mind/stuff I'd like to
 do, in no particular order.
 
+  - Add support for counting the number of concurrent users and how
+    long the server has been online to the API.
+
   - Keep track of the number of clients that have requested
     connectivity so that the Net connection isn't dropped until the
     last landialler client has been closed.
+
+  - Allow any client to drop the connection, irrespective of whether
+    other users are still online or not (e.g. if they want to use the
+    phone).
 
   - Drastically improve the interface so that the user is provided
     with some proper feedback, both whilst the connection is being setup
