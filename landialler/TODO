@@ -7,14 +7,16 @@ Prioritised list of things to do:
 
   - Port XML-RPC code to later versions of Python.
 
-  - Replace server's Makefile with distutils.
+  - Port GTK support from version 1 to version 2.
 
   - Merge useful parts of gmalib into landialler, use Python's new
     logging API.
 
-  - Write a client in another language.
+  - Replace server's Makefile with distutils. Maybe.
 
   - Display how long the server has been online.
+
+  - Write a client in another language, maybe Java.
 
   - Put retry/cancel buttons on the dropped connection dialog.
 
