@@ -48,12 +48,7 @@ all users have unregistered), or to forceably terminate the
 connection, disconnecting all other users at the same time.
 
 If the connection drops out at any time (let's face it, it can happen
-a lot with modems) a dialog box pops up alerting the user, after which
-landialler.py exits (at some point in the future there may be an
-option for the user to attempt to reconnect instead).
-
-All client-server communication takes place via the LANdialler XML-RPC
-API, which is covered in landiallerd.py's documentation.
+a lot with modems) a dialog box pops up alerting the user.
 
 The configuration file tells landialler how to contact the server. A
 sample configuration file looks like this:
@@ -65,10 +60,7 @@ sample configuration file looks like this:
 The configuration file should be called "landialler.conf". On POSIX
 operating systems (e.g. Unix or similar) it can either be placed in
 /usr/local/etc, or the current directory. On other operating systems
-it must be placed in the current directory.
-
-On POSIX operating systems error, informational and debugging messages
-are written to syslog.
+it must be placed in the same directory as landialler.py.
 
 More information on LANdialler is available at the project home page:
 
@@ -149,7 +141,7 @@ class RemoteModem(Observable):
         self.notify_observers()
 
 
-class WidgetWrapper:
+class WidgetWrapper(object):
 
     def __init__(self, root_widget):
         self._root_widget_name = root_widget
@@ -307,7 +299,7 @@ class DisconnectDialog(Window):
         self.on_cancel_button_clicked()
 
 
-class App:
+class App(object):
 
     def __init__(self):
         self._config = ConfigParser.ConfigParser()
