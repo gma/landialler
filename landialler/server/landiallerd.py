@@ -78,7 +78,7 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
-__version__ = "0.2pre2"
+__version__ = "0.2pre3"
 
 
 import getopt
@@ -356,6 +356,7 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
         """
         my_api = ["connect", "disconnect", "get_status"]
         if not method in my_api:
+            self.log_err("Unknown method name: %s" % method)
             raise xmlrpclib.Fault, "Unknown method name"
         else:
             if method == "get_status":
@@ -364,6 +365,8 @@ class MyHandler(xmlrpcserver.RequestHandler, gmalib.Logger):
             elif method == "disconnect":
                 (host, port) = self.client_address
                 params = (params[0], host)
+            self.log_debug("called %s(%s)" % \
+                           (method, ", ".join(map(str, params))))
             return apply(eval("api_" + method), params)
 
     def log_request(self, code="-", size="-"):
@@ -404,7 +407,6 @@ class App(gmalib.Daemon):
 
     def main(self):
         """Read configuration, start the XML-RPC server."""
-        print "starting up"
         self.getopt()
         self.config = gmalib.SharedConfigParser()  # pre-cached
         if self.run_as_daemon:
@@ -430,19 +432,18 @@ if __name__ == "__main__":
         print "Terminating - error reading config file: %s" % e
         sys.exit()
 
+    # global variables for maintaining consistent logging across classes
+    debug = 0
+    logfile = "landiallerd.log"
+    use_syslog = 1
+
     # global variables for maintaining state
+    mutex = threading.RLock()  # control access to the following globals
     user_tracker = {}  # dict of all users' IP/port numbers
     current_users = 0  # number of users online (determined from user_tracker)
     is_connected = 0   # is the connection currently up?
     now_connecting = 0 # is the connection coming up?
     
-    # global variables for consistent logging
-    debug = 0
-    logfile = "landiallerd.log"
-    use_syslog = 1
-
-    mutex = threading.RLock()  # control access to *ALL* the above global vars
-
     cleaner = CleanerThread()
     cleaner.start()
     
