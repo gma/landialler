@@ -18,4 +18,4 @@
 #
 # $Id$
 
-__all__ = ["Controllers", "Views", "GtkViews", "TkViews"]
+__all__ = ["controllers", "views", "gtkviews", "tkviews"]
