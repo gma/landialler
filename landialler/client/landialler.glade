@@ -221,7 +221,7 @@
 	      <child>
 		<widget class="GtkLabel" id="label5">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">The connection will be dropped when there are no active users remaining.</property>
+		  <property name="label" translatable="yes">The connection will be dropped when there are no users remaining.</property>
 		  <property name="use_underline">False</property>
 		  <property name="use_markup">True</property>
 		  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -242,7 +242,6 @@
 	      <child>
 		<widget class="GtkCheckButton" id="disconnect_all">
 		  <property name="visible">True</property>
-		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes">Disconnect _all users</property>
 		  <property name="use_underline">True</property>
