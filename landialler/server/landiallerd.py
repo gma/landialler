@@ -278,6 +278,7 @@ class App(gmalib.Daemon):
 #   current_users  -- the number of people sharing the connection
 #   user_tracker   -- dict of clients and when they checked the status
 #   is_connected   -- whether or not the server is connected
+#   now_connecting -- whether or not another client has a connection pending
 
 
 def api_connect():
@@ -295,21 +296,26 @@ def api_connect():
     successfully set up by the script.
 
     """
-    global mutex, is_connected
+    global mutex, is_connected, now_connecting
 
     mutex.acquire()
-    do_nothing = is_connected  # do_nothing var just localises mutex code
+    do_nothing1 = is_connected  # do_nothing vars just localise mutex code
+    do_nothing2 = now_connecting
     mutex.release()
     
-    if do_nothing:
-        return xmlrpclib.True
-    
+    if do_nothing1:
+        return xmlrpclib.True   # already connected
+    elif do_nothing2:
+        return xmlrpclib.False  # another client started a connection, not up yet
     else:
         config = gmalib.SharedConfigParser()
         cmd = config.get("commands", "connect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
 
         if rval == 0:
+            mutex.acquire()
+            now_connecting = 1
+            mutex.release()
             return xmlrpclib.True
         else:
             return xmlrpclib.False
@@ -330,7 +336,7 @@ def api_disconnect(all='no', client=None):
     should be usable as a dictionary key.
 
     """
-    global mutex, current_users, is_connected, user_tracker
+    global mutex, current_users, is_connected, now_connecting, user_tracker
     
     if (current_users > 1) and (all <> 'yes'):  # other users still online
         del user_tracker[client]
@@ -343,6 +349,7 @@ def api_disconnect(all='no', client=None):
         if rval == 0:
             mutex.acquire()
             is_connected = 0
+            now_connecting = 0
             user_tracker.clear()
             mutex.release()
             return xmlrpclib.True
@@ -357,7 +364,7 @@ def api_get_status(client):
     is_connected  -- 1 if connected, 0 otherwise
 
     """
-    global mutex, current_users, is_connected, user_tracker
+    global mutex, current_users, is_connected, now_connecting, user_tracker
 
     mutex.acquire()
 
@@ -371,6 +378,7 @@ def api_get_status(client):
     if rval == 0:
         current_users = len(user_tracker.keys())
         is_connected = 1
+        now_connecting = 0
     else:
         current_users = 0  # ignore contents of user_tracker, we're not online
         is_connected = 0
@@ -389,6 +397,7 @@ if __name__ == '__main__':
     user_tracker = {}  # dict of all users' IP/port numbers
     current_users = 0  # number of users online (determined from user_tracker)
     is_connected = 0   # is the connection currently up?
+    now_connecting = 0 # is the connection coming up?
 
     mutex = threading.RLock()  # control access to *ALL* the above global vars
 
@@ -396,6 +405,6 @@ if __name__ == '__main__':
     cleaner.start()
     
     app = App()
-    # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
+    app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
     app.debug = 1
     app.main()
