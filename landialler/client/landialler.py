@@ -42,11 +42,19 @@ class UserInterface(gmalib.Logger):
 
         """
         self.log_err(text)
-        tkMBox.showerror("LANdialler: Error", text)
+        tkMBox.showerror("Error", text)
 
     def showinfo(self, caption, text):
         """Display an info dialog with an OK button."""
-        tkMBox.showinfo("LANdialler: %s" % caption, text)
+        tkMBox.showinfo(caption, text)
+
+    def askretrycancel(self, text):
+        """Display a dialog with a question and retry/cancel buttons.
+
+        Return 1 if retry is clicked, 0 if cancel is clicked.
+
+        """
+        return tkMBox.askretrycancel("Retry?", text)
 
     def askyesno(self, caption, text):
         """Ask if an operation should proceed.
@@ -57,111 +65,54 @@ class UserInterface(gmalib.Logger):
         Returns 1 if the user presses the Yes button, 0 otherwise.
 
         """
-        rval = tkMBox.askyesno("LANdialler: %s" % caption, text)
-        return rval
+        return tkMBox.askyesno(caption, text)
 
 
 class App(gmalib.Application):
     def __init__(self):
-        """Calls the base class's initialisor."""
+        """Calls the base class's initialisor, initialises user interface."""
 
         gmalib.Application.__init__(self)
-
-    def read_config(self):
-        """Map config file settings to instance attributes.
-
-        This really ought to be sorted out so that load_sys_config()
-        can do everything for us. Making a mental note to fix the
-        library...
-
-        """
-        self.sys_config_files = ["/usr/local/etc/landialler.conf",
-                                 "c:\landialler\landialler.conf",
-                                 os.getcwd() + os.sep + "landialler.conf"]
-        self.load_sys_config()
-
-        try:
-            self.server_host = self.config.get("server", "hostname")
-            self.server_port = self.config.get("server", "port")
-
-        except ConfigParser.NoOptionError, e:
-            self.ui.showerror("Error reading config file: %s" % e)
-            sys.exit()
-    
-    def main(self):
         self.ui = UserInterface()
 
+    def main(self):
+        """The main method, defining the landialler flow control.
+
+        Begins by reading the landialler.conf configuration file. Then
+        connects to the XML-RPC server (as specified in the config
+        file).
+
+        Then it calls the need_to_go_online() and go_online() methods
+        to control the server's dial up connection.
+
+        """
+
         try:
-            # load config file data into attributes
-            self.read_config()
+            # load config file
+            self.config = ConfigParser.ConfigParser()
+            self.config.read("landialler.conf")
+            hostname = self.config.get("xmlrpcserver", "hostname")
+            port = int(self.config.get("xmlrpcserver", "port"))
 
-            # connect to the server and attempt to dial up if necessary
-            self.client = xmlrpclib.Server("http://%s:%s/" %
-                                           (self.server_host, self.server_port))
-            self.log_info("connected to %s:%s" % (self.server_host,
-                                                   self.server_port))
+            # connect to the XML-RPC server
+            self.client = xmlrpclib.Server("http://%s:%d/" % (hostname, port))
+            self.log_info("connected to %s:%d" % (hostname, port))
 
-            response = self.client.is_connected()
-            if response.value == 1:
-                self.ui.showinfo("Online", "You are already online")
+            if self.need_to_go_online() == 0:
                 sys.exit()
-            else:
-                go_online = self.ui.askyesno("Go online?",
-                                             "Would you like to go online?")
-                if not go_online:
-                    sys.exit()
 
-                print "starting connection"
-                self.client.connect()
-
-                online = 0        # are we online?
-                paused = 0        # seconds waited for so far
-                max_pause = 120  # seconds to wait before giving up
-
-                response = self.client.is_connected()
-                while (response.value != 1) and (paused < max_pause):
-                    print "checking connection (%d secs)" % paused
-                    response = self.client.is_connected()
-                    if response.value == 1:
-                        self.ui.showinfo("connected!", "You are now online")
-                        break
-                    else:
-                        time.sleep(5)
-                        paused += 5
-
-                # The next OK button shouldn't be clicked until we're
-                # ready to disconnect from the Internet. It would be
-                # better if it was a button labelled Disconnect, and
-                # the dialog was minimisable. We really need to extend
-                # the UserInterface class so that it can support
-                # simple dialogs with an array of buttons...
-                
-                if response.value == 1:
-                    self.ui.showinfo("Disconnect?", "Click OK to disconnect")
+            success = 0
+            while success == 0:  # keep trying until successful or user cancels
+                success = self.go_online()
+                if success:
+                    # next dialog should have disconnect button (not OK),
+                    # and be minimisable
+                    self.ui.showinfo("Connected", "Click OK to disconnect")
                     print "closing connection"
                     self.client.disconnect()
                 else:
-                    print "cancelling connection attempt"
-                    self.client.disconnect()
-                    # should be able to click retry here...
-                    self.ui.showinfo("Timed out", "Sorry, connection timed out")
-
-                # Now sit in a loop while attempting to disconnect,
-                # checking the status as we go. Disconnecting should
-                # be immediate, but we wait for it to timeout just in
-                # case.
-                
-                paused = 0
-                response = self.client.is_connected()
-                while (response.value == 1) and (paused < max_pause):
-                    time.sleep(5)
-                    paused += 5
-                    print "checking connection (%d secs)" % paused
-                    response = self.client.is_connected()
-                if response.value == 1:
-                    self.ui.showerror("Unable to disconnect. " + \
-                                      "You are probably still online.")
-                sys.exit()
+                    if self.ui.askretrycancel("Connection timed out") == 0:
+                        break  # user clicked cancel
 
         except socket.error, e:
             self.log_err("Error %d: %s" % (e.args[0], e.args[1]))
@@ -170,6 +121,61 @@ class App(gmalib.Application):
                                   "landialler server. Is it turned on?")
             else:
                 self.ui.showerror("%d: %s" % (e.args[0], e.args[1]))
+
+    def need_to_go_online(self):
+        """Determines whether we need to initiate a dial up connection.
+
+        Asks the user to confirm that they wish to go online. If they
+        do, and the server is not already dialled up, returns 1.
+        Otherwise returns 0.
+
+        """
+        go_online = self.ui.askyesno("Go online?", "Would you like to go online?")
+        if go_online:
+            response = self.client.is_connected()  # is the server dialled up?
+            if response.value == 1:
+                self.ui.showinfo("Connected", "You are already online")
+            else:
+                return 1
+
+        return 0  # user clicked "No" or already online
+
+    def go_online(self):
+        """Instructs the server to start the dial up connection.
+
+        Initiaties the dial up connection by calling the XML-RPC
+        connect() method. Waits up to "timeout" seconds for the
+        connection to come up, checking the connection status with the
+        XML-RPC is_connected() method every 5 seconds. The timeout
+        parameter must be set in the landialler.conf configuration
+        file, and defaults to 120 seconds.
+
+        Returns 1 if the connection comes up inside timeout secs,
+        0 otherwise.
+
+        """
+        
+        self.log_info("starting connection")
+        self.client.connect()
+
+        online = 0        # are we online?
+        paused = 0        # seconds waited for so far
+        timeout = int(self.config.get("dialup", "timeout"))
+
+        response = self.client.is_connected()
+        while (response.value != 1) and (paused <= timeout):
+            time.sleep(5)
+            paused += 5
+            print "checking connection (%d secs)" % paused
+            response = self.client.is_connected()
+            if response.value == 1:
+                break
+
+        if response.value == 0:  # timed out before we got online
+            self.log_info("cancelling connection attempt")
+            self.client.disconnect()
+
+        return response.value
 
 
 if __name__ == '__main__':
