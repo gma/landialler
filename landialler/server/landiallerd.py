@@ -566,6 +566,27 @@ class Modem:
         return os.system(command) == 0
 
 
+class ModemProxy:
+
+    def __init__(self, modem):
+        self._modem = modem
+        self._clients = {}
+        self._is_dialling = False
+
+    def _count_client(self, client_id):
+        if client_id not in self._clients:
+            self._clients[client_id] = 1
+            
+    def dial(self, client_id):
+        self._count_client(client_id)
+        if not self._is_dialling:
+            self._is_dialling = True
+            return self._modem.dial()
+
+    def count_clients(self):
+        return len(self._clients.keys())
+        
+
 if __name__ == "__main__":
     app = App()
     app.main()
