@@ -12,6 +12,11 @@
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <signal name="delete_event" handler="on_main_window_delete_event" last_modification_time="Sun, 07 Mar 2004 22:21:54 GMT"/>
 
   <child>
@@ -83,18 +88,6 @@
 	  <property name="spacing">10</property>
 
 	  <child>
-	    <widget class="GtkButton" id="connect_button">
-	      <property name="visible">True</property>
-	      <property name="can_default">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label" translatable="yes">Connect...</property>
-	      <property name="use_underline">True</property>
-	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <signal name="clicked" handler="on_connect_button_clicked" last_modification_time="Sun, 07 Mar 2004 23:27:52 GMT"/>
-	    </widget>
-	  </child>
-
-	  <child>
 	    <widget class="GtkButton" id="disconnect_button">
 	      <property name="visible">True</property>
 	      <property name="sensitive">False</property>
@@ -103,7 +96,21 @@
 	      <property name="label" translatable="yes">Disconnect...</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="on_disconnect_button_clicked" last_modification_time="Sun, 07 Mar 2004 23:27:58 GMT"/>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="connect_button">
+	      <property name="visible">True</property>
+	      <property name="can_default">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label" translatable="yes">Connect</property>
+	      <property name="use_underline">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="on_connect_button_clicked" last_modification_time="Sun, 07 Mar 2004 23:27:52 GMT"/>
 	    </widget>
 	  </child>
 	</widget>
@@ -119,12 +126,17 @@
 
 <widget class="GtkDialog" id="disconnect_dialog">
   <property name="border_width">6</property>
-  <property name="title" translatable="yes"></property>
+  <property name="title" translatable="yes">Disconnect</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER</property>
   <property name="modal">True</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="delete_event" handler="on_disconnect_dialog_delete_event" last_modification_time="Sat, 13 Mar 2004 01:13:27 GMT"/>
 
@@ -148,6 +160,7 @@
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
 	      <signal name="clicked" handler="on_cancel_button_clicked" last_modification_time="Sat, 13 Mar 2004 01:11:51 GMT"/>
 	    </widget>
@@ -161,6 +174,7 @@
 	      <property name="label" translatable="yes">_Disconnect</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">0</property>
 	      <signal name="clicked" handler="on_disconnect_button_clicked" last_modification_time="Sat, 13 Mar 2004 01:11:55 GMT"/>
 	    </widget>
@@ -207,11 +221,7 @@
 	      <child>
 		<widget class="GtkLabel" id="label5">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">&lt;span size=&quot;larger&quot; weight=&quot;bold&quot;&gt;Disconnect?&lt;/span&gt;
-
-Click &quot;Disconnect&quot; to remove yourself from the list of active users. The connection will be dropped when there are no active users remaining.
-
-Select &quot;Disconnect all users&quot; to drop the connection immediately.</property>
+		  <property name="label" translatable="yes">The connection will be dropped when there are no active users remaining.</property>
 		  <property name="use_underline">False</property>
 		  <property name="use_markup">True</property>
 		  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -232,10 +242,12 @@ Select &quot;Disconnect all users&quot; to drop the connection immediately.</pro
 	      <child>
 		<widget class="GtkCheckButton" id="disconnect_all">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes">Disconnect _all users</property>
 		  <property name="use_underline">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
 		  <property name="active">False</property>
 		  <property name="inconsistent">False</property>
 		  <property name="draw_indicator">True</property>
@@ -272,6 +284,11 @@ Select &quot;Disconnect all users&quot; to drop the connection immediately.</pro
   <property name="modal">True</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="delete_event" handler="on_dropped_dialog_delete_event" last_modification_time="Sun, 21 Mar 2004 19:03:32 GMT"/>
 
@@ -294,6 +311,7 @@ Select &quot;Disconnect all users&quot; to drop the connection immediately.</pro
 	      <property name="label">gtk-close</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-7</property>
 	      <signal name="clicked" handler="on_close_button_clicked" last_modification_time="Sun, 21 Mar 2004 19:03:24 GMT"/>
 	    </widget>
@@ -336,8 +354,7 @@ Select &quot;Disconnect all users&quot; to drop the connection immediately.</pro
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">&lt;span weight=&quot;bold&quot; size=&quot;larger&quot;&gt;Connection Dropped&lt;/span&gt;
 
-You have been disconnected.
-Perhaps another user hung up?</property>
+You have been disconnected.</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -373,6 +390,11 @@ Perhaps another user hung up?</property>
   <property name="modal">True</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="delete_event" handler="on_connecting_dialog_delete_event" last_modification_time="Sun, 07 Mar 2004 23:30:27 GMT"/>
 
@@ -395,6 +417,7 @@ Perhaps another user hung up?</property>
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
 	      <signal name="clicked" handler="on_cancel_button_clicked" last_modification_time="Sun, 07 Mar 2004 23:30:20 GMT"/>
 	    </widget>
@@ -468,6 +491,11 @@ Perhaps another user hung up?</property>
   <property name="modal">True</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <signal name="delete_event" handler="on_exception_dialog_delete_event" last_modification_time="Mon, 15 Mar 2004 09:34:08 GMT"/>
 
   <child>
@@ -545,6 +573,7 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
 	      <property name="label" translatable="yes">Details &gt;&gt;</property>
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="on_details_button_clicked" last_modification_time="Mon, 15 Mar 2004 08:55:34 GMT"/>
 	    </widget>
 	  </child>
@@ -559,6 +588,7 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
 	      <property name="label">gtk-close</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="on_close_button_clicked" last_modification_time="Mon, 15 Mar 2004 08:55:44 GMT"/>
 	    </widget>
 	  </child>
@@ -585,6 +615,8 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="editable">True</property>
+	      <property name="overwrite">False</property>
+	      <property name="accepts_tab">True</property>
 	      <property name="justification">GTK_JUSTIFY_LEFT</property>
 	      <property name="wrap_mode">GTK_WRAP_NONE</property>
 	      <property name="cursor_visible">True</property>
@@ -616,6 +648,11 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
   <property name="modal">True</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="delete_event" handler="on_error_dialog_delete_event" last_modification_time="Mon, 15 Mar 2004 09:37:26 GMT"/>
 
@@ -638,6 +675,7 @@ An unexpected error has occurred. Click &quot;Details &gt;&gt;&quot; for more in
 	      <property name="label">gtk-close</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-7</property>
 	      <signal name="clicked" handler="on_close_button_clicked" last_modification_time="Mon, 15 Mar 2004 09:37:18 GMT"/>
 	    </widget>
