@@ -170,6 +170,6 @@ if __name__ == '__main__':
         sys.exit()
 
     app = App()
-    app.daemonise = 1
+    # app.be_daemon = 0  # uncomment to run in foreground (easier debugging)
     app.debug = 1
     app.run()
