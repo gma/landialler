@@ -58,7 +58,7 @@ class View(Observer.Observer):
         Observer.Observer.__init__(self, model)
 
     def draw(self):
-        """Create and display the user interface (abstract method).
+        """Create and display the user interface (abstract).
 
         All views should override this method if they need to be
         displayed on the screen.
@@ -121,7 +121,7 @@ class Window(View):
             self.button_bar.sort(lambda a, b: cmp(b[1], a[1]))
 
     def cleanup(self):
-        """Destroy the dialog window (abstract method).
+        """Destroy the dialog window (abstract).
 
         Should be overriden in a sub class with GUI specific code for
         cleaning up the window after the cancel button has been
@@ -163,6 +163,22 @@ class ConnectingDialog(Dialog):
         # buttons = { name: (position in list, callback) }
         self.buttons = { 'cancel': (0, callback) }
 
+    def cleanup(self):
+        """Cleans up after the dialog has closed (abstract).
+
+        Should close the dialog and quit the application, causing the
+        model's server_disconnect() method to be called (directly or
+        indirectly).
+
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented cleanup()" % self.__class__)
+
+    def update(self):
+        """Closes the dialog once the connection has been made (abstract)."""
+        raise NotImplementedError, \
+              ("%s has not implemented update()" % self.__class__)
+
 
 class DisconnectDialog(Dialog):
 
@@ -190,6 +206,14 @@ class DisconnectDialog(Dialog):
         # buttons = { name: (position in list, callback) }
         self.buttons = { 'yes': (0, yes_cb), 'no': (1, no_cb) }
 
+    def cleanup(self):
+        """Cleans up after the Yes or No buttons have been pressed.
+
+        Destroys the dialog box.
+
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented cleanup()" % self.__class__)
 
 class DroppedDialog(Dialog):
 
@@ -216,6 +240,19 @@ class DroppedDialog(Dialog):
         # buttons = { name: (position in list, callback) }
         self.buttons = { 'OK': (0, callback) }
 
+    def cleanup(self):
+        """Cleans up after the OK button has been pressed.
+
+        Exits the application.
+
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented cleanup()" % self.__class__)
+
+    def update(self):
+        """Closes the dialog if the connection comes up."""
+        raise NotImplementedError, \
+              ("%s has not implemented update()" % self.__class__)
 
 class FatalErrorDialog(Dialog):
 
@@ -244,6 +281,15 @@ class FatalErrorDialog(Dialog):
         callback = (lambda c=self.cleanup, s=self: s.controller.ok_cb(c))
         # buttons = { name: (position in list, callback) }
         self.buttons = { 'OK': (0, callback) }
+
+    def cleanup(self):
+        """Cleans up after the OK button has been pressed.
+
+        Exits the application.
+
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented cleanup()" % self.__class__)
         
 
 class MainWindow(Window):
@@ -269,8 +315,26 @@ class MainWindow(Window):
         # buttons = { name: (position in list, callback) }
         self.buttons = { 'disconnect': (0, callback) }
 
+    def cleanup(self):
+        """Destroy the main window (abstract)."""
+        raise NotImplementedError, \
+              ("%s has not implemented cleanup()" % self.__class__)
+
+    def draw(self):
+        """Display the main window on screen (abstract).
+
+        See an existing example of the this method's implementation to
+        see what the app should look like. The window's delete signal
+        should be tied to the same callback as the disconnect button.
+
+        Finally, the event loop should also be started.
+
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented draw()" % self.__class__)
+
     def status_check(self):
-        """Call the model.get_server_status() periodically (abstract method).
+        """Call the model.get_server_status() periodically (abstract).
 
         The toolkit specific sub class should override this method to
         enable periodic status updates by calling the model's
@@ -280,3 +344,13 @@ class MainWindow(Window):
         """
         raise NotImplementedError, \
               ("%s has not implemented status_check()" % self.__class__)
+
+    def update(self):
+        """Updates the status display (abstract).
+
+        Updates the status and user count labels. If the connection
+        has dropped a DroppedDialog is created.
+
+        """
+        raise NotImplementedError, \
+              ("%s has not implemented update()" % self.__class__)
