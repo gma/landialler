@@ -59,6 +59,7 @@ class Window:
         """Lays out a set of buttons in a button bar."""
         bbox = GtkHButtonBox()
         bbox.set_layout(BUTTONBOX_END)
+        bbox.set_spacing(6)
         self.create_button_store()
         self.button_bar.reverse()
         for tup in self.button_bar:
@@ -116,7 +117,6 @@ class Dialog(Window):
         self.add_label()
         self.add_separator()
         self.add_button_box()
-        print "showing window: %s" % self.__class__
         self.window.show_all()
     
     def add_label(self):
@@ -150,8 +150,7 @@ class DisconnectDialog(Dialog, views.DisconnectDialog):
         views.DisconnectDialog.__init__(self, model)
     
     def cleanup(self):
-        print "%s.cleanup()" % self.__class__
-        self.window.destroy()
+        mainquit()
 
 
 class DroppedDialog(Dialog, views.DroppedDialog):
@@ -161,12 +160,12 @@ class DroppedDialog(Dialog, views.DroppedDialog):
         views.DroppedDialog.__init__(self, model)
     
     def cleanup(self):
-        print "%s.cleanup()" % self.__class__
         mainquit()
     
     def update(self):
         if self.model.is_connected:
             self.window.destroy()
+            self.model.detach(self)
 
 
 class FatalErrorDialog(Dialog, views.FatalErrorDialog):
@@ -196,7 +195,6 @@ class MainWindow(Window, views.MainWindow):
         return 1
 
     def cleanup(self):
-        """Destroy the main window."""
         mainquit()
     
     def draw(self):
