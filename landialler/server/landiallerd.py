@@ -284,7 +284,12 @@ def api_disconnect(all='no', client=None):
 
 
 def api_get_status(client):
-    """Return current_users and is_connected."""
+    """Return current_users and is_connected.
+
+    current_users -- The number of users sharing the connection
+    is_connected  -- 1 if connected, 0 otherwise
+
+    """
     global current_users, user_tracker, is_connected
 
     # register client's connection, purge old data
