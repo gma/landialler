@@ -221,10 +221,10 @@ class MainWindow(Window, views.MainWindow):
         users_label.set_text(str(self.model.current_users))
         if self.model.is_connected:
             status_label.set_text("Online")
-            #self.button_store["Disconnect"].set_state(STATE_NORMAL)
+            self.button_store["Disconnect"].set_sensitive(TRUE)
         else:
             status_label.set_text('Offline')
-            #self.button_store["Disconnect"].set_state(STATE_INSENSITIVE)
+            self.button_store["Disconnect"].set_sensitive(FALSE)
 
         if (not self.model.is_connected) and self.model.was_connected:
             self.model.was_connected = 0
