@@ -133,7 +133,6 @@ class FatalErrorController(Controller):
         that the connection doesn't hang around after we've gone.
 
         """
-        self.model.server_disconnect()
         cleanup_view()
         
 
