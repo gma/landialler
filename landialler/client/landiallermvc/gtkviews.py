@@ -65,36 +65,11 @@ class Window:
         for tup in self.button_bar:
             (name, pos, callback) = tup
             button = GtkButton(name)
-            button.connect("clicked", self.callback_wrapper, callback)
+            button.connect("clicked", callback)
             bbox.pack_end(button)
             key = name
             self.button_store[key] = button  # so we can configure it
         self.vbox.pack_start(bbox, expand=1, fill=1, padding=6)
-
-    def callback_wrapper(self, widget, controller_callback):
-        """Integrates the controllers' callback functions with GTK+.
-        
-        In GTK+ a callback function is passed both the widget that 
-        raised the signal and an optional list of arguments. Normally 
-        this is very handy, but in the landiallermvc package we have 
-        already implemented our own way of passing arguments into non 
-        GUI specific callbacks by using lambda functions that bind to 
-        cleanup() methods in the GUI specific view implementation 
-        classes. GTK+'s arguments break this system, unless we wrap 
-        our own callbacks in a method that knows how to cope with the 
-        extra GTK+ arguments.
-        
-        All widgets should be connected to their landialler callbacks 
-        through this method. You don't need to use it for callbacks 
-        that aren't defined in the non GTK+ part of landialler.
-        
-        The widget argument is automatically filled in by the connect() 
-        method. Pass the true landiallermvc.controller callback method 
-        to be run as a final parameter to the connect() method, and it 
-        will be mapped to the controller_callback argument automatically.
-        
-        """
-        controller_callback()
 
     def start_event_loop(self):
         mainloop()
