@@ -145,7 +145,7 @@ class MainWindowController(Controller):
 
         """
         if self.model.current_users > 1:
-            dialog = self.model.toolkit.DisconnectDialog(self.model)
+            dialog = self.model.views.DisconnectDialog(self.model)
             dialog.draw()
         else:
             self.model.server_disconnect()
