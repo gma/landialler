@@ -1,8 +1,6 @@
 README
 ------
 
-$Id$
-
 landialler.py is the landialler client program. Along with the
 landiallerd.py server (often packaged separately), it enables a group
 (or small LAN) of workstations (Windows, Linux, MacOS) to control a
@@ -21,3 +19,5 @@ For more information (and screenshots) see:
 INSTALLATION
 
 For installation instructions please see the file INSTALL.
+
+$Id$
