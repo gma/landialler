@@ -90,7 +90,19 @@ import socket
 import xmlrpclib
 
 
-__version__ = '0.2pre1'
+__version__ = "0.2pre2"
+
+
+class ConnectError(Exception):
+    pass
+
+
+class DisconnectError(Exception):
+    pass
+
+
+class StatusError(Exception):
+    pass
 
 
 class Model:
@@ -137,14 +149,14 @@ class Model:
         # FIXME: Improve behaviour when no toolkit entry in config file
         # so that gtk can be the default on Unix. :)
         try:
-            toolkit = self.config.get('interface', 'toolkit')
+            toolkit = self.config.get("interface", "toolkit")
         except ConfigParser.NoSectionError:
-            toolkit = 'tk'
+            toolkit = "tk"
         except ConfigParser.NoOptionError:
-            toolkit = 'tk'
+            toolkit = "tk"
 
-        exec('from landiallermvc import %sviews' % toolkit)
-        exec('self.toolkit = %sviews' % toolkit)
+        exec("from landiallermvc import %sviews" % toolkit)
+        exec("self.toolkit = %sviews" % toolkit)
 
     def notify(self):
         """Calls each observer's update() method."""
@@ -166,18 +178,15 @@ class Model:
     def server_connect(self):
         """Instructs the server to start the dial up connection.
 
-        Calls the XML-RPC API's connect() method. Returns 1 if the
-        server reported that it's connect command exited successfully,
-        0 otherwise.
+        Calls the XML-RPC API's connect() method. Raises a
+        ConnectError exception if the connect() method returns false.
 
         """
         rval = self.server.connect()
-        if rval.value == xmlrpclib.True:
-            return 1
-        else:
-            return 0
+        if rval.value == xmlrpclib.False:
+            raise ConnectError
 
-    def server_disconnect(self, all='no'):
+    def server_disconnect(self, all="no"):
         """Instructs the server to disconnect the dial up connection.
 
         Calls the XML-RPC API's disconnect() method. Returns 1 if the
@@ -210,9 +219,9 @@ class App(gmalib.Application):
         # load config file
         config = ConfigParser.ConfigParser()
         files = []
-        if os.name == 'posix':
-            files.append('/usr/local/etc/landialler.conf')
-        files.append('landialler.conf')
+        if os.name == "posix":
+            files.append("/usr/local/etc/landialler.conf")
+        files.append("landialler.conf")
         config.read(files)
 
         # connect to XML-RPC server
@@ -220,32 +229,46 @@ class App(gmalib.Application):
         # dialog's with error messages in, rather than print
         # statements?)
 
-        hostname = config.get('xmlrpcserver', 'hostname')
-        port = config.get('xmlrpcserver', 'port')
+        hostname = config.get("xmlrpcserver", "hostname")
+        port = config.get("xmlrpcserver", "port")
         
         try:
-            server = xmlrpclib.Server('http://%s:%s/' % (hostname, port))
-            self.log_info('connected to %s:%s' % (hostname, port))
+            server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
+            self.log_debug("connected to %s:%s" % (hostname, port))
+
+            # start the GUI
+            model = Model(config, server)
+            model.get_server_status()
+            if not model.is_connected:
+                dialog = model.toolkit.ConnectingDialog(model)
+                dialog.draw()
+                model.server_connect()
+            window = model.toolkit.MainWindow(model)
+            window.draw()  # starts event handling loop
+
+        except ConnectError, e:
+            print e
+
         except socket.error, e:
-            self.log_err('Error %d: %s' % (e.args[0], e.args[1]))
+            self.log_err("Error %d: %s" % (e.args[0], e.args[1]))
             if e.args[0] == 111:  # connection refused
-                print "Sorry, I couldn't connect to the " + \
-                      "landialler server. Is it turned on?"
+                err_msg = "Sorry, I couldn't connect to the " + \
+                          "landialler server. Is it turned on?"
+                print err_msg
+                dialog = model.toolkit.FatalErrorDialog(model, err_msg)
+                dialog.draw()
             else:
-                print '%d: %s' % (e.args[0], e.args[1])
+                err_msg = "Socket error: %s (%d)" % (e.args[0], e.args[1])
+                dialog = model.toolkit.FatalErrorDialog(model, err_msg)
+                dialog.draw()
 
-        # start the GUI
-        model = Model(config, server)
-        model.get_server_status()
-        if not model.is_connected:
-            dialog = model.toolkit.ConnectingDialog(model)
-            dialog.draw()
-            model.server_connect()
-        window = model.toolkit.MainWindow(model)
-        window.draw()  # starts event handling loop
+##        except Exception, e:
+##            print e
+##            dialog = model.toolkit.FatalErrorDialog(model, "Error: %s" % e)
+##            dialog.draw()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = App()
     app.debug = 1
     app.main()
