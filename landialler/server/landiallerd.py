@@ -85,7 +85,6 @@ __version__ = "0.2.1"
 import getopt
 import gmalib
 import os
-import posixpath
 import SocketServer
 import sys
 import threading
@@ -472,7 +471,7 @@ Options:
     -l file     write log messages to file
     -s          write log messages to syslog
 
-""" % posixpath.basename(sys.argv[0])
+""" % os.path.basename(sys.argv[0])
         sys.stderr.write(message)
         sys.exit(1)
 
