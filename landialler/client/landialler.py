@@ -20,7 +20,43 @@
 #
 # $Id$
 
-"""set up a connection on the landialler server"""
+"""set up a shared network connection (via the server)
+
+LANdialler enables several computers on a home LAN to remotely control
+a dial up device (e.g. modem) that is connected to a single Unix
+workstation. This scenario is explained in more detail on the
+LANdialler web site (http://landialler.sourceforge.net/).
+
+There are two programs that make up a complete LANdialler system; the
+client (landialler) and the server (landiallerd). This program is the
+client.
+
+When you run landialler it contacts the server and determines if it is
+currently connected (e.g. dialled up). If so, the user is informed
+that they are currently online. Otherwise the client asks the server
+to connect, displaying confirmation to the user that the server is
+connecting.
+
+Once the server reports that the connection is made, the client
+displays the number of users currently using the connection. The user
+has the option to disconnect at any time. If there are other users
+online then the user has the option to simply unregister themselves
+(thereby allowing the server to disconnect when all users have
+unregistered), or to actually terminate the connection, disconnecting
+all other users at the same time.
+
+If the connection drops out at any time (let's face it, it can happen
+a lot with modems) a dialog box pops up alerting the user, after which
+landialler exits (at some point in the future there will be an option
+for the user to attempt to reconnect instead).
+
+All client-server communication takes place via the LANdialler XML-RPC
+API, which is covered in landiallerd's documentation.
+
+"""
+
+# For more information on the Model-View-Controller design pattern,
+# see http://www.ootips.org/mvc-pattern.html
 
 
 import ConfigParser
