@@ -2,6 +2,7 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
+<requires lib="gnome"/>
 
 <widget class="GtkWindow" id="main_window">
   <property name="border_width">6</property>
@@ -125,6 +126,7 @@
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
   <property name="has_separator">False</property>
+  <signal name="delete_event" handler="on_disconnect_dialog_delete_event" last_modification_time="Sat, 13 Mar 2004 01:13:27 GMT"/>
 
   <child internal-child="vbox">
     <widget class="GtkVBox" id="dialog-vbox1">
@@ -138,19 +140,21 @@
 	  <property name="layout_style">GTK_BUTTONBOX_END</property>
 
 	  <child>
-	    <widget class="GtkButton" id="button1">
+	    <widget class="GtkButton" id="cancel_button">
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
+	      <property name="has_focus">True</property>
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="response_id">-6</property>
+	      <signal name="clicked" handler="on_cancel_button_clicked" last_modification_time="Sat, 13 Mar 2004 01:11:51 GMT"/>
 	    </widget>
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button2">
+	    <widget class="GtkButton" id="disconnect_button">
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
@@ -158,6 +162,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="response_id">0</property>
+	      <signal name="clicked" handler="on_disconnect_button_clicked" last_modification_time="Sat, 13 Mar 2004 01:11:55 GMT"/>
 	    </widget>
 	  </child>
 	</widget>
@@ -225,7 +230,7 @@ Select &quot;Disconnect all users&quot; to drop the connection immediately.</pro
 	      </child>
 
 	      <child>
-		<widget class="GtkCheckButton" id="checkbutton1">
+		<widget class="GtkCheckButton" id="disconnect_all">
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes">Disconnect _all users</property>
