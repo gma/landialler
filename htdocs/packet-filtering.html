@@ -46,6 +46,9 @@ modprobe iptable_nat
 # insmod ip_conntrack (autoloaded by iptable_nat by the looks of it)
 insmod ip_conntrack_ftp
 
+# Clear all current rules, so we start from a clean slate.
+iptables -F
+
 # Create chain which blocks new connections, except if coming from inside.
 iptables -N block
 iptables -A block -m state --state ESTABLISHED,RELATED -j ACCEPT
