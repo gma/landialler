@@ -31,9 +31,6 @@ To install LANdialler follow the instructions for your platform:
     - Download the latest landialler ZIP file, and unzip into a temporary
       directory.
 
-    - From within the landialler directory, run "python setup.py install"
-      This will install the landiallermvc library.
-
     - Create a landialler directory (e.g. C:\Program Files\landialler)
       and copy landialler.py and landialler.conf into the new directory.
       If you want to put the landialler.conf file in a different directory

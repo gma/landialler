@@ -27,8 +27,7 @@ if __name__ == '__main__':
                          description="LANdialler client",
                          author="Graham Ashton",
                          author_email="ashtong@users.sourceforge.net",
-                         url="http://landialler.sourceforge.net/",
-                         packages=['landiallermvc'])
+                         url="http://landialler.sourceforge.net/")
 
     if sys.argv[1] <> 'install':
         sys.exit(0)   # Only continue if we're doing an "install"
