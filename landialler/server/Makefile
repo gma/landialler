@@ -5,12 +5,24 @@ BIN = $(DESTDIR)/usr/local/sbin
 ETC = $(DESTDIR)/usr/local/etc
 INSTALL = /usr/bin/install -c
 
+# variables for the tardist target
+VERS = 0.1
+SRC = AUTHORS COPYING INSTALL Makefile README TODO \
+      landiallerd.conf landiallerd.py
+
 install:
 	@echo "### Installing ..."
 	$(INSTALL) -d $(BIN)
 	$(INSTALL) -m755 ./landiallerd.py $(BIN)
 	$(INSTALL) -d $(ETC)
 	$(INSTALL) -m644 ./landiallerd.conf $(ETC)
+
+tardist:
+	@echo "### Building landiallerd-$(VERS).tar.gz"
+	@ls $(SRC) | sed s:^:landiallerd-$(VERS)/: >MANIFEST
+	@(cd ..; ln -s server landiallerd-$(VERS))
+	(cd ..; tar -czvf landiallerd-$(VERS).tar.gz `cat server/MANIFEST`)
+	@(cd ..; rm landiallerd-$(VERS))
 
 uninstall:
 	@echo "### Uninstalling ..."
