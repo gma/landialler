@@ -31,10 +31,6 @@ class Dialog(views.View):
     pass
 
 
-class GoOnlineDialog(Dialog, views.GoOnLineDialog):
-    pass
-
-
 class ConnectingDialog(Dialog, views.ConnectingDialog):
     pass
 
