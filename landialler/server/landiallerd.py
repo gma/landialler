@@ -96,23 +96,113 @@ import os
 import time
 import xmlrpclib
 
-# try:
-#     import syslog
-# except ImportError, e:
-#     if os.name == "posix":
-#         sys.stderr.write("can't import syslog: %s" % e)
+
+class Timer:
+
+    """Simple timer class to record elapsed times."""
+
+    def __init__(self):
+        """Run the start() method."""
+        self._start_time = None  # seconds since epoch
+        self._stop_time = None
+        self.reset()
+        self.is_running = False
+
+    def start(self):
+        """Start the timer."""
+        self._start_time = time.time()
+        self.is_running = True
+
+    def stop(self):
+        """Stop the timer."""
+        self._stop_time = time.time()
+        self.is_running = False
+
+    def reset(self):
+        """Reset the timer to zero.
+
+        Note that reset() neither stops or starts the timer.
+
+        """
+        self._start_time = time.time()
+        self._stop_time = time.time()
+
+    def _get_elapsed_seconds(self):
+        """Return seconds since timer started."""
+        if self.is_running:
+            return int('%.0f' % (time.time() - self._start_time))
+        else:
+            return int('%.0f' % (self._stop_time - self._start_time))
+
+    elapsed_seconds = property(_get_elapsed_seconds)
 
 
-# class Dummy:
+class Modem:
 
-#     def method(self, *args):
-#         pass
-    
-#     def __getattr__(self, name):
-#         return self.method
+    def __init__(self, config_parser):
+        self._config_parser = config_parser
+        self.timer = Timer()
 
-# # TODO: replace with proper logging object
-# log = Dummy()
+    def dial(self):
+        self.timer.reset()
+        command = self._config_parser.get('commands', 'connect')
+        return os.system(command) == 0
+
+    def hang_up(self):
+        self.timer.stop()
+        command = self._config_parser.get('commands', 'disconnect')
+        return os.system(command) == 0
+
+    def is_connected(self):
+        if not self.timer.is_running:
+            self.timer.start()
+        command = self._config_parser.get('commands', 'is_connected')
+        return os.system(command) == 0
+
+
+class ModemProxy:
+
+    CLIENT_TIMEOUT = 30
+
+    def __init__(self, modem):
+        self._modem = modem
+        self._clients = {}
+        self._is_dialling = False  # TODO: remove/sort this attribute out
+
+    def _add_client(self, client_id):
+        if client_id not in self._clients:
+            self._clients[client_id] = time.time()
+
+    def refresh_client(self, client_id):
+        self._clients[client_id] = time.time()
+            
+    def count_clients(self):
+        for client_id, time_last_seen in self._clients.items():
+            if (time.time() - time_last_seen) > self.CLIENT_TIMEOUT:
+                self.hang_up(client_id)
+        return len(self._clients.keys())
+
+    def dial(self, client_id):
+        self._add_client(client_id)
+        if self.is_connected() or self._is_dialling:
+            return True
+        else:
+            self._is_dialling = True
+            return self._modem.dial()
+
+    def hang_up(self, client_id, all=False):
+        if client_id in self._clients:
+            del self._clients[client_id]
+        if self.is_connected() and (all or not self._clients):
+            return self._modem.hang_up()
+        else:
+            return True
+
+    def is_connected(self):
+        return self._modem.is_connected()
+
+    def get_time_connected(self):
+        return self._modem.timer.elapsed_seconds
 
 
 class API:
@@ -188,106 +278,6 @@ class API:
                 self._modem_proxy.is_connected(),
                 self._modem_proxy.get_time_connected())
     
-#         self._modem.remember_client(client)
-#         if self._modem.is_connected:
-#             self._modem.is_connecting = 0
-#             if not self._modem.was_connected:
-#                 self._modem.start_timer()
-#             self._modem.was_connected = 1
-#             numClients = self._modem.count_clients()
-#         else:
-#             if self._modem.was_connected:
-#                 self._modem.stop_timer()
-#             self._modem.was_connected = 0
-#             numClients = 0
-#         return (numClients,
-#                 self._modem.is_connected,
-#                 self._modem.get_time_connected())
-
-
-# class SharedModem(object):
-
-#     def __init__(self, config):
-#         self._config = config
-#         self.client_tracker = {}
-#         self._is_connecting = False
-#         self.was_connected = False
-#         self.timer = Timer()
-
-#     def _get_is_connecting(self):
-#         return self._get_is_connecting
-
-#     is_connecting = property(_get_is_connecting)
-
-#     def _is_connected(self):
-#         cmd = self._config.get("commands", "is_connected")
-#         rval = os.system("%s > /dev/null 2>&1" % cmd)
-#         if rval == 0:
-#             self._is_connecting = False
-#             self.timer.start()
-#             return True
-#         else:
-#             return False
-
-#     is_connected = property(_is_connected)
-
-#     def count_clients(self):
-#         """Return the number of active clients."""
-#         return len(self.list_clients())
-
-#     def remember_client(self, client):
-#         self.client_tracker[client] = time.time()
-
-#     def forget_client(self, client):
-#         try:
-#             log.debug("forget_client: forgetting %s" % client)
-#             del self.client_tracker[client]
-#             log.info("%s timed out, %s client(s) remaining" %
-#                           (client, self.count_clients()))
-#         except KeyError:
-#             pass
-
-#     def forget_all_clients(self):
-#         log.debug("forget_all_clients: clearing client list")
-#         self.client_tracker.clear()
-
-#     def forget_old_clients(self):
-#         timeout = 30
-#         for client in self.list_clients():
-#             if (time.time() - self.client_tracker[client]) > timeout:
-#                 self.forget_client(client)
-
-#     def list_clients(self):
-#         return self.client_tracker.keys()
-
-#     def dial(self):
-#         cmd = self._config.get("commands", "connect")
-#         rval = os.system("%s > /dev/null 2>&1" % cmd)
-#         log.debug("connect command returned: %s" % rval)
-#         if rval == 0:
-#             return 1
-#         else:
-#             return 0
-
-#     def hangup(self):
-#         cmd = self._config.get("commands", "disconnect")
-#         rval = os.system("%s > /dev/null 2>&1" % cmd)
-#         log.debug("disconnect command returned: %s" % rval)
-#         if rval == 0:
-#             return 1
-#         else:
-#             return 0
-
-#     def start_timer(self):
-#         self.timer.reset()
-#         self.timer.start()
-
-#     def stop_timer(self):
-#         self.timer.stop()
-
-#     def get_time_connected(self):
-#         return self.timer.get_elapsed_time()
-
 
 # class CleanerThread(threading.Thread):
 
@@ -486,114 +476,6 @@ class API:
 # """ % os.path.basename(sys.argv[0])
 #         sys.stderr.write(message)
 #         sys.exit(1)
-
-
-class Timer:
-
-    """Simple timer class to record elapsed times."""
-
-    def __init__(self):
-        """Run the start() method."""
-        self._start_time = None  # seconds since epoch
-        self._stop_time = None
-        self.reset()
-        self.is_running = False
-
-    def start(self):
-        """Start the timer."""
-        self._start_time = time.time()
-        self.is_running = True
-
-    def stop(self):
-        """Stop the timer."""
-        self._stop_time = time.time()
-        self.is_running = False
-
-    def reset(self):
-        """Reset the timer to zero.
-
-        Note that reset() neither stops or starts the timer.
-
-        """
-        self._start_time = time.time()
-        self._stop_time = time.time()
-
-    def _get_elapsed_seconds(self):
-        """Return seconds since timer started."""
-        if self.is_running:
-            return int('%.0f' % (time.time() - self._start_time))
-        else:
-            return int('%.0f' % (self._stop_time - self._start_time))
-
-    elapsed_seconds = property(_get_elapsed_seconds)
-
-
-class Modem:
-
-    def __init__(self, config_parser):
-        self._config_parser = config_parser
-        self.timer = Timer()
-
-    def dial(self):
-        self.timer.reset()
-        command = self._config_parser.get('commands', 'connect')
-        return os.system(command) == 0
-
-    def hang_up(self):
-        self.timer.stop()
-        command = self._config_parser.get('commands', 'disconnect')
-        return os.system(command) == 0
-
-    def is_connected(self):
-        if not self.timer.is_running:
-            self.timer.start()
-        command = self._config_parser.get('commands', 'is_connected')
-        return os.system(command) == 0
-
-
-class ModemProxy:
-
-    CLIENT_TIMEOUT = 30
-
-    def __init__(self, modem):
-        self._modem = modem
-        self._clients = {}
-        self._is_dialling = False  # TODO: remove/sort this attribute out
-
-    def _add_client(self, client_id):
-        if client_id not in self._clients:
-            self._clients[client_id] = time.time()
-
-    def refresh_client(self, client_id):
-        self._clients[client_id] = time.time()
-            
-    def count_clients(self):
-        for client_id, time_last_seen in self._clients.items():
-            if (time.time() - time_last_seen) > self.CLIENT_TIMEOUT:
-                self.hang_up(client_id)
-        return len(self._clients.keys())
-
-    def dial(self, client_id):
-        self._add_client(client_id)
-        if self.is_connected() or self._is_dialling:
-            return True
-        else:
-            self._is_dialling = True
-            return self._modem.dial()
-
-    def hang_up(self, client_id, all=False):
-        if client_id in self._clients:
-            del self._clients[client_id]
-        if self.is_connected() and (all or not self._clients):
-            return self._modem.hang_up()
-        else:
-            return True
-
-    def is_connected(self):
-        return self._modem.is_connected()
-
-    def get_time_connected(self):
-        return self._modem.timer.elapsed_seconds
     
 
 if __name__ == "__main__":
