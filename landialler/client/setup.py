@@ -2,69 +2,43 @@
 # $Id$
 
 
-"""landialler setup/install script
-
-Usage: python setup.py install
-
-"""
-
-
 import distutils.core
-import landialler
+import distutils.sysconfig
 import os
 import shutil
 import sys
 
 
-def error_msg(message):
-    print 'Error: %s' % message
-    sys.exit(1)
+def get_prefix():
+    dist = distutils.core.run_setup('run_setup.py',
+                                    script_args=sys.argv[1:],
+                                    stop_after='commandline')
+    default_prefix = distutils.sysconfig.get_config_var('prefix')
+    try:
+        return dist.get_option_dict('install')['prefix'][1]
+    except LookupError:
+        return default_prefix
 
 
-if __name__ == '__main__':
-    distutils.core.setup(name="landialler",
-                         version=landialler.__version__,
-                         description="LANdialler client",
-                         author="Graham Ashton",
-                         author_email="ashtong@users.sourceforge.net",
-                         url="http://landialler.sourceforge.net/")
+def create_script(prefix):
+    shutil.copyfile("landialler.py", "landialler")
+    script = "landialler"
+    # modify path to glade file
+    file = "landialler.glade"
+    abspath = os.path.join(prefix, "share/landialler/glade", file)
+    os.system("perl -p -i -e 's|%s|%s|' %s" % (file, abspath, script))
 
-    if sys.argv[1] <> 'install':
-        sys.exit(0)   # Only continue if we're doing an "install"
+    # modify path to config file
+    file = "landialler.conf"
+    if prefix == "/usr":
+        prefix = "/"
+    print 'joining', (prefix, "etc", file)
+    abspath = os.path.join(prefix, "etc", file)
+    os.system("perl -p -i -e 's|%s|%s|' %s" % (file, abspath, script))
 
-    # Copy stuff into /usr/local if we're on a POSIX system.
-    if os.name == 'posix':
-        bin_dir = '/usr/local/bin'
-        bin_file = 'landialler.py'
-        glade_file = 'landialler.glade'
-        conf_dir = '/usr/local/etc'
-        conf_file = 'landialler.conf'
 
-        # install landialler.py, landialler.glade
-        print 'copying %s, %s to %s' % (bin_file, glade_file, bin_dir)
-        if (not os.path.exists(bin_dir)) or (not os.path.isdir(bin_dir)):
-            error_msg('%s is not a directory' % bin_dir)
-        shutil.copyfile(bin_file, os.path.join(bin_dir, bin_file))
-        os.chmod('%s/%s' % (bin_dir, bin_file), 0755)
-        shutil.copyfile(glade_file, os.path.join(bin_dir, glade_file))
-
-        # install landialler.conf
-        print 'copying %s to %s' % (conf_file, conf_dir)
-        if (not os.path.exists(conf_dir)) or (not os.path.isdir(conf_dir)):
-            error_msg('%s is not a directory' % conf_dir)
-        shutil.copyfile(conf_file, '%s/%s' % (conf_dir, conf_file))
-        os.chmod('%s/%s' % (conf_dir, conf_file), 0644)
-
-    # Tell windows users to do it themselves.
-    else:
-        print """
-Please copy landialler.py, landialler.glade and landialler.conf into
-the same directory (e.g. 'C:\Program Files\landialler' on Windows). Edit
-the landialler.conf file to point to your LANdialler server, and then
-run "python landialler.py" from a command prompt.
-
-If you would prefer to run LANdialler without the command prompt
-window rename landialler.py to landialler.pyw and create a desktop
-shortcut that executes "python landialler.pyw" for you, but make sure
-that the shortcut starts in the landialler directory.
-"""
+if __name__ == "__main__":
+    prefix = get_prefix()
+    create_script(prefix)
+    file(".prefix", "w").write(prefix)
+    dist = distutils.core.run_setup('run_setup.py', script_args=sys.argv[1:])

@@ -71,6 +71,9 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
+__version__ = "0.3.0"
+
+
 import ConfigParser
 import os
 import socket
