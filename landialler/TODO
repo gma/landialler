@@ -4,33 +4,12 @@ TODO
 This file documents upcoming fixes/things on my mind/stuff I'd like to
 do, in no particular order.
 
-  - Add support for counting the number of concurrent users and how
-    long the server has been online to the API.
+  - Add support for monitoring how long the server has been online.
 
-  - Keep track of the number of clients that have requested
-    connectivity so that the Net connection isn't dropped until the
-    last landialler client has been closed.
-
-  - Allow any client to drop the connection, irrespective of whether
-    other users are still online or not (e.g. if they want to use the
-    phone).
-
-  - Drastically improve the interface so that the user is provided
-    with some proper feedback, both whilst the connection is being setup
-    (i.e. the "Yes, I'm still alive, hang on" kind of thing), and
-    whilst connected (e.g. "You've been connected for 23 mins, 2 people
-    on line"). This will involve learning some Tk, as will making it
-    possible to minimise the "Connected" dialog...
-
-  - Find out why the tkMessageBox.askyesno() dialog box hangs around
-    for ages after the user has pressed a button on Linux. Will, you
-    guessed it, mean I need to find out a bit more about Tk... :(
-
-  - A GTK+/GNOME port as Tk is *really* ugly on Linux. Perhaps I
-    should do wxWindows() instead but I'd quite like to have a GNOME
-    applet for this stuff.
+  - A GTK+ port, and an anygui port; Tk is not that attractive on
+    Linux.
 
   - Improve support for trapping exceptions (e.g. missing config files
-    aren't trapped properly yet! - how embarrassing?).
+    aren't trapped properly yet).
 
 $Id$
