@@ -6,13 +6,13 @@ REMOTE_DIR=/home/groups/l/la/landialler/htdocs/new
 REMOTE_USER=ashtong
 
 
-upload: .upload-html .upload-news .upload-ssi .upload-images \
+upload: .upload-root .upload-news .upload-ssi .upload-images \
 	.upload-screenshots
 
 
-.upload-html: *.html .htaccess default.css
+.upload-root: *.html .htaccess default.css
 	scp $? $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
-	@touch .upload-html
+	@touch .upload-root
 
 
 .upload-news: news/*.html
