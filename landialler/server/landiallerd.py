@@ -20,7 +20,8 @@
 #
 # $Id$
 
-import BaseHTTPServer
+import application
+import os
 import posixpath
 import SocketServer
 import sys
@@ -28,33 +29,77 @@ import syslog
 import xmlrpclib
 import xmlrpcserver
 
-from harpoon.Log import Log
-from harpoon.application import Daemon
 
-class App(Daemon):
+class MyTCPServer(SocketServer.TCPServer):
+    """We override TCPServer so that we can set the allow_reuse_socket
+    attribute to true (so we can restart immediately).
+
+    """
+    
+    def __init__(self, server_address, RequestHandlerClass):
+        self.allow_reuse_address = 1
+        SocketServer.TCPServer.__init__(self, server_address,
+                                        RequestHandlerClass)
+        #print "reuse set to: %d" % self.allow_reuse_address
+        
+
+class App(application.Daemon):
     """Simple wrapper class that runs the server."""
     
     def __init__(self):
-        Daemon.__init__(self)
-        print "running App.__init__()"
-        self.debug = 1 # prevents daemonising when true
+        application.Daemon.__init__(self)
 
+    def read_config(self):
+        """Map config file settings to instance attributes.
+
+        This really ought to be sorted out so that load_sys_config()
+        can do everything for us. Making a mental note to fix the
+        library...
+
+        """
+
+        self.sys_config_files = ["/usr/local/etc/landiallerd.conf",
+                                 "/etc/landiallerd.conf",
+                                 "%s/landiallerd.conf" % os.getcwd()]
+        self.load_sys_config()
+
+        try:
+            self.server_ip = self.config.get("server", "ip")
+            self.server_port = int(self.config.get("server", "port"))
+
+        except ConfigParser.ParsingError, e:
+            self.log_err("Error reading config file: %s" % e)
+            sys.exit()
+
+        except ConfigParser.NoSectionError, e:
+            self.log_err("Error reading config file: %s" % e)
+            sys.exit()
+
+        except ConfigParser.NoOptionError, e:
+            self.log_err("Error reading config file: %s" % e)
+            sys.exit()
+        
     def run(self):
+        """Start the landiallerd server.
+
+        """
+
         syslog.openlog(posixpath.basename(sys.argv[0]),
                        syslog.LOG_PID | syslog.LOG_CONS)
         self.log_info("starting server")
-        self.load_sys_config("/usr/local/etc/landiallerd.conf")
-        self.server = SocketServer.TCPServer(('', 8090), LandiallerHandler)
+
+        self.read_config()
+
+        print "binding to %s:%d" % (self.server_ip, self.server_port)
+        self.server = MyTCPServer((self.server_ip, self.server_port), MyHandler)
         self.server.serve_forever()
 
+        syslog.closelog()
 
-class LandiallerHandler(xmlrpcserver.RequestHandler):
-    """Defines methods that correspond to a procedure in the XML-RPC API.
 
-    Other methods are already defined in the super classes though, so
-    read the docs with care...
 
-    """
+class MyHandler(xmlrpcserver.RequestHandler):
+    """Defines methods that correspond to a procedure in the XML-RPC API."""
 
     def call(self, method, params):
         """Call the server side procedure and return the result.
@@ -64,51 +109,74 @@ class LandiallerHandler(xmlrpcserver.RequestHandler):
 
         """
 
-	print "CALL: %s(%s)" % (method, params)
+	print "CALL: %s %s" % (method, params)
+
         try:
-            server_method = getattr(self, method)
+            server_method = getattr(self, "api_%s" % method)
         except:
             raise AttributeError, \
                   "Server does not have XML-RPC procedure %s" % method
 
-        return server_method(method, params)
+        return server_method(params)
 
-    def is_connected(self, params):
-        """Check if we are connected to the Internet.
+    ### remaining methods are part of the XML-RPC API.
 
-        Returns true if the server is connected to the Internet, false
-        otherwise.
+    def api_connect(self, params):
+        """Connect to the Internet.
 
-        """
-
-        # Currently, this stuff is only designed to work with ppp
-        # interfaces on UNIX like operating systems. If you'd like to
-        # get this working from your Windows box and mail me a patch,
-        # that'd be spiffing. If you'd do the same for some other
-        # operating system, that'd be even better.
-
-        try:
-            if os.name == "posix":
-                return linux_is_connected(self, params)
-            else:
-                raise NotImplementedError
-
-        except NotImplementedError:
-            print "Sorry, non POSIX compliant servers are not supported."
-            sys.exit()
-        
-        
-    def linux_is_connected(self, params):
-        """Checks to see if we're connected on a POSIX operating system.
-
-        Parses the output of the /sbin/ifconfig command to see if
-        there is a ppp interface up.
+        Attempts to connect to the Internet by running an external
+        dial up script.
 
         """
+
+        print "connecting..."
+        cmd = "pon"
+        os.system(cmd)
 
         return xmlrpclib.True
 
+    def api_disconnect(self, params):
+        """Disconnects from the Internet.
+
+        Drops the Internet connection by running an external dial up
+        termination script.
+
+        """
+
+        print "disconnecting..."
+        cmd = "poff"
+        os.system(cmd)
+
+        return xmlrpclib.True
+
+    def api_is_connected(self, params):
+        """Check if we are connected to the Internet.
+
+        Runs the external command that is defined by the is_connected
+        configuration file directive. The command should print a
+        single line of output; 1 if we are connected to the Internet,
+        0 otherwise.
+
+        """
+
+        cmd = "/sbin/ifconfig | perl -e 'undef($/); $_ = <STDIN>; " + \
+              "printf \"%s\", /ppp0/? 1 : 0'"
+        fd = os.popen(cmd)
+        is_conn = int(fd.read(1))
+        fd.close()
+
+        if is_conn == 1:
+            return xmlrpclib.True
+        else:
+            return xmlrpclib.False
+
 
 if __name__ == '__main__':
+    if os.name != "posix":
+        print "Sorry, only Unix (and similar) operating systems are supported."
+        sys.exit()
+
     app = App()
+    app.daemonise = 0
+    app.debug = 1
     app.run()
