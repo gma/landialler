@@ -151,7 +151,7 @@ class App(gmalib.Daemon):
 
         self.sys_config_files = ["/usr/local/etc/landiallerd.conf",
                                  "/etc/landiallerd.conf",
-                                 "%s/landiallerd.conf" % os.getcwd()]
+                                 os.getcwd() + os.sep + "landiallerd.conf"]
         self.load_sys_config()
 
         try:
