@@ -79,14 +79,6 @@ class TimerTest(unittest.TestCase):
         self.assertEqual(timer.is_running, False)
 
 
-class MockConfigParser:
-
-    value = 'value from config file'
-
-    def get(self, section, option):
-        return self.value
-
-
 class ModemTest(unittest.TestCase):
 
     SUCCESSFUL_COMMAND = 'ls / > /dev/null'
@@ -267,7 +259,7 @@ class ModemProxyTest(unittest.TestCase):
     def test_timer(self):
         """Check the proxy can return time spent online"""
         timer = MockTimer()
-        modem = landiallerd.Modem(MockConfigParser())
+        modem = landiallerd.Modem(mock.Mock())
         modem.timer = timer
         proxy = landiallerd.ModemProxy(modem)
         self.assertEqual(proxy.get_time_connected(), 14)
