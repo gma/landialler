@@ -229,8 +229,8 @@ class MainWindow(Window):
         gtk.main_quit()
 
     def on_connect_button_clicked(self, *args):
-        dialog = ConnectingDialog(self._modem)
         self._modem.dial()
+        dialog = ConnectingDialog(self._modem)
         dialog.show()
 
     def on_disconnect_button_clicked(self, *args):
@@ -276,6 +276,12 @@ class DisconnectDialog(Window):
 
     def __init__(self):
         Window.__init__(self, 'disconnect_dialog')
+
+    def on_disconnect_button_clicked(self, *args):
+        pass
+
+    def on_cancel_button_clicked(self, *args):
+        pass
 
 
 class App:
