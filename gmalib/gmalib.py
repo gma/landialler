@@ -93,6 +93,12 @@ class Logger:
         return s
 
     def _to_file(self, priority, message):
+        """Append a line to the log file, including priority and message.
+        
+        On POSIX systems the file is locked exclusively with flock() prior
+        to writing.
+        
+        """
         date_time = self._log_date_time_string()
         fmt = "%s %s[%d]: (%s) %s"
         if message[-1:] != "\n":
@@ -105,7 +111,7 @@ class Logger:
         f.close()
 
     def log_debug(self, message):
-        """Log debug message."""
+        """Log a debug message."""
 
         if self.debug:
             if self.use_syslog:
@@ -146,7 +152,7 @@ class Daemon:
 
     A call to self.daemonise() will convert the calling script into a
     daemon. The sys.stdout and sys.stderr file handles are re-directed
-    via a Logger object that 
+    via a Logger object.
 
     """
     
@@ -164,9 +170,10 @@ class Daemon:
 
         Forks a child process, exits the parent, makes the child a
         session leader and sets the umask to 0 (so programs run from
-        within can set their own file permissions correctly). stdout
-        and stderr are sent to syslog (LOG_INFO and LOG_ERR priority,
-        respectively).
+        within can set their own file permissions correctly). sys.stdout
+        and sys.stderr are redirected to the log_info() and log_err()
+        methods of Logger instances. The Logger objects' arguments should
+        be passed into Daemon.__init__().
 
         """
         # UNIX only, sorry.
