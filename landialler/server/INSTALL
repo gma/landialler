@@ -27,10 +27,16 @@ it may be in your source tree already). If not, copy both xmlrpclib.py
 and xmlrpcserver.py into Python's site-packages directory
 (e.g. /usr/local/lib/python2.1/site-packages).
 
-Then copy the gmalib.py file into the same directory and the
-landiallerd.py file into the standard directory for locally installed
-server software (e.g. /usr/local/sbin or similar). Copy the sample
-landiallerd.conf file into /usr/local/etc or /etc.
+Then copy the gmalib.py file into the same directory.
+
+Now you are ready to install the LANdialler server. Untar the source
+code, change into the directory created, and type simply type (as root):
+
+  # make install
+
+landiallerd.py will be installed in /usr/local/sbin, and
+landiallerd.conf will be installed in /usr/local/etc. This should be
+fine for most systems.
 
 In order to start the daemon every time your operating system is
 booted you may wish to edit the files in your /etc/init.id (or
@@ -57,7 +63,8 @@ software is successful in attempting to connect to the Internet.
 
 The default commands work on Debian GNU/Linux (the author's preferred
 environment) especially if the pppconfig package is used to set up the
-PPP parameters (which makes life very easy for connecting to many ISPs).
+PPP parameters, thereby enabling the pon and poff commands (which
+makes life very easy for connecting to many ISPs).
 
 In future it may make sense to collect scripts that work well on
 different Operating Systems. If there is demand for this then they can
