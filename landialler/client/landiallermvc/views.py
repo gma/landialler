@@ -65,15 +65,8 @@ class ButtonBar:
         View.__init__(self, model)
         self.buttons = []
 
-    def add(self, text='Button', callback=None):
+    def add_button(self, text='Button', callback=None):
         self.buttons.append((text, callback))
-
-    def draw(self):
-        pass
-
-    def update(self):
-        pass
-        
 
 
 class Window:
@@ -83,6 +76,7 @@ class Window:
         """Set button_side attribute to default to RIGHT."""
         self.button_store = {}  # maintain link to buttons so we config them
         self.button_bar = []
+        #self.button_bar = ButtonBar()
         
     def create_button_store(self, parent=None):
         """Lays out a set of buttons in a button bar.
@@ -222,4 +216,5 @@ class MainWindow(View):
         enable periodic status updates.
 
         """
-        print "FIXME: %s.status_check() is not written!!!" % self.__class__
+        raise NotImplementedError, \
+              ("%s has not implemented status_check()" % self.__class__)
