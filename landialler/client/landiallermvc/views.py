@@ -181,9 +181,7 @@ class ConnectingDialog(Dialog):
     def cleanup(self):
         """Cleans up after the dialog has closed (abstract).
 
-        Should close the dialog and quit the application, causing the
-        model's server_disconnect() method to be called (directly or
-        indirectly).
+        Should close the dialog and cleanly terminate the application.
 
         """
         raise NotImplementedError, \
@@ -222,9 +220,10 @@ class DisconnectDialog(Dialog):
         self.buttons = { 'Yes': (0, yes_cb), 'No': (1, no_cb) }
 
     def cleanup(self):
-        """Cleans up after the Yes or No buttons have been pressed.
+        """Clean up after a button has been pressed (abstract).
 
-        Destroys the dialog box.
+        Closes the dialog box and cleanly terminates the application
+        when either the Yes or No buttons are pressed.
 
         """
         raise NotImplementedError, \
@@ -257,18 +256,19 @@ class DroppedDialog(Dialog):
         self.buttons = { 'OK': (0, callback) }
 
     def cleanup(self):
-        """Cleans up after the OK button has been pressed.
+        """Cleans up after the OK button has been pressed (abstract).
 
-        Exits the application.
+        Cleanly terminates the application.
 
         """
         raise NotImplementedError, \
               ("%s has not implemented cleanup()" % self.__class__)
 
     def update(self):
-        """Closes the dialog if the connection comes up."""
+        """Closes the dialog if the connection comes up (abstract)."""
         raise NotImplementedError, \
               ("%s has not implemented update()" % self.__class__)
+
 
 class FatalErrorDialog(Dialog):
 
@@ -305,9 +305,9 @@ class FatalErrorDialog(Dialog):
         self.buttons = { 'OK': (0, callback) }
 
     def cleanup(self):
-        """Cleans up after the OK button has been pressed.
+        """Cleans up after the OK button has been pressed (abstract).
 
-        Exits the application.
+        Cleanly terminates the application.
 
         """
         raise NotImplementedError, \
@@ -338,7 +338,12 @@ class MainWindow(Window):
         self.buttons = { "Disconnect": (0, callback) }
 
     def cleanup(self):
-        """Destroy the main window (abstract)."""
+        """GUI specific tear down code (abstract).
+        
+        Must be overridden in the subclass, cleanly terminating the 
+        application.
+        
+        """
         raise NotImplementedError, \
               ("%s has not implemented cleanup()" % self.__class__)
 
