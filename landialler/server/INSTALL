@@ -1,0 +1,73 @@
+INSTALL
+-------
+
+This file contains the installation instructions for landiallerd.py.
+In the future they will be streamlined so that you will be able to
+type something as simple as "python setup.py", but unfortunately we're
+not quite there yet.
+
+
+REQUIREMENTS
+
+  - Unix, or similar POSIX compliant Operating System (e.g. Linux)
+  - Python 2.1 (it may work with Python 2.0 though this is untested)
+  - xmlrpclib, from http://www.pythonware.com/products/xmlrpc/
+  - gmalib, available from http://sourceforge.net/projects/landialler/
+
+
+INSTALLATION
+
+I will ignore the first two requirements and assume that if you have
+got this far that you are there already. If not you might want to get
+hold of a copy of Linux and the Python language (http://www.python.org/).
+
+Next, download xmlrpclib from the URL above (xmlrpclib should be
+included with the main Python source tree from Python 2.2 onwards, so
+it may be in your source tree already). If not, copy both xmlrpclib.py
+and xmlrpcserver.py into Python's site-packages directory
+(e.g. c:\python21\lib\site-packages).
+
+Then copy the gmalib.py file into the same directory.
+
+To install the client itself and it's configuration file just copy
+them into a separate directory on your hard drive. Then create a new icon on your desktop 
+
+In order to start the daemon every time your operating system is
+booted you may wish to edit the files in your /etc/init.id (or
+similar) directories. For security reasons (it is simply best
+practice) it is recommended that you create a new user account purely
+to run the landiallerd.py server and configure your startup scripts to
+use that account.
+
+
+CONFIGURATION
+
+You will probably need to edit the [commands] section of the config
+file. The "connect" and "disconnect" options should be non interactive
+shell commands or scripts that cause the modem to dial up or
+disconnect. They should have an exit status of 0 if they are launched
+successfully, or a positive integer if they are unable to run
+correctly. The "is connected" command is simply used to determine
+whether we are currently on line and should return 0 if we are or a
+positive integer if we are not. None of the commands should block
+(i.e. pause), but should return immediately. For example, the
+"connect" command should return 0 if the it is able to launch the dial
+up software, rather than waiting to see whether or not the dial up
+software is successful in attempting to connect to the Internet.
+
+The default commands work on Debian GNU/Linux (the author's preferred
+environment) especially if the pppconfig package is used to set up the
+PPP parameters.
+
+In future it may make sense to collect scripts that work well on
+different Operating Systems. If there is demand for this then they can
+be collected and made available on the landialler web site.
+
+If you have problems installing either the client or the server then I
+will try and help you if I can. Please make sure that you send me as
+much information as you can, including the operating system (and
+version number) that you are using, the version of Python and any
+output that you see when you launch the software (either on the
+command line or in syslog).
+
+$Id$
