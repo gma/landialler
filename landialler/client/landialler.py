@@ -79,208 +79,41 @@ The author can be contacted at ashtong@users.sourceforge.net.
 """
 
 
-# # For more information on the Model-View-Controller design pattern,
-# # see http://www.ootips.org/mvc-pattern.html
-
-
-# import exceptions
-# import ConfigParser
-# import getopt
-# import landiallermvc
-# from landiallermvc import Model
-# import os
-# import socket
-# import sys
-# import xmlrpclib
-
-
-# __version__ = "0.2.1"
-
-
-# class Dummy:
-
-#     def method(self, *args):
-#         pass
-    
-#     def __getattr__(self, name):
-#         return self.method
-
-# # TODO: replace with proper logging object
-# log = Dummy()
-
-
-# class App:
-
-#     def __init__(self):
-#         """Calls the base class's initialisor."""
-#         self.conf_file = None
-#         self.debug = 0
-#         self.toolkit = None
-    
-#     def getopt(self):
-#         """Parse command line arguments.
-        
-#         Reads the command line arguments, looking for the following:
-        
-#         -c file      path to configuration file
-#         -d           enable debugging for extra output
-#         -h	     display this message on stderr
-#         -u toolkit   select user interface toolkit (tk or gtk)
-        
-#         """
-#         opts, args = getopt.getopt(sys.argv[1:], "c:dhu:")
-        
-#         for o, v in opts:
-#             if o == "-c":
-#                 self.conf_file = v
-#             elif o == "-d":
-#                 self.debug = 1
-#             elif o == "-h":
-#                 self.usage_message()
-#             elif o == "-u":
-#                 self.toolkit = v
-
-#     def handle_connect_error(self):
-#         log.err("Error: ConnectError")
-#         msg = "There was a problem\nconnecting to the network."
-#         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
-#         dialog.draw()
-#         dialog.start_event_loop()
-
-#     def handle_disconnect_error(self):
-#         log.err("Error: DisconnectError")
-#         msg = "There was a problem disconnecting\nfrom the network. " + \
-#               "You may not have\nbeen disconnected properly!"
-#         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
-#         dialog.draw()
-#         dialog.start_event_loop()
-
-#     def handle_socket_error(self, e):
-#         log.err("Error: socket error: %s (%d)" % (e.args[1], e.args[0]))
-#         msg = "Unable to connect to server: %s" % e.args[1]
-#         log.err(msg)
-#         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
-#         dialog.draw()
-#         dialog.start_event_loop()
-
-#     def handle_status_error(self):
-#         log.err("Error: StatusError")
-#         msg = "LANdialler is unable to determine the\nstatus of your " + \
-#               "network connection.\n\nPlease check the connection and\n" + \
-#               "the server and try again."
-#         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
-#         dialog.draw()
-#         dialog.start_event_loop()
-
-#     def handle_error(self, e):
-#         log.err("Error: %s" % e)
-#         msg = "Error: %s" % e
-#         dialog = self.model.views.FatalErrorDialog(self.model, message=msg)
-#         dialog.draw()
-#         dialog.start_event_loop()
-
-#     def main(self):
-#         """The main method, runs the application.
-        
-#         Begins by reading the landialler.conf configuration file. Then
-#         connects to the XML-RPC server (as specified in the config
-#         file).
-        
-#         Initialises and launches the user interface.
-        
-#         """
-#         try:
-#             # read command line options and config file
-#             self.getopt()
-#             config = ConfigParser.ConfigParser()
-#             if self.conf_file:
-#                 if not os.path.exists(self.conf_file):
-#                     raise IOError, "File not found: %s" % self.conf_file
-#                 else:
-#                     config.read(self.conf_file)
-#             else:
-#                 files = []
-#                 if os.name == "posix":
-#                     files.append("/usr/local/etc/landialler.conf")
-#                 files.append("landialler.conf")
-#                 config.read(files)
-        
-#             # run the core of the application
-#             hostname = config.get("xmlrpcserver", "hostname")
-#             port = config.get("xmlrpcserver", "port")
-        
-#             server = xmlrpclib.Server("http://%s:%s/" % (hostname, port))
-#             log.debug("connected to %s:%s" % (hostname, port))
-#             self.model = Model.Model(config, server, self.toolkit)
-#             window = self.model.views.MainWindow(self.model)
-
-#         except getopt.GetoptError, e:
-#             sys.stderr.write("%s\n" % e)
-#             self.usage_message()
-
-#         except SystemExit:  # ignore calls to sys.exit()
-#             raise
-
-#         except Exception, e:
-#             sys.stderr.write("%s\n" % e)
-#             sys.exit(1)
-        
-#         # from now on we can do GUI based error messages
-#         try:
-#             window.draw()
-#             self.model.get_server_status()
-#             if not self.model.is_connected:
-#                 dialog = self.model.views.ConnectingDialog(self.model)
-#                 dialog.draw()
-#                 self.model.server_connect()
-#             window.start_event_loop()
-        
-#         except landiallermvc.ConnectError:
-#             self.handle_connect_error()
-#         except landiallermvc.DisconnectError:
-#             self.handle_disconnect_error()
-#         except landiallermvc.StatusError:
-#             self.handle_status_error()
-#         except socket.error, e:
-#             self.handle_socket_error(e)
-#         except Exception, e:
-#             self.handle_error(e)
-
-#     def usage_message(self):
-#         """Print usage message to sys.stderr and exit."""
-#         message = """usage: %s [-d] [-f] [-h] [-l file] [-s]
-
-# Options:
-
-#     -c file     path to configuration file
-#     -d          enable debugging for extra output
-#     -h	        display this message on stderr
-#     -u toolkit  select user interface toolkit (tk or gtk)
-
-# """ % os.path.basename(sys.argv[0])
-#         sys.stderr.write(message)
-#         sys.exit(1)
-
-
+import ConfigParser
 import os
 import socket
 import time
+import xmlrpclib
 
 import pygtk; pygtk.require('2.0')
 import gtk
 import gtk.glade
 
 
-class TestServer:
+class Observable(object):
 
-    def get_status(self, foo):
-        return 1, True, time.time()
+    def __init__(self):
+        self._observers = {}
+
+    def add_observer(self, observer):
+        self._observers[observer] = None
+
+    def remove_observer(self, observer):
+        del self._observers[observer]
+
+    def notify_observers(self):
+        for observer in self._observers.keys():
+            observer.update()
 
 
-class RemoteModem:
+class RemoteModem(Observable):
 
     def __init__(self, server_proxy):
+        Observable.__init__(self)
         self._server_proxy = server_proxy
+        self.num_users = 0
+        self.is_connected = False
+        self.seconds_online = 0
 
     def _get_client_id(self):
         ip = socket.gethostbyname(socket.gethostname())
@@ -292,13 +125,19 @@ class RemoteModem:
     client_id = property(_get_client_id)
 
     def dial(self):
-        return self._server_proxy.dial(self.client_id)
+        return self._server_proxy.connect(self.client_id)
 
     def hang_up(self):
-        return self._server_proxy.hang_up(self.client_id)
+        return self._server_proxy.disconnect(self.client_id)
+
+    def hang_up_all(self):
+        return self._server_proxy.disconnect(self.client_id, all=True)
 
     def get_status(self):
-        return self._server_proxy.get_status(self.client_id)
+        self.num_users, self.is_connected, self.seconds_online = \
+                        self._server_proxy.get_status(self.client_id)
+        self.notify_observers()
+        return True
 
 
 class WidgetWrapper:
@@ -338,36 +177,50 @@ class Window(WidgetWrapper):
 
 class MainWindow(Window):
 
-    CHECK_PERIOD = 1000 * 10  # 10 seconds
+    CHECK_STATUS_PERIOD = 1000 * 2
     STATUS_LABEL = '<span size="larger" weight="bold">You are %s</span>'
+    TIMER_UPDATE_PERIOD = 100
 
     def __init__(self, modem):
         Window.__init__(self, 'main_window')
         self._modem = modem
+        self._modem.add_observer(self)
         self._set_status_disconnected()
-        gtk.timeout_add(self.CHECK_PERIOD, self._check_status)
+        self._seconds_online = 0
+        self._last_check_time = None
+        gtk.timeout_add(self.CHECK_STATUS_PERIOD, self._modem.get_status)
+        gtk.timeout_add(self.TIMER_UPDATE_PERIOD, self._update_timer)
 
-    def _check_status(self):
-        users, connected, seconds_connected = self._modem.get_status()
-        if connected:
-            self._set_status_connected(users, seconds_connected)
+    def _update_timer(self):
+        if self._modem.is_connected:
+            secs_since_check = time.time() - self._last_check_time
+            secs_online = self._modem.seconds_online + secs_since_check
+            self._set_status_connected(secs_online)
+        return True
+
+    def update(self):
+        self._last_check_time = time.time()
+        if self._modem.is_connected:
+            self._set_status_connected(self._modem.seconds_online)
         else:
             self._set_status_disconnected()
         return gtk.TRUE
             
-    def _set_status(self, status):
+    def _set_status_label(self, status):
         self.status_label.set_label(self.STATUS_LABEL % status)
 
-    def _set_status_connected(self, users, seconds_connected):
-        self._set_status('connected')
-        time_str = time.strftime('%H:%M:%S', time.gmtime(seconds_connected))
-        user_str = { True: 'user', False: 'users' }[users == 1]
-        self.details_label.set_label('%s %s, %s' % (users, user_str, time_str))
+    def _set_status_connected(self, seconds_online):
+        self._set_status_label('connected')
+        time_str = time.strftime('%H:%M:%S', time.gmtime(seconds_online))
+        user_str = { True: 'user', False: 'users' }[self._modem.num_users == 1]
+        self.details_label.set_label(
+            '%s %s, online for %s' %
+            (self._modem.num_users, user_str, time_str))
         self.connect_button.set_sensitive(gtk.FALSE)
         self.disconnect_button.set_sensitive(gtk.TRUE)
 
     def _set_status_disconnected(self):
-        self._set_status('disconnected')
+        self._set_status_label('disconnected')
         self.connect_button.set_sensitive(gtk.TRUE)
         self.disconnect_button.set_sensitive(gtk.FALSE)
 
@@ -376,7 +229,8 @@ class MainWindow(Window):
         gtk.main_quit()
 
     def on_connect_button_clicked(self, *args):
-        dialog = ConnectingDialog()
+        dialog = ConnectingDialog(self._modem)
+        self._modem.dial()
         dialog.show()
 
     def on_disconnect_button_clicked(self, *args):
@@ -386,22 +240,32 @@ class MainWindow(Window):
 
 class ConnectingDialog(Window):
 
-    def __init__(self):
+    def __init__(self, modem):
         Window.__init__(self, 'connecting_dialog')
+        self._modem = modem
+        self._progress_timeout = None
+        self._modem.add_observer(self)
         self._start_progress_bar()
 
     def _start_progress_bar(self):
 
         def pulse():
-            try:
-                self.progressbar1.pulse()
-                return gtk.TRUE
-            except AttributeError:
-                return gtk.FALSE
+            self.progressbar1.pulse()
+            return gtk.TRUE
         
-        gtk.timeout_add(100, pulse)
+        self._progress_timeout = gtk.timeout_add(100, pulse)
+
+    def destroy(self):
+        gtk.timeout_remove(self._progress_timeout)
+        self._modem.remove_observer(self)
+        Window.destroy(self)
+
+    def update(self):
+        if self._modem.is_connected:
+            self.destroy()
 
     def on_cancel_button_clicked(self, *args):
+        self._modem.hang_up()
         self.destroy()
 
     def on_connecting_dialog_delete_event(self, *args):
@@ -416,9 +280,19 @@ class DisconnectDialog(Window):
 
 class App:
 
+    def __init__(self):
+        self._config = ConfigParser.ConfigParser()
+        self._config.read('landialler.conf')
+
+    def _connect_to_server(self):
+        hostname = self._config.get('server', 'hostname')
+        port = self._config.get('server', 'port')
+        return xmlrpclib.ServerProxy('http://%s:%s/' % (hostname, port))
+        
     def main(self):
         try:
-            modem = RemoteModem(TestServer())
+            server = self._connect_to_server()
+            modem = RemoteModem(server)
             window = MainWindow(modem)
             window.show()
             gtk.main()
@@ -426,11 +300,6 @@ class App:
             modem.hang_up()
             gtk.main_quit()
 
-
-if __name__ == "__main__":
-    app = App()
-    app.main()
-        
 
 if __name__ == "__main__":
     app = App()
