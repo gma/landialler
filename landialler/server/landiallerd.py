@@ -81,9 +81,30 @@ import os
 import SimpleXMLRPCServer
 import SocketServer
 import sys
+import syslog
 import threading
 import time
 import xmlrpclib
+
+
+class Logger:
+
+    def __init__(self):
+        ident = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+        syslog.openlog(ident, syslog.LOG_PID | syslog.LOG_CONS,
+                       syslog.LOG_DAEMON)
+
+    def info(self, msg):
+        syslog.syslog(syslog.LOG_INFO, msg)
+
+    def warn(self, msg):
+        syslog.syslog(syslog.LOG_WARNING, msg)
+        
+    def error(self, msg):
+        syslog.syslog(syslog.LOG_ERR, msg)
+
+
+log = Logger()
 
 
 class Timer(object):
@@ -218,6 +239,7 @@ class API(object):
         Always returns True.
 
         """
+        log.info('%s connected' % client_id)
         self._modem_proxy.add_client(client_id)
         return xmlrpclib.True
 
@@ -230,6 +252,7 @@ class API(object):
         should be usable as a dictionary key.
 
         """
+        log.info('%s disconnected' % client_id)
         if self._modem_proxy.is_connected():
             self._modem_proxy.remove_client(client_id)
             if all:
@@ -246,6 +269,7 @@ class API(object):
         seconds_connected  -- Number of seconds connected
 
         """
+        log.info('get_status()')
         self._modem_proxy.refresh_client(client_id)
         return (self._modem_proxy.count_clients(),
                 self._modem_proxy.is_connected(),
@@ -267,8 +291,6 @@ class AutoDisconnectThread(threading.Thread):
         proxy = self._modem_proxy
         while not self.finished.isSet():
             proxy.remove_old_clients()
-            if proxy.count_clients() == 0 and proxy.is_connected():
-                self._modem_proxy.hang_up()
             self.finished.wait(self.INTER_CHECK_PERIOD)
 
 
@@ -284,8 +306,6 @@ class App(object):
         self._config = self._load_config_file()
         modem = Modem(self._config)
         self._modem_proxy = ModemProxy(modem)
-        thread = AutoDisconnectThread(self._modem_proxy)
-        thread.start()
 
     def _load_config_file(self):
         try:
@@ -334,6 +354,7 @@ class App(object):
                 self._become_daemon = False
 
     def main(self):
+        log.info('Starting')
         self.check_platform()
         try:
             self.getopt()
@@ -341,6 +362,9 @@ class App(object):
         except getopt.GetoptError, e:
             sys.stderr.write("%s\n" % e)
         
+        thread = AutoDisconnectThread(self._modem_proxy)
+        thread.start()
+
         addr = ('', self._config.getint('general', 'port'))
         server = ReusableSimpleXMLRPCServer(addr, logRequests=False)
         server.allow_reuse_address = True
@@ -349,6 +373,7 @@ class App(object):
             server.serve_forever()
         except KeyboardInterrupt:
             print "Caught Ctrl-C, shutting down."
+            log.info('Exit')
 
     
 if __name__ == "__main__":
