@@ -30,7 +30,7 @@ LANdialler web site.
 
 There are two programs that make up a complete LANdialler system; the
 client (landialler.py) and the server (landiallerd.py). You're reading
-the documentation for the server that runs on the Unix workstation.
+the documentation for the server.
 
 The client and server communicate via XML-RPC. The server runs in the
 background (as a daemon) waiting for clients to connect to it and
@@ -42,9 +42,8 @@ call; connect(), disconnect() and get_status(). These are individually
 documented below. Each procedure runs an external script/program to
 perform their task, making the server more portable between different
 versions of Unix, or distributions of Linux. Each command should
-return immediately and exit with a non zero return code if there is an
-error. Commands are specified in the [commands] section of the
-landiallerd.conf configuration file.
+return immediately. Commands are specified in the [commands] section
+of the landiallerd.conf configuration file.
 
 A sample configuration file should be included with the package, but
 the following should serve as a good example:
@@ -62,17 +61,10 @@ uses to talk to the clients.
 
 The connect and disconnect scripts referenced in the config file
 should both make sure that they exit immediately; the connect command
-MUST NOT block before the connection has been made, but should only
-check that the commands that it has run have started correctly (errors
-should be indicated with a non zero exit code). If you know how to
-integrate LANdialler cleanly with your own operating system's dial up
-systems then please send suggestions in and they will be made
-available on the web site (with credits).
-
-To see a list of the available command line options, use the -h
-switch. For example, error, informational and debugging messages can
-be written to the syslog if the -s switch is used, or to a separate
-log file if -l is used.
+MUST NOT block before the connection has been made. If you have
+managed to integrate LANdialler cleanly with your operating system's
+dial up scripts please send your configuration to the author and they
+will be made available on the web site (with credits).
 
 More information on LANdialler is available at the project home page:
 
@@ -94,7 +86,7 @@ import time
 import xmlrpclib
 
 
-class Timer:
+class Timer(object):
 
     """Simple timer class to record elapsed times."""
 
@@ -134,7 +126,7 @@ class Timer:
     elapsed_seconds = property(_get_elapsed_seconds)
 
 
-class Modem:
+class Modem(object):
 
     def __init__(self, config_parser):
         self._config_parser = config_parser
@@ -158,7 +150,7 @@ class Modem:
             return False
 
 
-class ModemProxy:
+class ModemProxy(object):
 
     CLIENT_TIMEOUT = 30
 
@@ -201,7 +193,7 @@ class ModemProxy:
         self._modem.hang_up()
 
 
-class API:
+class API(object):
     
     """Implements the LANdialler API.
 
@@ -279,7 +271,7 @@ class ReusableSimpleXMLRPCServer(SimpleXMLRPCServer.SimpleXMLRPCServer):
      allow_reuse_address = True
 
  
-class App:
+class App(object):
 
     def __init__(self):
         self._become_daemon = True
