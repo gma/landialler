@@ -39,6 +39,10 @@ platform:
       it towards landialler.py. Make sure that the shortcut runs
       landialler in it's own directory.
 
+      Note: If you'd like to avoid the console window that always pops
+            up when you run landialler.py then rename landialler.py to
+            landialler.pyw and run that instead.
+
   Unix (or Linux)
     - Copy landialler.py to somewhere in your path (e.g. /usr/local/bin).
     - Copy the landialler.conf file to /usr/local/etc, or run landialler.py
