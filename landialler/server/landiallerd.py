@@ -150,12 +150,12 @@ class API:
         the actual connection will be successfully set up immediately.
 
         """
-        if self._modem.is_connected():
+        if self._modem.is_connected:
             return xmlrpclib.True
         elif self._modem.is_connecting:
             return xmlrpclib.False
         else:
-            if self._modem.run_connect_command():
+            if self._modem.dial():
                 self._modem.is_connecting = 1
                 return xmlrpclib.True
             else:
@@ -184,7 +184,7 @@ class API:
                 log.info("%s disconnected, terminating connection" % client)
             self._modem.is_connecting = 0
             self._modem.forget_all_clients()
-            if self._modem.run_disconnect_command():
+            if self._modem.hangup():
                 return xmlrpclib.True
             else:
                 return xmlrpclib.False
@@ -204,7 +204,7 @@ class API:
 
         """
         self._modem.remember_client(client)
-        if self._modem.is_connected():
+        if self._modem.is_connected:
             self._modem.is_connecting = 0
             if not self._modem.was_connected:
                 self._modem.start_timer()
@@ -216,32 +216,39 @@ class API:
             self._modem.was_connected = 0
             numClients = 0
         return (numClients,
-                self._modem.is_connected(),
+                self._modem.is_connected,
                 self._modem.get_time_connected())
 
 
-class SharedModem:
+class SharedModem(object):
 
     def __init__(self, config):
         self._config = config
         self.client_tracker = {}
-        self.is_connecting = False
-        self.was_connected = False  # should only be used by API.get_status()
+        self._is_connecting = False
+        self.was_connected = False
         self.timer = Timer()
+
+    def _get_is_connecting(self):
+        return self._get_is_connecting
+
+    is_connecting = property(_get_is_connecting)
+
+    def _is_connected(self):
+        cmd = self._config.get("commands", "is_connected")
+        rval = os.system("%s > /dev/null 2>&1" % cmd)
+        if rval == 0:
+            self._is_connecting = False
+            self.timer.start()
+            return True
+        else:
+            return False
+
+    is_connected = property(_is_connected)
 
     def count_clients(self):
         """Return the number of active clients."""
         return len(self.list_clients())
-
-    def is_connected(self):
-        cmd = self._config.get("commands", "is_connected")
-        rval = os.system("%s > /dev/null 2>&1" % cmd)
-        if rval == 0:
-            self.is_connecting = 0
-            self.timer.start()
-            return 1
-        else:
-            return 0
 
     def remember_client(self, client):
         self.client_tracker[client] = time.time()
@@ -268,7 +275,7 @@ class SharedModem:
     def list_clients(self):
         return self.client_tracker.keys()
 
-    def run_connect_command(self):
+    def dial(self):
         cmd = self._config.get("commands", "connect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         log.debug("connect command returned: %s" % rval)
@@ -277,7 +284,7 @@ class SharedModem:
         else:
             return 0
 
-    def run_disconnect_command(self):
+    def hangup(self):
         cmd = self._config.get("commands", "disconnect")
         rval = os.system("%s > /dev/null 2>&1" % cmd)
         log.debug("disconnect command returned: %s" % rval)
@@ -287,12 +294,10 @@ class SharedModem:
             return 0
 
     def start_timer(self):
-        log.debug("starting timer")
         self.timer.reset()
         self.timer.start()
 
     def stop_timer(self):
-        log.debug("stopping timer")
         self.timer.stop()
 
     def get_time_connected(self):
@@ -317,7 +322,7 @@ class CleanerThread(threading.Thread):
         while 1:
             self._modem.forget_old_clients()
             if self._modem.count_clients() < 1:
-                if self._modem.is_connecting or self._modem.is_connected():
+                if self._modem.is_connecting or self._modem.is_connected:
                     log.info("clients timed out, terminating connection")
                     api = API(self._modem)
                     api.disconnect(all="yes")
