@@ -175,11 +175,13 @@ class ModemProxy:
 
     def refresh_client(self, client_id):
         self._clients[client_id] = time.time()
-            
-    def count_clients(self):
+
+    def remove_old_clients(self):
         for client_id, time_last_seen in self._clients.items():
             if (time.time() - time_last_seen) > self.CLIENT_TIMEOUT:
                 self.hang_up(client_id)
+
+    def count_clients(self):
         return len(self._clients.keys())
 
     def dial(self, client_id):
